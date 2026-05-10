@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Upload, X, FileText } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 const SERVICE_TYPES = [
   { value: "direct_to_employment", label: "Direct to Employment (DEA)" },
@@ -96,9 +97,29 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
     clb_level: client?.clb_level || "",
     employment_status: client?.employment_status || "",
     has_vehicle: client?.has_vehicle || "",
+    career_objectives: client?.career_objectives || "",
+    employment_history: client?.employment_history || "",
+    resume_urls: client?.resume_urls || [],
   });
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setUploading(true);
+    for (const file of files) {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      set("resume_urls", [...(form.resume_urls || []), file_url]);
+    }
+    setUploading(false);
+    e.target.value = "";
+  };
+
+  const removeResume = (url) => {
+    set("resume_urls", form.resume_urls.filter(u => u !== url));
+  };
 
   const handleWorkerSelect = (email) => {
     const worker = users.find(u => u.email === email);
@@ -261,6 +282,58 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
                 {VEHICLE_OPTIONS.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <Label>Career / Employment Objectives</Label>
+            <Textarea
+              value={form.career_objectives}
+              onChange={e => set("career_objectives", e.target.value)}
+              rows={4}
+              placeholder="Describe the client's career goals and employment objectives..."
+            />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <Label>Employment History / Education</Label>
+            <Textarea
+              value={form.employment_history}
+              onChange={e => set("employment_history", e.target.value)}
+              rows={4}
+              placeholder="Summarize relevant work history, education, certifications..."
+            />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <Label>Resumes & Documents</Label>
+            <div className="border border-dashed border-slate-300 rounded-lg p-4 bg-slate-50">
+              <label className="flex flex-col items-center gap-2 cursor-pointer">
+                <Upload className="w-6 h-6 text-slate-400" />
+                <span className="text-sm text-slate-500">
+                  {uploading ? "Uploading..." : "Click to upload resume or document (PDF, image, Word)"}
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
+              </label>
+            </div>
+            {form.resume_urls?.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {form.resume_urls.map((url, i) => (
+                  <div key={url} className="flex items-center gap-2 bg-white border border-slate-200 rounded px-3 py-2">
+                    <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline truncate flex-1">
+                      Document {i + 1}
+                    </a>
+                    <button type="button" onClick={() => removeResume(url)} className="text-slate-400 hover:text-red-500">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="space-y-1 md:col-span-2">
             <Label>Intake Notes</Label>

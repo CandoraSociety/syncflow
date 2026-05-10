@@ -140,6 +140,21 @@
       "default": "new",
       "description": "Case status"
     },
+    "career_objectives": {
+      "type": "string",
+      "description": "Career/Employment Objectives"
+    },
+    "employment_history": {
+      "type": "string",
+      "description": "Employment History / Education"
+    },
+    "resume_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Uploaded resume file URLs"
+    },
     "intake_notes": {
       "type": "string",
       "description": "Notes from intake worker"
