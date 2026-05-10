@@ -26,6 +26,47 @@ const REFERRAL_SOURCES = [
   { value: "other", label: "Other" },
 ];
 
+const RESIDENCY_STATUSES = [
+  { value: "canadian_citizen", label: "Canadian Citizen" },
+  { value: "permanent_resident", label: "Permanent Resident" },
+  { value: "protected_person", label: "Protected Person" },
+  { value: "convention_refugee", label: "Convention Refugee" },
+  { value: "refugee_claimant", label: "Refugee Claimant / Asylum Seeker" },
+  { value: "temporary_resident", label: "Temporary Resident" },
+  { value: "work_permit", label: "Work Permit Holder" },
+  { value: "study_permit", label: "Study Permit Holder" },
+  { value: "visitor", label: "Visitor" },
+  { value: "other", label: "Other" },
+];
+
+const CLB_LEVELS = [
+  { value: "clb_1", label: "CLB 1" },
+  { value: "clb_2", label: "CLB 2" },
+  { value: "clb_3", label: "CLB 3" },
+  { value: "clb_4", label: "CLB 4" },
+  { value: "clb_5", label: "CLB 5" },
+  { value: "clb_6", label: "CLB 6" },
+  { value: "clb_7", label: "CLB 7" },
+  { value: "clb_8", label: "CLB 8" },
+  { value: "clb_9", label: "CLB 9" },
+  { value: "clb_10", label: "CLB 10" },
+  { value: "clb_11", label: "CLB 11" },
+  { value: "clb_12", label: "CLB 12" },
+  { value: "native_english_french", label: "Native English / French Speaker" },
+];
+
+const EMPLOYMENT_STATUSES = [
+  { value: "employed", label: "Employed" },
+  { value: "unemployed", label: "Unemployed" },
+  { value: "underemployed", label: "Underemployed" },
+];
+
+const VEHICLE_OPTIONS = [
+  { value: "yes", label: "Yes" },
+  { value: "no_has_license", label: "No (has driver's license)" },
+  { value: "no_no_license", label: "No (no driver's license)" },
+];
+
 const STATUSES = [
   { value: "new", label: "New" },
   { value: "active", label: "Active" },
@@ -51,6 +92,10 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
     status: client?.status || "new",
     intake_notes: client?.intake_notes || "",
     compass_hsid: client?.compass_hsid || "",
+    residency_status: client?.residency_status || "",
+    clb_level: client?.clb_level || "",
+    employment_status: client?.employment_status || "",
+    has_vehicle: client?.has_vehicle || "",
   });
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
@@ -178,6 +223,42 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Residency Status</Label>
+            <Select value={form.residency_status} onValueChange={v => set("residency_status", v)}>
+              <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+              <SelectContent>
+                {RESIDENCY_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>CLB Level</Label>
+            <Select value={form.clb_level} onValueChange={v => set("clb_level", v)}>
+              <SelectTrigger><SelectValue placeholder="Select CLB level" /></SelectTrigger>
+              <SelectContent>
+                {CLB_LEVELS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Employment Status</Label>
+            <Select value={form.employment_status} onValueChange={v => set("employment_status", v)}>
+              <SelectTrigger><SelectValue placeholder="Select employment status" /></SelectTrigger>
+              <SelectContent>
+                {EMPLOYMENT_STATUSES.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Has Vehicle</Label>
+            <Select value={form.has_vehicle} onValueChange={v => set("has_vehicle", v)}>
+              <SelectTrigger><SelectValue placeholder="Select vehicle status" /></SelectTrigger>
+              <SelectContent>
+                {VEHICLE_OPTIONS.map(v => <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

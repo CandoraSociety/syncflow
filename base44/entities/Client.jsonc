@@ -43,6 +43,59 @@
       "type": "string",
       "description": "Compass HSID# (Government of Alberta database)"
     },
+    "residency_status": {
+      "type": "string",
+      "enum": [
+        "canadian_citizen",
+        "permanent_resident",
+        "protected_person",
+        "convention_refugee",
+        "refugee_claimant",
+        "temporary_resident",
+        "work_permit",
+        "study_permit",
+        "visitor",
+        "other"
+      ],
+      "description": "Canadian residency/immigration status"
+    },
+    "clb_level": {
+      "type": "string",
+      "enum": [
+        "clb_1",
+        "clb_2",
+        "clb_3",
+        "clb_4",
+        "clb_5",
+        "clb_6",
+        "clb_7",
+        "clb_8",
+        "clb_9",
+        "clb_10",
+        "clb_11",
+        "clb_12",
+        "native_english_french"
+      ],
+      "description": "Canadian Language Benchmark level"
+    },
+    "employment_status": {
+      "type": "string",
+      "enum": [
+        "employed",
+        "unemployed",
+        "underemployed"
+      ],
+      "description": "Current employment status"
+    },
+    "has_vehicle": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "no_has_license",
+        "no_no_license"
+      ],
+      "description": "Vehicle and driver's license status"
+    },
     "referral_source": {
       "type": "string",
       "enum": [
