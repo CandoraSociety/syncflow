@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { LogOut, Users, Search } from "lucide-react";
+import { LogOut, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
+import ClientListControls, { applyFiltersAndSort } from "@/components/lists/ClientListControls";
 
 const SERVICE_LABELS = {
   direct_to_employment: "DEA",
@@ -28,18 +28,25 @@ const BARRIER_STATUS_COLORS = {
   resolved: "text-green-600",
 };
 
+const EMPTY_FILTERS = {
+  service_type: "", program_status: "", employment_status: "",
+  clb_level: "", assigned_worker: "", age_min: "", age_max: "",
+  duration_min: "", duration_max: "",
+};
+
 export default function WorkerDashboard() {
   const [user, setUser] = useState(null);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [sortKey, setSortKey] = useState("intake_date_desc");
 
   useEffect(() => {
     const init = async () => {
       const me = await base44.auth.me();
       setUser(me);
-      const allClients = await base44.entities.Client.list("-created_date", 500);
-      // Service navigator (Dawn) sees clients with barriers; others see their own assigned clients
+      const allClients = await base44.entities.Client.list("-created_date", 1000);
       const isDawn = me.email === "Dawn.williston@candorasociety.com";
       const myClients = isDawn
         ? allClients.filter(c => c.barriers_addressed || c.assigned_worker === me.email)
@@ -50,18 +57,8 @@ export default function WorkerDashboard() {
     init();
   }, []);
 
-  const filtered = clients.filter(c => {
-    const q = search.toLowerCase();
-    return (
-      c.first_name?.toLowerCase().includes(q) ||
-      c.last_name?.toLowerCase().includes(q) ||
-      c.compass_hsid?.toLowerCase().includes(q) ||
-      c.phone?.includes(q) ||
-      c.email?.toLowerCase().includes(q)
-    );
-  });
-
   const isDawn = user?.email === "Dawn.williston@candorasociety.com";
+  const displayed = applyFiltersAndSort(clients, search, filters, sortKey);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -84,17 +81,6 @@ export default function WorkerDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-slate-600">
-            <Users className="w-4 h-4" />
-            <span className="text-sm font-medium">{filtered.length} client{filtered.length !== 1 ? "s" : ""}</span>
-          </div>
-          <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-            <Input className="pl-9" placeholder="Search clients..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-        </div>
-
         {clients.length === 0 ? (
           <div className="text-center py-20 text-slate-400">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -104,90 +90,111 @@ export default function WorkerDashboard() {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Name</th>
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">HSID#</th>
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Service</th>
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Program Status</th>
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Emp. Status</th>
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">CLB</th>
-                    {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 1</th>}
-                    {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 2</th>}
-                    {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 3</th>}
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">90-Day Status</th>
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Svc Nav</th>
-                    <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Intake Date</th>
-                    <th className="px-3 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filtered.map(c => (
-                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-3 py-2.5 font-medium whitespace-nowrap">
-                        <Link to={`/client/${c.id}`} className="text-blue-700 hover:underline">
-                          {c.first_name} {c.last_name}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.compass_hsid || "—"}</td>
-                      <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{SERVICE_LABELS[c.service_type] || "—"}</td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
-                        {c.program_status ? (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROGRAM_STATUS_COLORS[c.program_status] || "bg-slate-100 text-slate-600"}`}>
-                            {c.program_status.replace("_", " ")}
-                          </span>
-                        ) : "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.employment_status || "—"}</td>
-                      <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.clb_level?.replace("clb_", "CLB ").replace("native_english_french", "Native") || "—"}</td>
-                      {isDawn && (
-                        <td className="px-3 py-2.5 whitespace-nowrap">
-                          {c.barrier_1 ? (
-                            <span>
-                              <span className="text-slate-700">{c.barrier_1}</span>
-                              {c.barrier_1_status && <span className={`ml-1 text-xs ${BARRIER_STATUS_COLORS[c.barrier_1_status] || ""}`}>({c.barrier_1_status})</span>}
-                            </span>
-                          ) : "—"}
-                        </td>
-                      )}
-                      {isDawn && (
-                        <td className="px-3 py-2.5 whitespace-nowrap">
-                          {c.barrier_2 ? (
-                            <span>
-                              <span className="text-slate-700">{c.barrier_2}</span>
-                              {c.barrier_2_status && <span className={`ml-1 text-xs ${BARRIER_STATUS_COLORS[c.barrier_2_status] || ""}`}>({c.barrier_2_status})</span>}
-                            </span>
-                          ) : "—"}
-                        </td>
-                      )}
-                      {isDawn && (
-                        <td className="px-3 py-2.5 whitespace-nowrap">
-                          {c.barrier_3 ? (
-                            <span>
-                              <span className="text-slate-700">{c.barrier_3}</span>
-                              {c.barrier_3_status && <span className={`ml-1 text-xs ${BARRIER_STATUS_COLORS[c.barrier_3_status] || ""}`}>({c.barrier_3_status})</span>}
-                            </span>
-                          ) : "—"}
-                        </td>
-                      )}
-                      <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.followup_90day_status || "—"}</td>
-                      <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.service_navigation_supports ? "Yes" : "—"}</td>
-                      <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{c.intake_date ? format(new Date(c.intake_date), "MMM d, yy") : "—"}</td>
-                      <td className="px-3 py-2.5">
-                        <Link to={`/client/${c.id}`}><Button variant="outline" size="sm">Open</Button></Link>
-                      </td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={isDawn ? 15 : 12} className="text-center py-10 text-slate-400">No clients found.</td></tr>
-                  )}
-                </tbody>
-              </table>
+          <>
+            <div className="flex items-center gap-2 text-slate-600 mb-2">
+              <Users className="w-4 h-4" />
+              <span className="text-sm font-medium">{displayed.length} of {clients.length} client{clients.length !== 1 ? "s" : ""}</span>
             </div>
-          </div>
+
+            <ClientListControls
+              search={search} onSearch={setSearch}
+              filters={filters} onFilters={setFilters}
+              sortKey={sortKey} onSort={setSortKey}
+            />
+
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Name</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">HSID#</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Service</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Switches</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Program Status</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Emp. Status</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">CLB</th>
+                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 1</th>}
+                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 2</th>}
+                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 3</th>}
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">90-Day Status</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Svc Nav</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Intake Date</th>
+                      <th className="px-3 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {displayed.map(c => (
+                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-3 py-2.5 font-medium whitespace-nowrap">
+                          <Link to={`/client/${c.id}`} className="text-blue-700 hover:underline">
+                            {c.first_name} {c.last_name}
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.compass_hsid || "—"}</td>
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{SERVICE_LABELS[c.service_type] || "—"}</td>
+                        <td className="px-3 py-2.5 whitespace-nowrap">
+                          {c.program_stream_switches?.length > 0 ? (
+                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                              {c.program_stream_switches.length}×
+                            </span>
+                          ) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 whitespace-nowrap">
+                          {c.program_status ? (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROGRAM_STATUS_COLORS[c.program_status] || "bg-slate-100 text-slate-600"}`}>
+                              {c.program_status.replace("_", " ")}
+                            </span>
+                          ) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.employment_status || "—"}</td>
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.clb_level?.replace("clb_", "CLB ").replace("native_english_french", "Native") || "—"}</td>
+                        {isDawn && (
+                          <td className="px-3 py-2.5 whitespace-nowrap">
+                            {c.barrier_1 ? (
+                              <span>
+                                <span className="text-slate-700">{c.barrier_1}</span>
+                                {c.barrier_1_status && <span className={`ml-1 text-xs ${BARRIER_STATUS_COLORS[c.barrier_1_status] || ""}`}>({c.barrier_1_status})</span>}
+                              </span>
+                            ) : "—"}
+                          </td>
+                        )}
+                        {isDawn && (
+                          <td className="px-3 py-2.5 whitespace-nowrap">
+                            {c.barrier_2 ? (
+                              <span>
+                                <span className="text-slate-700">{c.barrier_2}</span>
+                                {c.barrier_2_status && <span className={`ml-1 text-xs ${BARRIER_STATUS_COLORS[c.barrier_2_status] || ""}`}>({c.barrier_2_status})</span>}
+                              </span>
+                            ) : "—"}
+                          </td>
+                        )}
+                        {isDawn && (
+                          <td className="px-3 py-2.5 whitespace-nowrap">
+                            {c.barrier_3 ? (
+                              <span>
+                                <span className="text-slate-700">{c.barrier_3}</span>
+                                {c.barrier_3_status && <span className={`ml-1 text-xs ${BARRIER_STATUS_COLORS[c.barrier_3_status] || ""}`}>({c.barrier_3_status})</span>}
+                              </span>
+                            ) : "—"}
+                          </td>
+                        )}
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.followup_90day_status || "—"}</td>
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.service_navigation_supports ? "Yes" : "—"}</td>
+                        <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{c.intake_date ? format(new Date(c.intake_date), "MMM d, yy") : "—"}</td>
+                        <td className="px-3 py-2.5">
+                          <Link to={`/client/${c.id}`}><Button variant="outline" size="sm">Open</Button></Link>
+                        </td>
+                      </tr>
+                    ))}
+                    {displayed.length === 0 && (
+                      <tr><td colSpan={isDawn ? 16 : 13} className="text-center py-10 text-slate-400">No clients match your filters.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
       </main>
     </div>

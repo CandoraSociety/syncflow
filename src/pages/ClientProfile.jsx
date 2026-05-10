@@ -10,6 +10,7 @@ import ClientPlacements from "@/components/client/ClientPlacements";
 import ClientReferrals from "@/components/client/ClientReferrals";
 import ClientEmployment from "@/components/client/ClientEmployment";
 import ClientFinancials from "@/components/client/ClientFinancials";
+import ClientStreamSwitches from "@/components/client/ClientStreamSwitches";
 
 export default function ClientProfile() {
   const { id } = useParams();
@@ -68,6 +69,14 @@ export default function ClientProfile() {
             <TabsTrigger value="referrals">Referrals</TabsTrigger>
             <TabsTrigger value="employment">Employment</TabsTrigger>
             <TabsTrigger value="financials">Financials</TabsTrigger>
+            <TabsTrigger value="stream_switches" className="relative">
+              Stream Switches
+              {client.program_stream_switches?.length > 0 && (
+                <span className="ml-1.5 bg-amber-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
+                  {client.program_stream_switches.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -87,6 +96,9 @@ export default function ClientProfile() {
           </TabsContent>
           <TabsContent value="financials">
             <ClientFinancials clientId={id} clientName={`${client.first_name} ${client.last_name}`} />
+          </TabsContent>
+          <TabsContent value="stream_switches">
+            <ClientStreamSwitches client={client} onSave={handleSave} />
           </TabsContent>
         </Tabs>
       </div>

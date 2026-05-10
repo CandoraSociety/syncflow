@@ -345,6 +345,33 @@
       "type": "string",
       "format": "date",
       "description": "Date of intake"
+    },
+    "program_stream_switches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from_stream": {
+            "type": "string"
+          },
+          "to_stream": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reason_other": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "History of program stream switches"
     }
   },
   "required": [
