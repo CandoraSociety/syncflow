@@ -9,6 +9,8 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Home from "./pages/Home";
 import IntakePage from "./pages/IntakePage";
 import WorkerDashboard from "./pages/WorkerDashboard";
+import ClientProfile from "./pages/ClientProfile";
+import MasterList from "./pages/MasterList";
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -39,6 +41,8 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Home />} />
       <Route path="/intake" element={<IntakePage />} />
       <Route path="/dashboard" element={<WorkerDashboard />} />
+      <Route path="/client/:id" element={<ClientProfile />} />
+      <Route path="/master" element={<MasterList />} />
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -1,0 +1,37 @@
+{
+  "name": "Employer",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Employer/organization name"
+    },
+    "contact_name": {
+      "type": "string",
+      "description": "Contact person name"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Contact email"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Contact phone"
+    },
+    "address": {
+      "type": "string",
+      "description": "Employer address"
+    },
+    "industry": {
+      "type": "string",
+      "description": "Industry sector"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

@@ -81,11 +81,15 @@
     "employment_status": {
       "type": "string",
       "enum": [
-        "employed",
-        "unemployed",
-        "underemployed"
+        "E-RF",
+        "E-UF",
+        "E-PT",
+        "UE",
+        "UE-LA",
+        "UE-S",
+        "NA"
       ],
-      "description": "Current employment status"
+      "description": "Current employment status code"
     },
     "has_vehicle": {
       "type": "string",
@@ -139,6 +143,184 @@
       ],
       "default": "new",
       "description": "Case status"
+    },
+    "program_status": {
+      "type": "string",
+      "enum": [
+        "in_progress",
+        "complete",
+        "incomplete",
+        "cancelled"
+      ],
+      "description": "Program completion status"
+    },
+    "service_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Service start date"
+    },
+    "completion_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Program completion date"
+    },
+    "employment_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Employment start date"
+    },
+    "followup_90day_date": {
+      "type": "string",
+      "format": "date",
+      "description": "90-day follow-up date"
+    },
+    "followup_90day_status": {
+      "type": "string",
+      "enum": [
+        "E-RF",
+        "E-UF",
+        "E-PT",
+        "UE",
+        "UE-LA",
+        "UE-S",
+        "NA",
+        "no_contact"
+      ],
+      "description": "90-day follow-up employment status code"
+    },
+    "service_navigation_supports": {
+      "type": "boolean",
+      "description": "Received service navigation supports"
+    },
+    "service_navigation_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Service navigation date"
+    },
+    "barriers_addressed": {
+      "type": "boolean",
+      "description": "Barriers addressed in service plan"
+    },
+    "barrier_1": {
+      "type": "string",
+      "description": "Primary barrier"
+    },
+    "barrier_1_status": {
+      "type": "string",
+      "enum": [
+        "unresolved",
+        "in_progress",
+        "resolved"
+      ],
+      "description": "Barrier 1 status"
+    },
+    "barrier_2": {
+      "type": "string",
+      "description": "Secondary barrier"
+    },
+    "barrier_2_status": {
+      "type": "string",
+      "enum": [
+        "unresolved",
+        "in_progress",
+        "resolved"
+      ],
+      "description": "Barrier 2 status"
+    },
+    "barrier_3": {
+      "type": "string",
+      "description": "Tertiary barrier"
+    },
+    "barrier_3_status": {
+      "type": "string",
+      "enum": [
+        "unresolved",
+        "in_progress",
+        "resolved"
+      ],
+      "description": "Barrier 3 status"
+    },
+    "exposure_course": {
+      "type": "boolean",
+      "description": "Client did exposure course"
+    },
+    "paid_external_placement": {
+      "type": "boolean",
+      "description": "Client did paid external placement"
+    },
+    "employment_supports": {
+      "type": "boolean",
+      "description": "Client received employment supports (PPE etc)"
+    },
+    "internal_placement": {
+      "type": "string",
+      "enum": [
+        "none",
+        "cleaning_arc",
+        "food_services_onsite",
+        "food_services_offsite",
+        "reception",
+        "childcare"
+      ],
+      "description": "Internal placement type"
+    },
+    "internal_placement_details": {
+      "type": "string",
+      "description": "Internal placement job details, skills, description"
+    },
+    "external_employer": {
+      "type": "string",
+      "description": "External employer name (autocomplete)"
+    },
+    "employer_name": {
+      "type": "string",
+      "description": "Employer name when employed"
+    },
+    "employer_contact": {
+      "type": "string",
+      "description": "Employer contact info"
+    },
+    "job_title": {
+      "type": "string",
+      "description": "Job title when employed"
+    },
+    "job_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Job start date"
+    },
+    "job_wage": {
+      "type": "string",
+      "description": "Hourly wage or salary"
+    },
+    "job_hours": {
+      "type": "string",
+      "description": "Hours per week"
+    },
+    "sdp_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Service Delivery Plan selected items"
+    },
+    "sdp_notes": {
+      "type": "string",
+      "description": "Service Delivery Plan additional notes"
+    },
+    "internal_referrals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Internal referrals made"
+    },
+    "external_referrals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "External referrals made"
     },
     "career_objectives": {
       "type": "string",

@@ -1,0 +1,62 @@
+{
+  "name": "FinancialRecord",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Related client ID"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Client full name (denormalized)"
+    },
+    "record_type": {
+      "type": "string",
+      "enum": [
+        "exposure_course",
+        "paid_external_placement",
+        "employment_supports"
+      ],
+      "description": "Type of financial record"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the expense/course/placement"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Dollar amount"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of expense/activity"
+    },
+    "vendor": {
+      "type": "string",
+      "description": "Vendor or provider name"
+    },
+    "receipt_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Uploaded receipt/document URLs"
+    },
+    "completion_record_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Uploaded completion record URLs"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "client_id",
+    "record_type"
+  ]
+}
