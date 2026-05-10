@@ -1,0 +1,103 @@
+{
+  "name": "Client",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string",
+      "description": "Client's first name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "Client's last name"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of birth"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "address": {
+      "type": "string",
+      "description": "Street address"
+    },
+    "city": {
+      "type": "string",
+      "description": "City"
+    },
+    "state": {
+      "type": "string",
+      "description": "State"
+    },
+    "zip": {
+      "type": "string",
+      "description": "ZIP code"
+    },
+    "referral_source": {
+      "type": "string",
+      "enum": [
+        "self",
+        "family_friend",
+        "school",
+        "court",
+        "hospital",
+        "shelter",
+        "employer",
+        "other"
+      ],
+      "description": "How the client was referred"
+    },
+    "service_type": {
+      "type": "string",
+      "enum": [
+        "job_placement",
+        "resume_assistance",
+        "skills_training",
+        "benefits_enrollment",
+        "housing_support",
+        "mental_health_referral",
+        "childcare_assistance",
+        "other"
+      ],
+      "description": "Primary service requested"
+    },
+    "assigned_worker": {
+      "type": "string",
+      "description": "Email of the assigned worker"
+    },
+    "assigned_worker_name": {
+      "type": "string",
+      "description": "Display name of the assigned worker"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "active",
+        "pending",
+        "closed"
+      ],
+      "default": "new",
+      "description": "Case status"
+    },
+    "intake_notes": {
+      "type": "string",
+      "description": "Notes from intake worker"
+    },
+    "intake_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of intake"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name"
+  ]
+}
