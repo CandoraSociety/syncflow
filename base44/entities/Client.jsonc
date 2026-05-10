@@ -214,6 +214,25 @@
       "format": "date",
       "description": "Employment start date"
     },
+    "post_completion_employment_status": {
+      "type": "string",
+      "enum": [
+        "E-RF",
+        "E-UF",
+        "E-PT",
+        "UE",
+        "UE-LA",
+        "UE-S",
+        "NA",
+        "no_contact"
+      ],
+      "description": "Employment status at post-program completion"
+    },
+    "post_completion_employment_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Employment start date at post-program completion"
+    },
     "followup_90day_date": {
       "type": "string",
       "format": "date",

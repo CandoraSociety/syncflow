@@ -26,6 +26,8 @@ export default function ClientEmployment({ client, onSave }) {
     job_start_date: client?.job_start_date || "",
     job_wage: client?.job_wage || "",
     job_hours: client?.job_hours || "",
+    post_completion_employment_status: client?.post_completion_employment_status || "",
+    post_completion_employment_date: client?.post_completion_employment_date || "",
     followup_90day_date: client?.followup_90day_date || "",
     followup_90day_status: client?.followup_90day_status || "",
   });
@@ -91,6 +93,27 @@ export default function ClientEmployment({ client, onSave }) {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Post-Program Completion Employment</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label>Post-Completion Employment Status</Label>
+            <Select value={form.post_completion_employment_status} onValueChange={v => set("post_completion_employment_status", v)}>
+              <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+              <SelectContent>
+                {[...EMPLOYMENT_CODES, { value: "no_contact", label: "No Contact" }].map(e => (
+                  <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Post-Completion Employment Start Date</Label>
+            <Input type="date" value={form.post_completion_employment_date} onChange={e => set("post_completion_employment_date", e.target.value)} />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-base">90-Day Follow-Up</CardTitle></CardHeader>

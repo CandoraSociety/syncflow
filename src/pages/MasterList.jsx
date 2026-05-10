@@ -118,6 +118,8 @@ export default function MasterList() {
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Completion</th>
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Emp. Status</th>
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Emp. Start</th>
+                  <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Post-Comp. Status</th>
+                  <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Post-Comp. Emp. Start</th>
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">90-Day Date</th>
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">90-Day Status</th>
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Svc Nav</th>
@@ -158,6 +160,8 @@ export default function MasterList() {
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.completion_date ? format(new Date(c.completion_date), "MMM d, yy") : "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.employment_status || "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.employment_start_date ? format(new Date(c.employment_start_date), "MMM d, yy") : "—"}</td>
+                    <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.post_completion_employment_status || "—"}</td>
+                    <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.post_completion_employment_date ? format(new Date(c.post_completion_employment_date), "MMM d, yy") : "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.followup_90day_date ? format(new Date(c.followup_90day_date), "MMM d, yy") : "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.followup_90day_status || "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.service_navigation_supports ? "Yes" : "—"}</td>

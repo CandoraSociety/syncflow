@@ -117,6 +117,8 @@ export default function WorkerDashboard() {
                       {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 1</th>}
                       {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 2</th>}
                       {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 3</th>}
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Post-Comp. Status</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Post-Comp. Emp. Start</th>
                       <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">90-Day Status</th>
                       <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Svc Nav</th>
                       <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Intake Date</th>
@@ -179,6 +181,8 @@ export default function WorkerDashboard() {
                             ) : "—"}
                           </td>
                         )}
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.post_completion_employment_status || "—"}</td>
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.post_completion_employment_date ? format(new Date(c.post_completion_employment_date), "MMM d, yy") : "—"}</td>
                         <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.followup_90day_status || "—"}</td>
                         <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.service_navigation_supports ? "Yes" : "—"}</td>
                         <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{c.intake_date ? format(new Date(c.intake_date), "MMM d, yy") : "—"}</td>
