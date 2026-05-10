@@ -112,7 +112,7 @@ export default function WorkerDashboard() {
                       <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Service</th>
                       <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Switches</th>
                       <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Program Status</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Emp. Status</th>
+
                       <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">CLB</th>
                       {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 1</th>}
                       {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 2</th>}
@@ -149,7 +149,7 @@ export default function WorkerDashboard() {
                             </span>
                           ) : "—"}
                         </td>
-                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.employment_status || "—"}</td>
+
                         <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.clb_level?.replace("clb_", "CLB ").replace("native_english_french", "Native") || "—"}</td>
                         {isDawn && (
                           <td className="px-3 py-2.5 whitespace-nowrap">
