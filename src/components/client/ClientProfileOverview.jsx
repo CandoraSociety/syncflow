@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Save } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Save, ShieldCheck } from "lucide-react";
 
 const RESIDENCY_STATUSES = [
   { value: "canadian_citizen", label: "Canadian Citizen" },
@@ -181,6 +182,52 @@ export default function ClientProfileOverview({ client, onSave }) {
             <Label>Intake Notes</Label>
             <Textarea rows={4} value={form.intake_notes || ""} onChange={e => set("intake_notes", e.target.value)} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" /> Compass Entry Verification
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              id="compass_verified"
+              checked={!!form.compass_verified}
+              onCheckedChange={v => set("compass_verified", v)}
+            />
+            <Label htmlFor="compass_verified" className="font-medium cursor-pointer">
+              Client file has been entered into Compass
+            </Label>
+          </div>
+          {form.compass_verified && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div className="space-y-1">
+                <Label>Date Verified</Label>
+                <Input type="date" value={form.compass_verified_date || ""} onChange={e => set("compass_verified_date", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Verified By</Label>
+                <Input placeholder="Name of person who verified..." value={form.compass_verified_by || ""} onChange={e => set("compass_verified_by", e.target.value)} />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <Label>Compass Notes / Discrepancies</Label>
+                <Textarea
+                  rows={3}
+                  placeholder="Note any discrepancies between this record and Compass, or any outstanding items..."
+                  value={form.compass_notes || ""}
+                  onChange={e => set("compass_notes", e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          {!form.compass_verified && (
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+              ⚠ This client has not been verified as entered in Compass.
+            </p>
+          )}
         </CardContent>
       </Card>
 

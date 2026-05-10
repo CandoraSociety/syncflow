@@ -63,6 +63,7 @@ export default function MasterList() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={() => navigate("/intake")}>Intake</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/reports")}>Reports</Button>
           <Button variant="ghost" size="icon" onClick={() => base44.auth.logout()}><LogOut className="w-4 h-4" /></Button>
         </div>
       </div>

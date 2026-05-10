@@ -43,6 +43,23 @@
       "type": "string",
       "description": "Compass HSID# (Government of Alberta database)"
     },
+    "compass_verified": {
+      "type": "boolean",
+      "description": "Client file entered into Compass"
+    },
+    "compass_verified_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date Compass entry was verified"
+    },
+    "compass_verified_by": {
+      "type": "string",
+      "description": "Name of person who verified Compass entry"
+    },
+    "compass_notes": {
+      "type": "string",
+      "description": "Notes about Compass entry / discrepancies"
+    },
     "residency_status": {
       "type": "string",
       "enum": [
@@ -211,8 +228,7 @@
         "unresolved",
         "in_progress",
         "resolved"
-      ],
-      "description": "Barrier 1 status"
+      ]
     },
     "barrier_2": {
       "type": "string",
@@ -224,8 +240,7 @@
         "unresolved",
         "in_progress",
         "resolved"
-      ],
-      "description": "Barrier 2 status"
+      ]
     },
     "barrier_3": {
       "type": "string",
@@ -237,20 +252,16 @@
         "unresolved",
         "in_progress",
         "resolved"
-      ],
-      "description": "Barrier 3 status"
+      ]
     },
     "exposure_course": {
-      "type": "boolean",
-      "description": "Client did exposure course"
+      "type": "boolean"
     },
     "paid_external_placement": {
-      "type": "boolean",
-      "description": "Client did paid external placement"
+      "type": "boolean"
     },
     "employment_supports": {
-      "type": "boolean",
-      "description": "Client received employment supports (PPE etc)"
+      "type": "boolean"
     },
     "internal_placement": {
       "type": "string",
@@ -261,90 +272,72 @@
         "food_services_offsite",
         "reception",
         "childcare"
-      ],
-      "description": "Internal placement type"
+      ]
     },
     "internal_placement_details": {
-      "type": "string",
-      "description": "Internal placement job details, skills, description"
+      "type": "string"
     },
     "external_employer": {
-      "type": "string",
-      "description": "External employer name (autocomplete)"
+      "type": "string"
     },
     "employer_name": {
-      "type": "string",
-      "description": "Employer name when employed"
+      "type": "string"
     },
     "employer_contact": {
-      "type": "string",
-      "description": "Employer contact info"
+      "type": "string"
     },
     "job_title": {
-      "type": "string",
-      "description": "Job title when employed"
+      "type": "string"
     },
     "job_start_date": {
       "type": "string",
-      "format": "date",
-      "description": "Job start date"
+      "format": "date"
     },
     "job_wage": {
-      "type": "string",
-      "description": "Hourly wage or salary"
+      "type": "string"
     },
     "job_hours": {
-      "type": "string",
-      "description": "Hours per week"
+      "type": "string"
     },
     "sdp_items": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Service Delivery Plan selected items"
+      }
     },
     "sdp_notes": {
-      "type": "string",
-      "description": "Service Delivery Plan additional notes"
+      "type": "string"
     },
     "internal_referrals": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Internal referrals made"
+      }
     },
     "external_referrals": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "External referrals made"
+      }
     },
     "career_objectives": {
-      "type": "string",
-      "description": "Career/Employment Objectives"
+      "type": "string"
     },
     "employment_history": {
-      "type": "string",
-      "description": "Employment History / Education"
+      "type": "string"
     },
     "resume_urls": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Uploaded resume file URLs"
+      }
     },
     "intake_notes": {
-      "type": "string",
-      "description": "Notes from intake worker"
+      "type": "string"
     },
     "intake_date": {
       "type": "string",
-      "format": "date",
-      "description": "Date of intake"
+      "format": "date"
     },
     "program_stream_switches": {
       "type": "array",
@@ -370,8 +363,7 @@
             "type": "string"
           }
         }
-      },
-      "description": "History of program stream switches"
+      }
     }
   },
   "required": [

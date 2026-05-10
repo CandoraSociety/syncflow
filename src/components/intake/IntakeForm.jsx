@@ -104,6 +104,25 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
   const [uploading, setUploading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validate = (data) => {
+    const errs = {};
+    if (!data.first_name?.trim()) errs.first_name = "First name is required.";
+    if (!data.last_name?.trim()) errs.last_name = "Last name is required.";
+    if (data.phone) {
+      const digits = data.phone.replace(/\D/g, "");
+      if (digits.length < 10 || digits.length > 11) errs.phone = "Phone must be 10 digits (or 11 with country code).";
+    }
+    if (data.zip) {
+      const postal = data.zip.replace(/\s/g, "").toUpperCase();
+      if (!/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(postal)) errs.zip = "Postal code must be in format A1A 1A1.";
+    }
+    if (data.email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errs.email = "Enter a valid email address.";
+    }
+    return errs;
+  };
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -129,6 +148,9 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const errs = validate(form);
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     onSave(form);
   };
 
@@ -156,11 +178,13 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>First Name *</Label>
-            <Input value={form.first_name} onChange={e => set("first_name", e.target.value)} required />
+            <Input value={form.first_name} onChange={e => { set("first_name", e.target.value); setErrors(p => ({...p, first_name: ""})); }} className={errors.first_name ? "border-red-400" : ""} />
+            {errors.first_name && <p className="text-xs text-red-500">{errors.first_name}</p>}
           </div>
           <div className="space-y-1">
             <Label>Last Name *</Label>
-            <Input value={form.last_name} onChange={e => set("last_name", e.target.value)} required />
+            <Input value={form.last_name} onChange={e => { set("last_name", e.target.value); setErrors(p => ({...p, last_name: ""})); }} className={errors.last_name ? "border-red-400" : ""} />
+            {errors.last_name && <p className="text-xs text-red-500">{errors.last_name}</p>}
           </div>
           <div className="space-y-1">
             <Label>Date of Birth</Label>
@@ -168,11 +192,13 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
           </div>
           <div className="space-y-1">
             <Label>Phone</Label>
-            <Input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="(555) 555-5555" />
+            <Input value={form.phone} onChange={e => { set("phone", e.target.value); setErrors(p => ({...p, phone: ""})); }} placeholder="(555) 555-5555" className={errors.phone ? "border-red-400" : ""} />
+            {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
           </div>
           <div className="space-y-1">
             <Label>Email</Label>
-            <Input type="email" value={form.email} onChange={e => set("email", e.target.value)} />
+            <Input value={form.email} onChange={e => { set("email", e.target.value); setErrors(p => ({...p, email: ""})); }} className={errors.email ? "border-red-400" : ""} />
+            {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
           </div>
           <div className="space-y-1">
             <Label>Compass HSID#</Label>
@@ -200,7 +226,8 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
             </div>
             <div className="space-y-1">
               <Label>Postal Code</Label>
-              <Input value={form.zip} onChange={e => set("zip", e.target.value)} maxLength={7} placeholder="A1A 1A1" />
+              <Input value={form.zip} onChange={e => { set("zip", e.target.value); setErrors(p => ({...p, zip: ""})); }} maxLength={7} placeholder="A1A 1A1" className={errors.zip ? "border-red-400" : ""} />
+              {errors.zip && <p className="text-xs text-red-500">{errors.zip}</p>}
             </div>
           </div>
         </CardContent>

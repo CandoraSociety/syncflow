@@ -37,6 +37,29 @@ const PROGRAM_STATUS_OPTIONS = [
 
 const EMP_STATUS_OPTIONS = ["E-RF", "E-UF", "E-PT", "UE", "UE-LA", "UE-S", "NA"];
 
+const REFERRAL_SOURCE_OPTIONS = [
+  { value: "self", label: "Self" },
+  { value: "family_friend", label: "Family / Friend" },
+  { value: "school", label: "School" },
+  { value: "employer", label: "Employer" },
+  { value: "external_agency", label: "External Agency" },
+  { value: "alberta_works", label: "Alberta Works" },
+  { value: "other", label: "Other" },
+];
+
+const RESIDENCY_OPTIONS = [
+  { value: "canadian_citizen", label: "Canadian Citizen" },
+  { value: "permanent_resident", label: "Permanent Resident" },
+  { value: "protected_person", label: "Protected Person" },
+  { value: "convention_refugee", label: "Convention Refugee" },
+  { value: "refugee_claimant", label: "Refugee Claimant" },
+  { value: "temporary_resident", label: "Temporary Resident" },
+  { value: "work_permit", label: "Work Permit" },
+  { value: "study_permit", label: "Study Permit" },
+  { value: "visitor", label: "Visitor" },
+  { value: "other", label: "Other" },
+];
+
 const CLB_OPTIONS = [
   { value: "clb_1", label: "CLB 1" }, { value: "clb_2", label: "CLB 2" },
   { value: "clb_3", label: "CLB 3" }, { value: "clb_4", label: "CLB 4" },
@@ -92,6 +115,8 @@ export function applyFiltersAndSort(clients, search, filters, sortKey) {
   if (filters.employment_status) result = result.filter(c => c.employment_status === filters.employment_status);
   if (filters.clb_level) result = result.filter(c => c.clb_level === filters.clb_level);
   if (filters.assigned_worker) result = result.filter(c => c.assigned_worker_name?.toLowerCase().includes(filters.assigned_worker.toLowerCase()));
+  if (filters.referral_source) result = result.filter(c => c.referral_source === filters.referral_source);
+  if (filters.residency_status) result = result.filter(c => c.residency_status === filters.residency_status);
 
   // Age range
   if (filters.age_min || filters.age_max) {
@@ -146,7 +171,7 @@ export default function ClientListControls({ search, onSearch, filters, onFilter
   const clearAll = () => onFilters({
     service_type: "", program_status: "", employment_status: "",
     clb_level: "", assigned_worker: "", age_min: "", age_max: "",
-    duration_min: "", duration_max: "",
+    duration_min: "", duration_max: "", referral_source: "", residency_status: "",
   });
 
   return (
@@ -265,6 +290,19 @@ export default function ClientListControls({ search, onSearch, filters, onFilter
               onChange={e => onFilters({ ...filters, age_max: e.target.value })}
             />
           </div>
+
+          <FilterSelect
+            label="Referral Source"
+            value={filters.referral_source}
+            onChange={v => onFilters({ ...filters, referral_source: v })}
+            options={REFERRAL_SOURCE_OPTIONS}
+          />
+          <FilterSelect
+            label="Residency Status"
+            value={filters.residency_status}
+            onChange={v => onFilters({ ...filters, residency_status: v })}
+            options={RESIDENCY_OPTIONS}
+          />
 
           {/* Duration in program */}
           <div>
