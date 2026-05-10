@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { label: "My Dashboard", path: "/dashboard" },
   { label: "Reports", path: "/reports" },
   { label: "CRT", path: "/crt" },
+  { label: "Invoices", path: "/invoices" },
 ];
 
 export default function AppNav() {

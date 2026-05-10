@@ -1,0 +1,88 @@
+{
+  "name": "InvoiceConfig",
+  "type": "object",
+  "properties": {
+    "config_name": {
+      "type": "string",
+      "description": "Name/label for this contract configuration (e.g. 'AEIP 2024-2026')"
+    },
+    "contract_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Contract start date"
+    },
+    "contract_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Contract end date"
+    },
+    "base_monthly_amount": {
+      "type": "number",
+      "description": "Flat base fee billed every month"
+    },
+    "rate_dea_starter": {
+      "type": "number",
+      "description": "Rate per DEA (Direct to Employment) starter"
+    },
+    "rate_pathways_starter": {
+      "type": "number",
+      "description": "Rate per Pathways starter"
+    },
+    "rate_dea_completer": {
+      "type": "number",
+      "description": "Rate per DEA completer"
+    },
+    "rate_pathways_completer": {
+      "type": "number",
+      "description": "Rate per Pathways completer"
+    },
+    "rate_employment_outcome": {
+      "type": "number",
+      "description": "Rate per employment outcome (client gains employment)"
+    },
+    "rate_90day_outcome": {
+      "type": "number",
+      "description": "Rate per sustained 90-day employment outcome"
+    },
+    "cap_starters": {
+      "type": "number",
+      "description": "Maximum number of starters billable over contract period"
+    },
+    "cap_completers": {
+      "type": "number",
+      "description": "Maximum number of completers billable over contract period"
+    },
+    "cap_employment_outcomes": {
+      "type": "number",
+      "description": "Maximum number of employment outcomes billable over contract period"
+    },
+    "cap_90day_outcomes": {
+      "type": "number",
+      "description": "Maximum number of 90-day outcomes billable over contract period"
+    },
+    "cap_exposure_courses_dollars": {
+      "type": "number",
+      "description": "Max dollar amount for exposure courses/training over contract period"
+    },
+    "cap_paid_placements_dollars": {
+      "type": "number",
+      "description": "Max dollar amount for paid external placements over contract period"
+    },
+    "cap_employment_supports_dollars": {
+      "type": "number",
+      "description": "Max dollar amount for work equipment / employment supports over contract period"
+    },
+    "is_active": {
+      "type": "boolean",
+      "description": "Whether this is the currently active contract config",
+      "default": true
+    },
+    "notes": {
+      "type": "string",
+      "description": "Any notes about this contract configuration"
+    }
+  },
+  "required": [
+    "config_name"
+  ]
+}

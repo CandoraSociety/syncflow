@@ -13,6 +13,7 @@ import ClientProfile from "./pages/ClientProfile";
 import MasterList from "./pages/MasterList";
 import Reports from "./pages/Reports";
 import CRT from "./pages/CRT";
+import Invoices from "./pages/Invoices";
 import AppNav from "./components/layout/AppNav";
 
 const AuthenticatedApp = () => {
@@ -50,6 +51,7 @@ const AuthenticatedApp = () => {
         <Route path="/master" element={<MasterList />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/crt" element={<CRT />} />
+        <Route path="/invoices" element={<Invoices />} />
         {/* Add your page Route elements here */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>

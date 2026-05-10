@@ -1,0 +1,111 @@
+{
+  "name": "Invoice",
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": "string",
+      "description": "Invoice number (e.g. INV-2025-01)"
+    },
+    "billing_month": {
+      "type": "string",
+      "description": "Month being billed (YYYY-MM format)"
+    },
+    "config_id": {
+      "type": "string",
+      "description": "Reference to InvoiceConfig used"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "finalized",
+        "submitted"
+      ],
+      "default": "draft",
+      "description": "Invoice status"
+    },
+    "base_amount": {
+      "type": "number",
+      "description": "Base monthly fee"
+    },
+    "line_items": {
+      "type": "array",
+      "description": "All billable line items for this invoice",
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "e.g. starter, completer, employment_outcome, 90day_outcome, exposure_course, paid_placement, employment_support"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "stream": {
+            "type": "string"
+          },
+          "billed_under_stream": {
+            "type": "string",
+            "description": "Stream actually billed under (may differ if switch occurred)"
+          },
+          "switch_note": {
+            "type": "string",
+            "description": "Note if stream was switched and billing adjusted"
+          },
+          "unit_rate": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "is_direct_cost": {
+            "type": "boolean"
+          },
+          "financial_record_id": {
+            "type": "string",
+            "description": "Reference to FinancialRecord for direct costs"
+          },
+          "excluded": {
+            "type": "boolean",
+            "description": "Whether this line was excluded due to cap or double-billing"
+          },
+          "exclude_reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "subtotal_deliverables": {
+      "type": "number"
+    },
+    "subtotal_direct_costs": {
+      "type": "number"
+    },
+    "total_amount": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "generated_by": {
+      "type": "string",
+      "description": "Email of user who generated the invoice"
+    },
+    "finalized_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "billing_month"
+  ]
+}
