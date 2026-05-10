@@ -8,14 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save } from "lucide-react";
 
 const SERVICE_TYPES = [
-  { value: "job_placement", label: "Job Placement" },
-  { value: "resume_assistance", label: "Resume Assistance" },
-  { value: "skills_training", label: "Skills Training" },
-  { value: "benefits_enrollment", label: "Benefits Enrollment" },
-  { value: "housing_support", label: "Housing Support" },
-  { value: "mental_health_referral", label: "Mental Health Referral" },
-  { value: "childcare_assistance", label: "Childcare Assistance" },
-  { value: "other", label: "Other" },
+  { value: "direct_to_employment", label: "Direct to Employment (DEA)" },
+  { value: "pathways", label: "Pathways" },
+  { value: "casual", label: "Casual" },
+  { value: "external_referral", label: "External Referral" },
+  { value: "internal_referral", label: "Internal Referral (non-employment)" },
+  { value: "not_eligible", label: "Not eligible/no referral" },
 ];
 
 const REFERRAL_SOURCES = [
@@ -145,7 +143,7 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label>Service Type</Label>
+            <Label>Service Element (Stream)</Label>
             <Select value={form.service_type} onValueChange={v => set("service_type", v)}>
               <SelectTrigger><SelectValue placeholder="Select service" /></SelectTrigger>
               <SelectContent>

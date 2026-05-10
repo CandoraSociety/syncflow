@@ -33,11 +33,11 @@
     },
     "state": {
       "type": "string",
-      "description": "State"
+      "description": "Province"
     },
     "zip": {
       "type": "string",
-      "description": "ZIP code"
+      "description": "Postal code"
     },
     "referral_source": {
       "type": "string",
@@ -56,16 +56,14 @@
     "service_type": {
       "type": "string",
       "enum": [
-        "job_placement",
-        "resume_assistance",
-        "skills_training",
-        "benefits_enrollment",
-        "housing_support",
-        "mental_health_referral",
-        "childcare_assistance",
-        "other"
+        "direct_to_employment",
+        "pathways",
+        "casual",
+        "external_referral",
+        "internal_referral",
+        "not_eligible"
       ],
-      "description": "Primary service requested"
+      "description": "Service Element (Stream)"
     },
     "assigned_worker": {
       "type": "string",

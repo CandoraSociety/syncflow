@@ -11,14 +11,12 @@ const STATUS_COLORS = {
 };
 
 const SERVICE_LABELS = {
-  job_placement: "Job Placement",
-  resume_assistance: "Resume Assistance",
-  skills_training: "Skills Training",
-  benefits_enrollment: "Benefits Enrollment",
-  housing_support: "Housing Support",
-  mental_health_referral: "Mental Health Referral",
-  childcare_assistance: "Childcare Assistance",
-  other: "Other",
+  direct_to_employment: "Direct to Employment (DEA)",
+  pathways: "Pathways",
+  casual: "Casual",
+  external_referral: "External Referral",
+  internal_referral: "Internal Referral (non-employment)",
+  not_eligible: "Not eligible/no referral",
 };
 
 export default function ClientTable({ clients, onEdit, showWorkerColumn }) {
