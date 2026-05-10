@@ -114,12 +114,19 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label>State</Label>
-              <Input value={form.state} onChange={e => set("state", e.target.value)} maxLength={2} placeholder="NY" />
+              <Label>Province</Label>
+              <Select value={form.state} onValueChange={v => set("state", v)}>
+                <SelectTrigger><SelectValue placeholder="Select province" /></SelectTrigger>
+                <SelectContent>
+                  {["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"].map(p => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
-              <Label>ZIP</Label>
-              <Input value={form.zip} onChange={e => set("zip", e.target.value)} maxLength={10} />
+              <Label>Postal Code</Label>
+              <Input value={form.zip} onChange={e => set("zip", e.target.value)} maxLength={7} placeholder="A1A 1A1" />
             </div>
           </div>
         </CardContent>
