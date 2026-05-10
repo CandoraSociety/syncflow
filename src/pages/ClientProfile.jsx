@@ -12,6 +12,7 @@ import ClientReferrals from "@/components/client/ClientReferrals";
 import ClientEmployment from "@/components/client/ClientEmployment";
 import ClientFinancials from "@/components/client/ClientFinancials";
 import ClientStreamSwitches from "@/components/client/ClientStreamSwitches";
+import ClientTraining from "@/components/client/ClientTraining";
 
 export default function ClientProfile() {
   const { id } = useParams();
@@ -117,6 +118,7 @@ export default function ClientProfile() {
             <TabsTrigger value="referrals">Referrals</TabsTrigger>
             <TabsTrigger value="employment">Employment</TabsTrigger>
             <TabsTrigger value="financials">Financials</TabsTrigger>
+            <TabsTrigger value="training">Training</TabsTrigger>
             <TabsTrigger value="stream_switches" className="relative">
               Stream Switches
               {client.program_stream_switches?.length > 0 && (
@@ -144,6 +146,9 @@ export default function ClientProfile() {
           </TabsContent>
           <TabsContent value="financials">
             <ClientFinancials clientId={id} clientName={`${client.first_name} ${client.last_name}`} />
+          </TabsContent>
+          <TabsContent value="training">
+            <ClientTraining client={client} />
           </TabsContent>
           <TabsContent value="stream_switches">
             <ClientStreamSwitches client={client} onSave={handleSave} />

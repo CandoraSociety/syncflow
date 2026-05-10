@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: "Reports", path: "/reports" },
   { label: "CRT", path: "/crt" },
   { label: "Invoices", path: "/invoices" },
+  { label: "Supervisor Portal", path: "/supervisor" },
 ];
 
 export default function AppNav() {

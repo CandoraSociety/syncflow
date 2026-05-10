@@ -1,0 +1,236 @@
+{
+  "name": "InternalTraining",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Related client ID"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Client full name (denormalized)"
+    },
+    "placement_type": {
+      "type": "string",
+      "enum": [
+        "cleaning_arc",
+        "food_services_onsite",
+        "food_services_offsite",
+        "reception",
+        "childcare"
+      ],
+      "description": "Internal placement type"
+    },
+    "assigned_worker": {
+      "type": "string",
+      "description": "Email of assigned career counsellor"
+    },
+    "assigned_worker_name": {
+      "type": "string",
+      "description": "Display name of assigned career counsellor"
+    },
+    "referral_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of referral"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Training start date"
+    },
+    "expected_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Expected training end date"
+    },
+    "actual_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Actual training end date"
+    },
+    "transportation": {
+      "type": "string",
+      "enum": [
+        "has_own_vehicle",
+        "no_vehicle_willing_to_bus",
+        "no_vehicle_not_willing_to_bus",
+        "transit_pass_provided",
+        "requires_transportation_support",
+        "offsite_not_applicable"
+      ],
+      "description": "Client transportation situation"
+    },
+    "transportation_notes": {
+      "type": "string",
+      "description": "Additional transportation details"
+    },
+    "training_goals": {
+      "type": "string",
+      "description": "Individualized training goals / notes from counsellor"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "referred",
+        "active",
+        "completed",
+        "withdrawn",
+        "cancelled"
+      ],
+      "default": "referred",
+      "description": "Current training status"
+    },
+    "orientation_completed": {
+      "type": "boolean",
+      "description": "Orientation/induction completed"
+    },
+    "orientation_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "health_safety_completed": {
+      "type": "boolean",
+      "description": "Health & safety training completed"
+    },
+    "health_safety_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "midpoint_checkin_completed": {
+      "type": "boolean",
+      "description": "Mid-point check-in completed"
+    },
+    "midpoint_checkin_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "program_completion_completed": {
+      "type": "boolean",
+      "description": "Program/training fully completed"
+    },
+    "program_completion_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "training_plan_items": {
+      "type": "array",
+      "description": "Customized training plan checklist items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "focus": {
+            "type": "boolean",
+            "description": "Is this a focus area for this client?"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completed_date": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "supervisor_notes": {
+      "type": "string",
+      "description": "General supervisor notes / progress log"
+    },
+    "evaluation_completed": {
+      "type": "boolean",
+      "description": "Final evaluation has been completed"
+    },
+    "evaluation_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "evaluation_reliability": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "satisfactory",
+        "needs_improvement",
+        "unsatisfactory"
+      ]
+    },
+    "evaluation_attitude": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "satisfactory",
+        "needs_improvement",
+        "unsatisfactory"
+      ]
+    },
+    "evaluation_skill_development": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "satisfactory",
+        "needs_improvement",
+        "unsatisfactory"
+      ]
+    },
+    "evaluation_teamwork": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "satisfactory",
+        "needs_improvement",
+        "unsatisfactory"
+      ]
+    },
+    "evaluation_communication": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "satisfactory",
+        "needs_improvement",
+        "unsatisfactory"
+      ]
+    },
+    "evaluation_would_hire": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "yes_with_conditions",
+        "no",
+        "not_applicable"
+      ]
+    },
+    "evaluation_strengths": {
+      "type": "string",
+      "description": "Supervisor comments on client strengths"
+    },
+    "evaluation_areas_for_growth": {
+      "type": "string",
+      "description": "Supervisor comments on areas for growth"
+    },
+    "evaluation_overall_comments": {
+      "type": "string",
+      "description": "Overall evaluation comments"
+    },
+    "referral_notes": {
+      "type": "string",
+      "description": "Notes from the counsellor at time of referral"
+    }
+  },
+  "required": [
+    "client_id",
+    "placement_type"
+  ]
+}
