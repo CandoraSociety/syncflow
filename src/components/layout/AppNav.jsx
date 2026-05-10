@@ -27,7 +27,7 @@ export default function AppNav() {
     <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
       <div className="max-w-screen-2xl mx-auto px-4 flex items-center justify-between h-12">
         <div className="flex items-center gap-1">
-          <span className="text-sm font-bold text-slate-700 mr-4 tracking-tight">ARC Employment</span>
+          <span className="text-sm font-bold text-slate-700 mr-4 tracking-tight">Candora Pathways Program</span>
           {NAV_ITEMS.map(item => {
             const active = location.pathname === item.path;
             return (
