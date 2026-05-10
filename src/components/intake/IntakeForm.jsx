@@ -50,6 +50,7 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
     assigned_worker_name: client?.assigned_worker_name || "",
     status: client?.status || "new",
     intake_notes: client?.intake_notes || "",
+    compass_hsid: client?.compass_hsid || "",
   });
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
@@ -106,6 +107,10 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
           <div className="space-y-1">
             <Label>Email</Label>
             <Input type="email" value={form.email} onChange={e => set("email", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label>Compass HSID#</Label>
+            <Input value={form.compass_hsid} onChange={e => set("compass_hsid", e.target.value)} placeholder="Government of Alberta HSID number" />
           </div>
           <div className="space-y-1">
             <Label>Address</Label>

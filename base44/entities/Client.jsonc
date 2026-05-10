@@ -39,6 +39,10 @@
       "type": "string",
       "description": "Postal code"
     },
+    "compass_hsid": {
+      "type": "string",
+      "description": "Compass HSID# (Government of Alberta database)"
+    },
     "referral_source": {
       "type": "string",
       "enum": [
