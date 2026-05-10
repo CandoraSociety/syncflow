@@ -65,7 +65,13 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
     onSave(form);
   };
 
-  const workerUsers = users.filter(u => u.role !== "admin" || true); // show all users as potential workers
+  const workerUsers = [
+    { email: "priscilla@candorasociety.com", full_name: "Priscilla" },
+    { email: "lola@candorasociety.com", full_name: "Lola" },
+    { email: "john@candorasociety.com", full_name: "John" },
+    { email: "Dawn.williston@candorasociety.com", full_name: "Dawn" },
+    { email: "olena@candorasociety.com", full_name: "Olena" },
+  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
