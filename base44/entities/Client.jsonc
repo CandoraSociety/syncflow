@@ -171,6 +171,34 @@
       ],
       "description": "Program completion status"
     },
+    "file_closed": {
+      "type": "boolean",
+      "description": "Whether the file has been closed"
+    },
+    "closed_reason": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "cancelled",
+        "incomplete",
+        "withdrew",
+        "relocated",
+        "no_longer_eligible",
+        "no_contact",
+        "duplicate",
+        "other"
+      ],
+      "description": "Reason the file was closed"
+    },
+    "closed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the file was closed"
+    },
+    "closed_notes": {
+      "type": "string",
+      "description": "Notes about why the file was closed"
+    },
     "service_start_date": {
       "type": "string",
       "format": "date",

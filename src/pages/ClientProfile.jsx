@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, XCircle, RotateCcw } from "lucide-react";
+import CloseFileDialog from "@/components/client/CloseFileDialog";
 import ClientProfileOverview from "@/components/client/ClientProfileOverview";
 import ClientServicePlan from "@/components/client/ClientServicePlan";
 import ClientPlacements from "@/components/client/ClientPlacements";
@@ -17,6 +18,8 @@ export default function ClientProfile() {
   const navigate = useNavigate();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [closingSaving, setClosingSaving] = useState(false);
 
   useEffect(() => {
     base44.entities.Client.list().then(clients => {
@@ -32,6 +35,20 @@ export default function ClientProfile() {
     return updated;
   };
 
+  const handleCloseFile = async (data) => {
+    setClosingSaving(true);
+    await base44.entities.Client.update(id, data);
+    setClient(prev => ({ ...prev, ...data }));
+    setClosingSaving(false);
+    setShowCloseDialog(false);
+  };
+
+  const handleReopenFile = async () => {
+    const updates = { file_closed: false, status: "active" };
+    await base44.entities.Client.update(id, updates);
+    setClient(prev => ({ ...prev, ...updates }));
+  };
+
   if (loading) return (
     <div className="fixed inset-0 flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
@@ -44,21 +61,52 @@ export default function ClientProfile() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
+      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-slate-800">
+                {client.first_name} {client.last_name}
+              </h1>
+              {client.file_closed && (
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Closed</span>
+              )}
+            </div>
+            <p className="text-sm text-slate-500">
+              {client.compass_hsid ? `HSID: ${client.compass_hsid}` : ""}
+              {client.compass_hsid && client.service_type ? " · " : ""}
+              {client.service_type ? client.service_type.replace(/_/g, " ") : ""}
+              {client.file_closed && client.closed_reason ? ` · Closed: ${client.closed_reason.replace(/_/g, " ")}` : ""}
+            </p>
+          </div>
+        </div>
         <div>
-          <h1 className="text-xl font-bold text-slate-800">
-            {client.first_name} {client.last_name}
-          </h1>
-          <p className="text-sm text-slate-500">
-            {client.compass_hsid ? `HSID: ${client.compass_hsid}` : ""}
-            {client.compass_hsid && client.service_type ? " · " : ""}
-            {client.service_type ? client.service_type.replace(/_/g, " ") : ""}
-          </p>
+          {client.file_closed ? (
+            <Button variant="outline" size="sm" onClick={handleReopenFile} className="gap-2 text-slate-600">
+              <RotateCcw className="w-4 h-4" /> Reopen File
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCloseDialog(true)}
+              className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <XCircle className="w-4 h-4" /> Close File
+            </Button>
+          )}
         </div>
       </div>
+
+      <CloseFileDialog
+        open={showCloseDialog}
+        onClose={() => setShowCloseDialog(false)}
+        onConfirm={handleCloseFile}
+        saving={closingSaving}
+      />
 
       <div className="max-w-6xl mx-auto p-6">
         <Tabs defaultValue="overview">

@@ -1,6 +1,7 @@
-// CRT Tab 3: Financial Records with document links
+// CRT Tab 3: Financial Records — filtered by record date (month/year)
+import { useState } from "react";
 import { format } from "date-fns";
-import { FileText, Receipt, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 const TYPE_LABELS = {
   exposure_course: "Exposure Course",
@@ -13,6 +14,20 @@ const TYPE_COLORS = {
   paid_external_placement: "bg-blue-100 text-blue-700",
   employment_supports: "bg-green-100 text-green-700",
 };
+
+const MONTHS = [
+  { value: "01", label: "January" }, { value: "02", label: "February" },
+  { value: "03", label: "March" }, { value: "04", label: "April" },
+  { value: "05", label: "May" }, { value: "06", label: "June" },
+  { value: "07", label: "July" }, { value: "08", label: "August" },
+  { value: "09", label: "September" }, { value: "10", label: "October" },
+  { value: "11", label: "November" }, { value: "12", label: "December" },
+];
+
+function getYearOptions() {
+  const current = new Date().getFullYear();
+  return Array.from({ length: 5 }, (_, i) => current - i);
+}
 
 function fmt(dateStr) {
   if (!dateStr) return "";
@@ -34,30 +49,71 @@ function DocLink({ url, label }) {
 }
 
 export default function CRTFinancials({ clients, financials }) {
-  // Build a map of client id -> name
+  const now = new Date();
+  const [filterMonth, setFilterMonth] = useState(String(now.getMonth() + 1).padStart(2, "0"));
+  const [filterYear, setFilterYear] = useState(String(now.getFullYear()));
+  const [filterType, setFilterType] = useState("all");
+
+  // Build client map (all clients, not just filtered ones, so we can always show names)
   const clientMap = {};
   clients.forEach(c => { clientMap[c.id] = `${c.first_name} ${c.last_name}`; });
 
-  // Only show financials for clients in the filtered set
-  const clientIds = new Set(clients.map(c => c.id));
-  const visible = financials.filter(f => clientIds.has(f.client_id));
+  // Filter financials by their own record date (month + year)
+  const visible = financials.filter(f => {
+    if (!f.date) return false;
+    const [yr, mo] = f.date.split("-");
+    if (mo !== filterMonth || yr !== filterYear) return false;
+    if (filterType !== "all" && f.record_type !== filterType) return false;
+    return true;
+  });
 
-  // Totals by type
+  // Totals by type for the filtered set
   const totals = {};
   visible.forEach(f => {
     if (!totals[f.record_type]) totals[f.record_type] = 0;
     totals[f.record_type] += f.amount || 0;
   });
-
   const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+
+  const monthLabel = MONTHS.find(m => m.value === filterMonth)?.label || "";
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
+      {/* Month/Year filter bar */}
+      <div className="bg-white rounded-lg border border-slate-200 px-4 py-3 flex flex-wrap items-center gap-4">
+        <span className="text-sm font-semibold text-slate-700">Reporting Month:</span>
+        <select
+          className="h-8 border border-slate-200 rounded px-2 text-sm bg-white"
+          value={filterMonth}
+          onChange={e => setFilterMonth(e.target.value)}
+        >
+          {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+        </select>
+        <select
+          className="h-8 border border-slate-200 rounded px-2 text-sm bg-white"
+          value={filterYear}
+          onChange={e => setFilterYear(e.target.value)}
+        >
+          {getYearOptions().map(y => <option key={y} value={String(y)}>{y}</option>)}
+        </select>
+        <select
+          className="h-8 border border-slate-200 rounded px-2 text-sm bg-white"
+          value={filterType}
+          onChange={e => setFilterType(e.target.value)}
+        >
+          <option value="all">All Types</option>
+          {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <span className="text-xs text-slate-400 ml-auto">
+          Showing records dated in {monthLabel} {filterYear}
+        </span>
+      </div>
+
+      {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white rounded-lg border border-slate-200 px-4 py-3">
           <div className="text-xl font-bold text-slate-800">${grandTotal.toFixed(2)}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Total Expenditures</div>
+          <div className="text-xs text-slate-500 mt-0.5">Total — {monthLabel} {filterYear}</div>
         </div>
         {Object.entries(TYPE_LABELS).map(([key, label]) => (
           <div key={key} className="bg-white rounded-lg border border-slate-200 px-4 py-3">
@@ -70,7 +126,7 @@ export default function CRTFinancials({ clients, financials }) {
       {/* Records table */}
       {visible.length === 0 ? (
         <div className="text-center py-16 text-slate-400 text-sm bg-white rounded-lg border border-slate-200">
-          No financial records for clients in the selected period.
+          No financial records found for {monthLabel} {filterYear}.
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
@@ -107,7 +163,7 @@ export default function CRTFinancials({ clients, financials }) {
                       <div className="flex flex-col gap-1">
                         {f.receipt_urls?.length > 0
                           ? f.receipt_urls.map((url, idx) => (
-                            <DocLink key={idx} url={url} label={`Receipt ${f.receipt_urls.length > 1 ? idx + 1 : ""}`} />
+                            <DocLink key={idx} url={url} label={`Receipt${f.receipt_urls.length > 1 ? ` ${idx + 1}` : ""}`} />
                           ))
                           : <span className="text-slate-300">—</span>
                         }
@@ -117,7 +173,7 @@ export default function CRTFinancials({ clients, financials }) {
                       <div className="flex flex-col gap-1">
                         {f.completion_record_urls?.length > 0
                           ? f.completion_record_urls.map((url, idx) => (
-                            <DocLink key={idx} url={url} label={`Doc ${f.completion_record_urls.length > 1 ? idx + 1 : ""}`} />
+                            <DocLink key={idx} url={url} label={`Doc${f.completion_record_urls.length > 1 ? ` ${idx + 1}` : ""}`} />
                           ))
                           : <span className="text-slate-300">—</span>
                         }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, ArrowRight } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { format } from "date-fns";
 import ClientListControls, { applyFiltersAndSort } from "@/components/lists/ClientListControls";
 
@@ -28,6 +28,12 @@ const EMPTY_FILTERS = {
   duration_min: "", duration_max: "",
 };
 
+const CLOSED_REASON_LABELS = {
+  completed: "Completed", cancelled: "Cancelled", incomplete: "Incomplete",
+  withdrew: "Withdrew", relocated: "Relocated", no_longer_eligible: "No Longer Eligible",
+  no_contact: "No Contact", duplicate: "Duplicate", other: "Other",
+};
+
 export default function MasterList() {
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState("");
@@ -35,6 +41,7 @@ export default function MasterList() {
   const [sortKey, setSortKey] = useState("intake_date_desc");
   const [loading, setLoading] = useState(true);
   const [workers, setWorkers] = useState([]);
+  const [activeTab, setActiveTab] = useState("active");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,7 +53,10 @@ export default function MasterList() {
     });
   }, []);
 
-  const displayed = applyFiltersAndSort(clients, search, filters, sortKey);
+  const activeClients = clients.filter(c => !c.file_closed);
+  const closedClients = clients.filter(c => c.file_closed);
+  const sourceList = activeTab === "active" ? activeClients : closedClients;
+  const displayed = applyFiltersAndSort(sourceList, search, filters, sortKey);
 
   if (loading) return (
     <div className="fixed inset-0 flex items-center justify-center">
@@ -59,13 +69,30 @@ export default function MasterList() {
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-800">Master Client List</h1>
-          <p className="text-sm text-slate-500">{displayed.length} of {clients.length} client{clients.length !== 1 ? "s" : ""}</p>
+          <p className="text-sm text-slate-500">{displayed.length} shown · {activeClients.length} active · {closedClients.length} closed</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={() => navigate("/intake")}>Intake</Button>
           <Button variant="outline" size="sm" onClick={() => navigate("/reports")}>Reports</Button>
           <Button variant="ghost" size="icon" onClick={() => base44.auth.logout()}><LogOut className="w-4 h-4" /></Button>
         </div>
+      </div>
+      {/* Active / Closed toggle */}
+      <div className="bg-white border-b border-slate-100 px-6 flex gap-1 pt-1">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "active" ? "border-slate-800 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+        >
+          Active Files
+          <span className="ml-2 bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5 rounded-full">{activeClients.length}</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("closed")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "closed" ? "border-red-600 text-red-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+        >
+          Closed Files
+          <span className="ml-2 bg-red-100 text-red-600 text-xs px-1.5 py-0.5 rounded-full">{closedClients.length}</span>
+        </button>
       </div>
 
       <div className="px-6 py-4">
@@ -95,6 +122,12 @@ export default function MasterList() {
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">90-Day Status</th>
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Svc Nav</th>
                   <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Career Counsellor</th>
+                  {activeTab === "closed" && (
+                    <>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Close Reason</th>
+                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Closed Date</th>
+                    </>
+                  )}
                   <th className="px-3 py-3" />
                 </tr>
               </thead>
@@ -129,13 +162,27 @@ export default function MasterList() {
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.followup_90day_status || "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.service_navigation_supports ? "Yes" : "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.assigned_worker_name || "—"}</td>
+                    {activeTab === "closed" && (
+                      <>
+                        <td className="px-3 py-2.5 whitespace-nowrap">
+                          {c.closed_reason ? (
+                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                              {CLOSED_REASON_LABELS[c.closed_reason] || c.closed_reason}
+                            </span>
+                          ) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">
+                          {c.closed_date ? format(new Date(c.closed_date), "MMM d, yy") : "—"}
+                        </td>
+                      </>
+                    )}
                     <td className="px-3 py-2.5">
                       <Link to={`/client/${c.id}`}><Button variant="outline" size="sm">Open</Button></Link>
                     </td>
                   </tr>
                 ))}
                 {displayed.length === 0 && (
-                  <tr><td colSpan={15} className="text-center py-10 text-slate-400">No clients match your filters.</td></tr>
+                  <tr><td colSpan={17} className="text-center py-10 text-slate-400">No clients match your filters.</td></tr>
                 )}
               </tbody>
             </table>
