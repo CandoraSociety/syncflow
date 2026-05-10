@@ -24,6 +24,8 @@ const REFERRAL_SOURCES = [
   { value: "hospital", label: "Hospital" },
   { value: "shelter", label: "Shelter" },
   { value: "employer", label: "Employer" },
+  { value: "external_agency", label: "External Agency" },
+  { value: "alberta_works", label: "Alberta Works (Income Support)" },
   { value: "other", label: "Other" },
 ];
 

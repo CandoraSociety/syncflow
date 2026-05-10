@@ -49,6 +49,8 @@
         "hospital",
         "shelter",
         "employer",
+        "external_agency",
+        "alberta_works",
         "other"
       ],
       "description": "How the client was referred"
