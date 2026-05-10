@@ -1,0 +1,122 @@
+import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import CRTClientData from "@/components/crt/CRTClientData";
+import CRTOutcomes from "@/components/crt/CRTOutcomes";
+import CRTFinancials from "@/components/crt/CRTFinancials";
+
+export default function CRT() {
+  const [clients, setClients] = useState([]);
+  const [financials, setFinancials] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  useEffect(() => {
+    Promise.all([
+      base44.entities.Client.list("-service_start_date", 1000),
+      base44.entities.FinancialRecord.list("-date", 1000),
+    ]).then(([c, f]) => {
+      setClients(c);
+      setFinancials(f);
+      setLoading(false);
+    });
+
+    // Real-time updates
+    const unsub1 = base44.entities.Client.subscribe(ev => {
+      setClients(prev => {
+        if (ev.type === "create") return [ev.data, ...prev];
+        if (ev.type === "update") return prev.map(c => c.id === ev.id ? ev.data : c);
+        if (ev.type === "delete") return prev.filter(c => c.id !== ev.id);
+        return prev;
+      });
+    });
+    const unsub2 = base44.entities.FinancialRecord.subscribe(ev => {
+      setFinancials(prev => {
+        if (ev.type === "create") return [ev.data, ...prev];
+        if (ev.type === "update") return prev.map(r => r.id === ev.id ? ev.data : r);
+        if (ev.type === "delete") return prev.filter(r => r.id !== ev.id);
+        return prev;
+      });
+    });
+
+    return () => { unsub1(); unsub2(); };
+  }, []);
+
+  // Filter clients by reporting period
+  const filteredClients = clients.filter(c => {
+    const d = c.service_start_date || c.intake_date;
+    if (!d) return true;
+    if (dateFrom && d < dateFrom) return false;
+    if (dateTo && d > dateTo) return false;
+    return true;
+  });
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4">
+        <div className="max-w-screen-2xl mx-auto flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">CRT — Client Reporting Tool</h1>
+            <p className="text-sm text-slate-500">Live data formatted for GOA monthly reporting</p>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <label className="text-slate-500 font-medium">Reporting Period:</label>
+            <input
+              type="date"
+              className="h-8 border border-slate-200 rounded px-2 text-sm"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+            />
+            <span className="text-slate-400">to</span>
+            <input
+              type="date"
+              className="h-8 border border-slate-200 rounded px-2 text-sm"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); }}
+                className="text-xs text-slate-400 hover:text-slate-600 underline"
+              >
+                Clear
+              </button>
+            )}
+            <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-2 py-1 rounded">
+              {filteredClients.length} clients
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="max-w-screen-2xl mx-auto px-6 py-4">
+        <Tabs defaultValue="client-data">
+          <TabsList className="mb-4">
+            <TabsTrigger value="client-data">Client Data</TabsTrigger>
+            <TabsTrigger value="outcomes">Outcomes Tracker</TabsTrigger>
+            <TabsTrigger value="financials">Financial Records</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="client-data">
+            <CRTClientData clients={filteredClients} />
+          </TabsContent>
+          <TabsContent value="outcomes">
+            <CRTOutcomes clients={filteredClients} />
+          </TabsContent>
+          <TabsContent value="financials">
+            <CRTFinancials clients={filteredClients} financials={financials} />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}

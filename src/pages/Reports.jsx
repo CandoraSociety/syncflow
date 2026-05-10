@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Play, Download, Save, Trash2, FileBarChart } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Play, Download, Save, Trash2, FileBarChart } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 
 const ALL_FIELDS = [
@@ -93,7 +92,6 @@ function saveTemplates(templates) {
 }
 
 export default function Reports() {
-  const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFields, setSelectedFields] = useState(["first_name", "last_name", "service_type", "program_status", "assigned_worker_name", "intake_date"]);
@@ -180,14 +178,11 @@ export default function Reports() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <FileBarChart className="w-5 h-5" /> Data Reports
-          </h1>
-          <p className="text-sm text-slate-500">Build, save, and run custom reports</p>
-        </div>
+      <div className="bg-white border-b border-slate-200 px-6 py-4">
+        <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <FileBarChart className="w-5 h-5" /> Data Reports
+        </h1>
+        <p className="text-sm text-slate-500">Build, save, and run custom reports</p>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
