@@ -113,8 +113,8 @@ export default function IntakePage() {
           <p className="text-sm text-slate-500">Welcome, {user?.full_name}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => navigate("/master")}>Master List</Button>
-          <Button variant="outline" size="sm" onClick={() => navigate("/reports")}>Reports</Button>
+           <Button variant="outline" size="sm" onClick={() => navigate("/master")}>Master List</Button>
+           <Button variant="outline" size="sm" onClick={() => navigate("/reports")}>Reports</Button>
           {!showForm && (
             <Button onClick={() => { setEditingClient(null); setShowForm(true); }} className="gap-2">
               <PlusCircle className="w-4 h-4" /> New Client
