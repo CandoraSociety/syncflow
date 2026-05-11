@@ -11,6 +11,12 @@ export default function CRT() {
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterProgramStatus, setFilterProgramStatus] = useState("");
+  const [filterEmploymentStatus, setFilterEmploymentStatus] = useState("");
+  const [filterServiceType, setFilterServiceType] = useState("");
+  const [filterWorker, setFilterWorker] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -43,14 +49,30 @@ export default function CRT() {
     return () => { unsub1(); unsub2(); };
   }, []);
 
-  // Filter clients by reporting period
+  const workers = [...new Set(clients.map(c => c.assigned_worker_name).filter(Boolean))].sort();
+
   const filteredClients = clients.filter(c => {
     const d = c.service_start_date || c.intake_date;
-    if (!d) return true;
-    if (dateFrom && d < dateFrom) return false;
-    if (dateTo && d > dateTo) return false;
+    if (dateFrom && d && d < dateFrom) return false;
+    if (dateTo && d && d > dateTo) return false;
+    if (filterMonth) {
+      const ref = c.service_start_date || c.intake_date;
+      if (!ref || !ref.startsWith(filterMonth)) return false;
+    }
+    if (filterProgramStatus && c.program_status !== filterProgramStatus) return false;
+    if (filterEmploymentStatus && c.employment_status !== filterEmploymentStatus) return false;
+    if (filterServiceType && c.service_type !== filterServiceType) return false;
+    if (filterWorker && c.assigned_worker_name !== filterWorker) return false;
     return true;
   });
+
+  const activeFilterCount = [filterMonth, filterProgramStatus, filterEmploymentStatus, filterServiceType, filterWorker, dateFrom, dateTo].filter(Boolean).length;
+
+  const clearAll = () => {
+    setDateFrom(""); setDateTo(""); setFilterMonth("");
+    setFilterProgramStatus(""); setFilterEmploymentStatus("");
+    setFilterServiceType(""); setFilterWorker("");
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -67,35 +89,121 @@ export default function CRT() {
             <h1 className="text-xl font-bold text-slate-800">CRT — Client Reporting Tool</h1>
             <p className="text-sm text-slate-500">Live data formatted for GOA monthly reporting</p>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <label className="text-slate-500 font-medium">Reporting Period:</label>
-            <input
-              type="date"
-              className="h-8 border border-slate-200 rounded px-2 text-sm"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-            />
-            <span className="text-slate-400">to</span>
-            <input
-              type="date"
-              className="h-8 border border-slate-200 rounded px-2 text-sm"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-            />
-            {(dateFrom || dateTo) && (
-              <button
-                onClick={() => { setDateFrom(""); setDateTo(""); }}
-                className="text-xs text-slate-400 hover:text-slate-600 underline"
-              >
-                Clear
-              </button>
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button
+              onClick={() => setShowFilters(v => !v)}
+              className={`flex items-center gap-1.5 h-8 px-3 rounded border text-sm font-medium transition-colors ${showFilters ? "bg-slate-800 text-white border-slate-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h2" /></svg>
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center leading-none">{activeFilterCount}</span>
+              )}
+            </button>
+            {activeFilterCount > 0 && (
+              <button onClick={clearAll} className="text-xs text-slate-400 hover:text-red-500 underline">Clear all</button>
             )}
             <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-2 py-1 rounded">
-              {filteredClients.length} clients
+              {filteredClients.length} / {clients.length} clients
             </span>
           </div>
         </div>
       </div>
+
+      {/* Filter panel */}
+      {showFilters && (
+        <div className="bg-white border-b border-slate-200 px-6 py-4">
+          <div className="max-w-screen-2xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500">Month (svc start)</label>
+              <input
+                type="month"
+                className="h-8 w-full border border-slate-200 rounded px-2 text-sm"
+                value={filterMonth}
+                onChange={e => setFilterMonth(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500">Date From</label>
+              <input
+                type="date"
+                className="h-8 w-full border border-slate-200 rounded px-2 text-sm"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500">Date To</label>
+              <input
+                type="date"
+                className="h-8 w-full border border-slate-200 rounded px-2 text-sm"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500">Program Status</label>
+              <select
+                className="h-8 w-full border border-slate-200 rounded px-2 text-sm"
+                value={filterProgramStatus}
+                onChange={e => setFilterProgramStatus(e.target.value)}
+              >
+                <option value="">All</option>
+                <option value="in_progress">In Progress</option>
+                <option value="complete">Complete</option>
+                <option value="incomplete">Incomplete</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500">Employment Status</label>
+              <select
+                className="h-8 w-full border border-slate-200 rounded px-2 text-sm"
+                value={filterEmploymentStatus}
+                onChange={e => setFilterEmploymentStatus(e.target.value)}
+              >
+                <option value="">All</option>
+                <option value="E-RF">E-RF</option>
+                <option value="E-UF">E-UF</option>
+                <option value="E-PT">E-PT</option>
+                <option value="UE">UE</option>
+                <option value="UE-LA">UE-LA</option>
+                <option value="UE-S">UE-S</option>
+                <option value="NA">NA</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500">Service Element</label>
+              <select
+                className="h-8 w-full border border-slate-200 rounded px-2 text-sm"
+                value={filterServiceType}
+                onChange={e => setFilterServiceType(e.target.value)}
+              >
+                <option value="">All</option>
+                <option value="direct_to_employment">DEA</option>
+                <option value="pathways">Pathways</option>
+                <option value="casual">Casual</option>
+                <option value="external_referral">Ext. Referral</option>
+                <option value="internal_referral">Int. Referral</option>
+                <option value="not_eligible">Not Eligible</option>
+              </select>
+            </div>
+            {workers.length > 0 && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">Career Counsellor</label>
+                <select
+                  className="h-8 w-full border border-slate-200 rounded px-2 text-sm"
+                  value={filterWorker}
+                  onChange={e => setFilterWorker(e.target.value)}
+                >
+                  <option value="">All</option>
+                  {workers.map(w => <option key={w} value={w}>{w}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="max-w-screen-2xl mx-auto px-6 py-4">
