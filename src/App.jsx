@@ -15,6 +15,7 @@ import Reports from "./pages/Reports";
 import CRT from "./pages/CRT";
 import Invoices from "./pages/Invoices";
 import SupervisorPortal from "./pages/SupervisorPortal";
+import Resources from "./pages/Resources";
 import AppNav from "./components/layout/AppNav";
 
 const AuthenticatedApp = () => {
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
         <Route path="/crt" element={<CRT />} />
         <Route path="/invoices" element={<Invoices />} />
         <Route path="/supervisor" element={<SupervisorPortal />} />
+        <Route path="/resources" element={<Resources />} />
         {/* Add your page Route elements here */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>

@@ -13,6 +13,7 @@ import ClientEmployment from "@/components/client/ClientEmployment";
 import ClientFinancials from "@/components/client/ClientFinancials";
 import ClientStreamSwitches from "@/components/client/ClientStreamSwitches";
 import ClientTraining from "@/components/client/ClientTraining";
+import ClientRoadmap from "@/components/client/ClientRoadmap";
 
 export default function ClientProfile() {
   const { id } = useParams();
@@ -119,6 +120,7 @@ export default function ClientProfile() {
             <TabsTrigger value="employment">Employment</TabsTrigger>
             <TabsTrigger value="financials">Financials</TabsTrigger>
             <TabsTrigger value="training">Training</TabsTrigger>
+            <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
             <TabsTrigger value="stream_switches" className="relative">
               Stream Switches
               {client.program_stream_switches?.length > 0 && (
@@ -149,6 +151,9 @@ export default function ClientProfile() {
           </TabsContent>
           <TabsContent value="training">
             <ClientTraining client={client} />
+          </TabsContent>
+          <TabsContent value="roadmap">
+            <ClientRoadmap client={client} />
           </TabsContent>
           <TabsContent value="stream_switches">
             <ClientStreamSwitches client={client} onSave={handleSave} />
