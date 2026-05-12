@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Save, ShieldCheck } from "lucide-react";
+import { createCompassTask, taskServiceTypeChange, taskStatusChange } from "@/lib/compassTasks";
 
 const RESIDENCY_STATUSES = [
   { value: "canadian_citizen", label: "Canadian Citizen" },
@@ -75,6 +76,21 @@ export default function ClientProfileOverview({ client, onSave }) {
   const handleSave = async () => {
     setSaving(true);
     await onSave(form);
+
+    const clientBase = { ...client, ...form };
+
+    // Trigger Compass task if service type changed
+    if (form.service_type && form.service_type !== client.service_type) {
+      const t = taskServiceTypeChange(clientBase, form.service_type);
+      await createCompassTask({ client_id: client.id, client_name: `${form.first_name} ${form.last_name}`, compass_hsid: form.compass_hsid, ...t });
+    }
+
+    // Trigger Compass task if program status changed
+    if (form.program_status && form.program_status !== client.program_status) {
+      const t = taskStatusChange(clientBase, form.program_status);
+      await createCompassTask({ client_id: client.id, client_name: `${form.first_name} ${form.last_name}`, compass_hsid: form.compass_hsid, ...t });
+    }
+
     setSaving(false);
   };
 

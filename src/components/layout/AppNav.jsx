@@ -11,17 +11,22 @@ const NAV_ITEMS = [
 { label: "CRT", path: "/crt" },
 { label: "Invoices", path: "/invoices" },
 { label: "Supervisor Portal", path: "/supervisor" },
-{ label: "Resources", path: "/resources" }];
+{ label: "Resources", path: "/resources" },
+{ label: "Compass", path: "/compass" }];
 
 
 export default function AppNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [pendingCompassCount, setPendingCompassCount] = useState(0);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+    base44.entities.CompassTask.filter({ status: "pending" })
+      .then(tasks => setPendingCompassCount(tasks.length))
+      .catch(() => {});
+  }, [location.pathname]);
 
   // Don't show nav on client profile pages
   if (location.pathname.startsWith("/client/")) return null;
@@ -38,13 +43,17 @@ export default function AppNav() {
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={cn(
-                  "px-4 py-2 text-sm rounded-md font-medium transition-colors",
+                  "px-4 py-2 text-sm rounded-md font-medium transition-colors relative",
                   active ?
                   "bg-slate-900 text-white" :
                   "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}>
-                
                 {item.label}
+                {item.path === "/compass" && pendingCompassCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-amber-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none">
+                    {pendingCompassCount}
+                  </span>
+                )}
               </button>);
 
           })}

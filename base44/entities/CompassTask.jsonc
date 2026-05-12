@@ -1,0 +1,69 @@
+{
+  "name": "CompassTask",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Related client ID"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Client full name (denormalized)"
+    },
+    "compass_hsid": {
+      "type": "string",
+      "description": "Client Compass HSID# if known"
+    },
+    "task_type": {
+      "type": "string",
+      "description": "Category of task (e.g. new_client, status_change, employment_outcome, etc.)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short task title"
+    },
+    "instructions": {
+      "type": "string",
+      "description": "Detailed instructions for what to enter in Compass"
+    },
+    "triggered_by": {
+      "type": "string",
+      "description": "Email of staff who triggered this task"
+    },
+    "triggered_by_name": {
+      "type": "string",
+      "description": "Name of staff who triggered this task"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed"
+      ],
+      "default": "pending",
+      "description": "Task status"
+    },
+    "completed_by": {
+      "type": "string",
+      "description": "Email of staff who marked this completed"
+    },
+    "completed_by_name": {
+      "type": "string",
+      "description": "Name of staff who marked this completed"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date task was completed"
+    },
+    "completed_notes": {
+      "type": "string",
+      "description": "Optional notes on what was entered"
+    }
+  },
+  "required": [
+    "client_id",
+    "title",
+    "instructions"
+  ]
+}

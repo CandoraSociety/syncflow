@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Save } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { createCompassTask, taskServiceNavigation, taskBarriersIdentified } from "@/lib/compassTasks";
 
 const SDP_OPTIONS = [
   "Attend Job Search workshop",
@@ -91,6 +92,21 @@ export default function ClientServicePlan({ client, onSave }) {
   const handleSave = async () => {
     setSaving(true);
     await onSave(form);
+
+    const clientBase = { ...client, ...form };
+
+    // Service navigation newly toggled on
+    if (form.service_navigation_supports && !client.service_navigation_supports) {
+      const t = taskServiceNavigation(clientBase);
+      await createCompassTask({ client_id: client.id, client_name: `${client.first_name} ${client.last_name}`, compass_hsid: client.compass_hsid, ...t });
+    }
+
+    // Barriers newly identified
+    if (form.barriers_addressed && !client.barriers_addressed) {
+      const t = taskBarriersIdentified(clientBase);
+      await createCompassTask({ client_id: client.id, client_name: `${client.first_name} ${client.last_name}`, compass_hsid: client.compass_hsid, ...t });
+    }
+
     setSaving(false);
   };
 

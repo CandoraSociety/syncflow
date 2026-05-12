@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import DuplicateWarningDialog from "@/components/intake/DuplicateWarningDialog";
 import ClientListControls, { applyFiltersAndSort } from "@/components/lists/ClientListControls";
+import { createCompassTask, taskNewClient } from "@/lib/compassTasks";
 
 const SERVICE_LABELS = {
   direct_to_employment: "DEA",
@@ -88,8 +89,12 @@ export default function IntakePage() {
       const updated = await base44.entities.Client.update(editingClient.id, data);
       setClients(prev => prev.map(c => c.id === updated.id ? updated : c));
     } else {
-      const created = await base44.entities.Client.create({ ...data, intake_date: new Date().toISOString().split("T")[0] });
+      const withDate = { ...data, intake_date: new Date().toISOString().split("T")[0] };
+      const created = await base44.entities.Client.create(withDate);
       setClients(prev => [created, ...prev]);
+      // New client → prompt Compass entry
+      const t = taskNewClient(created);
+      await createCompassTask({ client_id: created.id, client_name: `${created.first_name} ${created.last_name}`, compass_hsid: created.compass_hsid, ...t });
     }
     setShowForm(false);
     setEditingClient(null);

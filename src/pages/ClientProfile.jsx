@@ -14,6 +14,7 @@ import ClientFinancials from "@/components/client/ClientFinancials";
 import ClientStreamSwitches from "@/components/client/ClientStreamSwitches";
 import ClientTraining from "@/components/client/ClientTraining";
 import ClientRoadmap from "@/components/client/ClientRoadmap";
+import { createCompassTask, taskFileClosed } from "@/lib/compassTasks";
 
 export default function ClientProfile() {
   const { id } = useParams();
@@ -40,7 +41,11 @@ export default function ClientProfile() {
   const handleCloseFile = async (data) => {
     setClosingSaving(true);
     await base44.entities.Client.update(id, data);
-    setClient(prev => ({ ...prev, ...data }));
+    const updatedClient = { ...client, ...data };
+    setClient(updatedClient);
+    // File closed → Compass task
+    const t = taskFileClosed(updatedClient);
+    await createCompassTask({ client_id: id, client_name: `${client.first_name} ${client.last_name}`, compass_hsid: client.compass_hsid, ...t });
     setClosingSaving(false);
     setShowCloseDialog(false);
   };

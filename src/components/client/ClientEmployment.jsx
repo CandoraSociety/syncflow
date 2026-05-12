@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save } from "lucide-react";
+import { createCompassTask, taskEmploymentOutcome, taskPostCompletionEmployment, task90DayFollowup } from "@/lib/compassTasks";
 
 const EMPLOYMENT_CODES = [
   { value: "E-RF", label: "E-RF – Employed, Related Field" },
@@ -40,6 +41,27 @@ export default function ClientEmployment({ client, onSave }) {
   const handleSave = async () => {
     setSaving(true);
     await onSave(form);
+
+    const clientBase = { ...client, ...form };
+
+    // Employment status changed
+    if (form.employment_status && form.employment_status !== client.employment_status) {
+      const t = taskEmploymentOutcome(clientBase, form.employment_status);
+      await createCompassTask({ client_id: client.id, client_name: `${client.first_name} ${client.last_name}`, compass_hsid: client.compass_hsid, ...t });
+    }
+
+    // Post-completion employment status changed
+    if (form.post_completion_employment_status && form.post_completion_employment_status !== client.post_completion_employment_status) {
+      const t = taskPostCompletionEmployment(clientBase, form.post_completion_employment_status);
+      await createCompassTask({ client_id: client.id, client_name: `${client.first_name} ${client.last_name}`, compass_hsid: client.compass_hsid, ...t });
+    }
+
+    // 90-day follow-up status changed
+    if (form.followup_90day_status && form.followup_90day_status !== client.followup_90day_status) {
+      const t = task90DayFollowup(clientBase, form.followup_90day_status);
+      await createCompassTask({ client_id: client.id, client_name: `${client.first_name} ${client.last_name}`, compass_hsid: client.compass_hsid, ...t });
+    }
+
     setSaving(false);
   };
 
