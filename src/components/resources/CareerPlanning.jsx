@@ -11,6 +11,7 @@ export default function CareerPlanning() {
   const [mode, setMode] = useState(null); // "forward" | "reverse"
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
   // Forward mode inputs
   const [jobType, setJobType] = useState("");
@@ -24,6 +25,8 @@ export default function CareerPlanning() {
   const runForward = async () => {
     setLoading(true);
     setResult(null);
+    setError(null);
+    try {
     const res = await base44.integrations.Core.InvokeLLM({
       prompt: `You are a Canadian career counsellor. Given the job type "${jobType}" in ${location}, provide a detailed career profile including:
 1. Typical job titles in this field
@@ -51,12 +54,17 @@ Be practical and specific. Format clearly with sections.`,
       }
     });
     setResult({ mode: "forward", data: res, jobType });
+    } catch (err) {
+      setError("Failed to generate career profile. Please try again.");
+    }
     setLoading(false);
   };
 
   const runReverse = async () => {
     setLoading(true);
     setResult(null);
+    setError(null);
+    try {
     const res = await base44.integrations.Core.InvokeLLM({
       prompt: `You are a Canadian career counsellor. A client has the following background:
 Education: ${education}
@@ -83,10 +91,13 @@ Be practical, encouraging, and specific to the Alberta labour market.`,
       }
     });
     setResult({ mode: "reverse", data: res });
+    } catch (err) {
+      setError("Failed to analyze career options. Please try again.");
+    }
     setLoading(false);
   };
 
-  const reset = () => { setMode(null); setResult(null); setJobType(""); setEducation(""); setExperience(""); setSkills(""); };
+  const reset = () => { setMode(null); setResult(null); setError(null); setJobType(""); setEducation(""); setExperience(""); setSkills(""); };
 
   if (!mode) {
     return (
@@ -132,6 +143,7 @@ Be practical, encouraging, and specific to the Alberta labour market.`,
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</p>}
             {mode === "forward" ? (
               <>
                 <div className="space-y-1.5">

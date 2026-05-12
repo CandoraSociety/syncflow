@@ -32,10 +32,13 @@ export default function JobSearch() {
   const [location, setLocation] = useState("Edmonton, Alberta");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const [error, setError] = useState(null);
 
   const search = async () => {
     setLoading(true);
     setResults(null);
+    setError(null);
+    try {
     const res = await base44.integrations.Core.InvokeLLM({
       prompt: `You are helping a job seeker in Alberta, Canada find employment. They are looking for: "${jobType}" near ${location}.
 
@@ -75,6 +78,9 @@ Keep results practical and relevant to the Alberta labour market.`,
       }
     });
     setResults(res);
+    } catch (err) {
+      setError("Failed to fetch job search results. Please try again.");
+    }
     setLoading(false);
   };
 
@@ -100,6 +106,7 @@ Keep results practical and relevant to the Alberta labour market.`,
               />
             </div>
           </div>
+          {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</p>}
           <Button onClick={search} disabled={!jobType || loading} className="gap-2">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             {loading ? "Searching..." : "Find Jobs"}
