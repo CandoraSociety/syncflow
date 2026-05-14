@@ -16,15 +16,15 @@ export const BrandingProvider = ({ children }) => {
         if (brandingConfig) {
           setBranding(brandingConfig);
           
-          // Apply colors to CSS variables
+          // Apply colors to CSS custom properties
           const primaryColor = brandingConfig.brand_primary_color;
           const secondaryColor = brandingConfig.brand_secondary_color;
           
           if (primaryColor) {
-            document.documentElement.style.setProperty('--primary', primaryColor);
+            document.documentElement.style.setProperty('--brand-primary', primaryColor);
           }
           if (secondaryColor) {
-            document.documentElement.style.setProperty('--secondary', secondaryColor);
+            document.documentElement.style.setProperty('--brand-secondary', secondaryColor);
           }
         }
       } catch (error) {

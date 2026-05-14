@@ -10,9 +10,11 @@
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --brand-primary: 0 0% 9%;
+    --brand-secondary: 0 0% 96.1%;
+    --primary: var(--brand-primary);
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
+    --secondary: var(--brand-secondary);
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
