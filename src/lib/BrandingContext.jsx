@@ -17,15 +17,11 @@ export const BrandingProvider = ({ children }) => {
           setBranding(brandingConfig);
           
           // Apply colors to CSS custom properties
-          const primaryColor = brandingConfig.brand_primary_color;
-          const secondaryColor = brandingConfig.brand_secondary_color;
+          const primaryColor = brandingConfig.brand_primary_color || '#005696';
+          const secondaryColor = brandingConfig.brand_secondary_color || '#FFD100';
           
-          if (primaryColor) {
-            document.documentElement.style.setProperty('--brand-primary', primaryColor);
-          }
-          if (secondaryColor) {
-            document.documentElement.style.setProperty('--brand-secondary', secondaryColor);
-          }
+          document.documentElement.style.setProperty('--brand-primary', primaryColor);
+          document.documentElement.style.setProperty('--brand-secondary', secondaryColor);
         }
       } catch (error) {
         console.warn('Failed to fetch branding config:', error);
