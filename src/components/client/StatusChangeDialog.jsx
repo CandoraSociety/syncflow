@@ -55,6 +55,8 @@ export default function StatusChangeDialog({ client, onClose, onSaved }) {
   const selectedType = CHANGE_TYPES.find(t => t.value === changeType);
   const options = changeType ? getOptionsForType(changeType) : null;
 
+  const currentStreamLabel = STREAM_OPTIONS.find(o => o.value === client.service_type)?.label || client.service_type || "Unknown";
+
   const handleSave = async () => {
     if (!changeType || !changeDate) return;
     setSaving(true);
@@ -89,7 +91,12 @@ export default function StatusChangeDialog({ client, onClose, onSaved }) {
             <select
               className="w-full h-9 text-sm border border-slate-200 rounded-md px-3"
               value={changeType}
-              onChange={e => { setChangeType(e.target.value); setFromValue(""); setToValue(""); }}
+              onChange={e => {
+                const newType = e.target.value;
+                setChangeType(newType);
+                setFromValue(newType === "stream_switch" ? (client.service_type || "") : "");
+                setToValue("");
+              }}
             >
               <option value="">Select type...</option>
               {CHANGE_TYPES.map(t => (
@@ -110,16 +117,22 @@ export default function StatusChangeDialog({ client, onClose, onSaved }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs mb-1 block">From</Label>
-                <select className="w-full h-9 text-sm border border-slate-200 rounded-md px-3" value={fromValue} onChange={e => setFromValue(e.target.value)}>
-                  <option value="">Select...</option>
-                  {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                {changeType === "stream_switch" ? (
+                  <div className="h-9 text-sm border border-slate-200 rounded-md px-3 flex items-center bg-slate-50 text-slate-600">
+                    {currentStreamLabel}
+                  </div>
+                ) : (
+                  <select className="w-full h-9 text-sm border border-slate-200 rounded-md px-3" value={fromValue} onChange={e => setFromValue(e.target.value)}>
+                    <option value="">Select...</option>
+                    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
               </div>
               <div>
                 <Label className="text-xs mb-1 block">To</Label>
                 <select className="w-full h-9 text-sm border border-slate-200 rounded-md px-3" value={toValue} onChange={e => setToValue(e.target.value)}>
                   <option value="">Select...</option>
-                  {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {options.filter(o => o.value !== fromValue).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
             </div>
