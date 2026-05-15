@@ -1,0 +1,62 @@
+{
+  "name": "StatusChange",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "type": "string",
+      "description": "Related client ID"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Client full name (denormalized)"
+    },
+    "change_type": {
+      "type": "string",
+      "enum": [
+        "stream_switch",
+        "program_status_change",
+        "file_opened",
+        "file_closed",
+        "employment_outcome",
+        "post_completion_status",
+        "followup_90day",
+        "other"
+      ],
+      "description": "Category of status change"
+    },
+    "change_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the change occurred"
+    },
+    "from_value": {
+      "type": "string",
+      "description": "Previous value (before change)"
+    },
+    "to_value": {
+      "type": "string",
+      "description": "New value (after change)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes about this change"
+    },
+    "logged_by": {
+      "type": "string",
+      "description": "Email of staff who logged this change"
+    },
+    "logged_by_name": {
+      "type": "string",
+      "description": "Name of staff who logged this change"
+    },
+    "billing_relevant": {
+      "type": "boolean",
+      "description": "Whether this change may affect billing"
+    }
+  },
+  "required": [
+    "client_id",
+    "change_type",
+    "change_date"
+  ]
+}
