@@ -35,8 +35,8 @@ const SWITCH_REASONS = [
 
 const STREAM_LABEL = Object.fromEntries(STREAMS.map(s => [s.value, s.label]));
 
-const emptySwitch = () => ({
-  from_stream: "",
+const emptySwitch = (currentStream = "") => ({
+  from_stream: currentStream,
   to_stream: "",
   reason: "",
   reason_other: "",
@@ -47,7 +47,7 @@ const emptySwitch = () => ({
 export default function ClientStreamSwitches({ client, onSave }) {
   const switches = client.program_stream_switches || [];
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState(emptySwitch());
+  const [form, setForm] = useState(emptySwitch(client.service_type));
   const [saving, setSaving] = useState(false);
 
   const handleAdd = async () => {
@@ -127,13 +127,10 @@ export default function ClientStreamSwitches({ client, onSave }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-medium mb-1 block">From Stream</Label>
-                  <Select value={form.from_stream} onValueChange={v => setForm(f => ({ ...f, from_stream: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select stream..." /></SelectTrigger>
-                    <SelectContent>
-                      {STREAMS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs font-medium mb-1 block">From Stream (current)</Label>
+                  <div className="h-9 text-sm border border-slate-200 rounded-md px-3 flex items-center bg-slate-50 text-slate-700 font-medium">
+                    {STREAM_LABEL[client.service_type] || client.service_type || "Not set"}
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs font-medium mb-1 block">To Stream</Label>
@@ -184,7 +181,7 @@ export default function ClientStreamSwitches({ client, onSave }) {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => { setAdding(false); setForm(emptySwitch()); }}>Cancel</Button>
+                <Button variant="outline" size="sm" onClick={() => { setAdding(false); setForm(emptySwitch(client.service_type)); }}>Cancel</Button>
                 <Button
                   size="sm"
                   onClick={handleAdd}
