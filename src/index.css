@@ -87,4 +87,12 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  a, button, [role="button"] {
+    @apply transition-colors;
+  }
+
+  a:hover, button:hover, [role="button"]:hover {
+    @apply bg-accent/5;
+  }
 }
