@@ -19,8 +19,10 @@ import SupervisorPortal from "./pages/SupervisorPortal";
 import Resources from "./pages/Resources";
 import Compass from "./pages/Compass";
 import AppNav from "./components/layout/AppNav";
+import { useBranding } from '@/hooks/useBranding';
 
 const AuthenticatedApp = () => {
+  useBranding();
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
