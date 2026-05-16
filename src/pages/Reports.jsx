@@ -239,7 +239,7 @@ export default function Reports() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       <div className="bg-white border-b border-slate-200 px-6 py-4">
         <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <FileBarChart className="w-5 h-5" /> Data Reports

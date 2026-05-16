@@ -5,7 +5,7 @@ import JobSearch from "@/components/resources/JobSearch";
 
 export default function Resources() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       <div className="bg-white border-b border-slate-200 px-6 py-4">
         <h1 className="text-xl font-bold text-slate-800">Resources</h1>
         <p className="text-sm text-slate-500">Career planning tools and job search resources</p>
