@@ -88,6 +88,10 @@
     @apply bg-background text-foreground;
   }
 
+  html {
+    @apply bg-background;
+  }
+
   a, button, [role="button"] {
     @apply transition-colors;
   }
