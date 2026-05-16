@@ -46,7 +46,7 @@ export default function AppNav() {
                   "px-4 py-2 text-sm rounded-md font-medium transition-colors relative",
                   active ?
                   "bg-slate-900 text-white" :
-                  "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  "text-slate-600 hover:bg-accent/10 hover:text-accent-foreground"
                 )}>
                 {item.label}
                 {item.path === "/compass" && pendingCompassCount > 0 && (
