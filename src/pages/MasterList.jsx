@@ -130,15 +130,14 @@ export default function MasterList() {
                       <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Closed Date</th>
                     </>
                   )}
-                  <th className="px-3 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {displayed.map(c => (
-                  <tr key={c.id} className={`transition-colors ${clientRowColor(c)}`}>
-                    <td className="px-3 py-2.5 font-medium whitespace-nowrap">
-                      <Link to={`/client/${c.id}`} className="font-semibold hover:underline" style={{ color: "hsl(231,64%,28%)" }}>{c.first_name} {c.last_name}</Link>
-                    </td>
+                 <tr key={c.id} onClick={() => navigate(`/client/${c.id}`)} className={`transition-colors cursor-pointer hover:brightness-95 ${clientRowColor(c)}`}>
+                   <td className="px-3 py-2.5 font-medium whitespace-nowrap">
+                     <span className="font-semibold" style={{ color: "hsl(231,64%,28%)" }}>{c.first_name} {c.last_name}</span>
+                   </td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.compass_hsid || "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.intake_date ? format(new Date(c.intake_date), "MMM d, yy") : "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.service_start_date ? format(new Date(c.service_start_date), "MMM d, yy") : "—"}</td>
@@ -165,7 +164,11 @@ export default function MasterList() {
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROGRAM_STATUS_COLORS[c.program_status] || "bg-slate-100 text-slate-600"}`}>
                           {c.program_status.replace("_", " ")}
                         </span>
-                      ) : "—"}
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                          Assessments / Action Plan Incomplete
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.completion_date ? format(new Date(c.completion_date), "MMM d, yy") : "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap font-mono text-xs">{c.post_completion_employment_status || "—"}</td>
@@ -188,13 +191,10 @@ export default function MasterList() {
                         </td>
                       </>
                     )}
-                    <td className="px-3 py-2.5">
-                      <Link to={`/client/${c.id}`}><Button variant="outline" size="sm">Open</Button></Link>
-                    </td>
                   </tr>
                 ))}
                 {displayed.length === 0 && (
-                  <tr><td colSpan={17} className="text-center py-10 text-slate-400">No clients match your filters.</td></tr>
+                  <tr><td colSpan={16} className="text-center py-10 text-slate-400">No clients match your filters.</td></tr>
                 )}
               </tbody>
             </table>
