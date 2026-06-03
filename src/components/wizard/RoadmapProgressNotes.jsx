@@ -38,13 +38,16 @@ function CompassBadge({ note, onMarkEntered }) {
       </button>
 
       {open && !entered && (
-        <div className="absolute right-0 top-7 z-20 bg-white border border-slate-200 rounded-lg shadow-lg p-3 w-48 text-xs space-y-2">
+        <div
+          className="absolute right-0 top-7 z-20 bg-white border border-slate-200 rounded-lg shadow-lg p-3 w-48 text-xs space-y-2"
+          onClick={e => e.stopPropagation()}
+        >
           <p className="text-slate-600 font-medium">Mark as entered in Compass?</p>
           <div className="flex gap-2">
             <Button
               size="sm"
               className="h-6 text-xs flex-1 bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => { setOpen(false); onMarkEntered(note.id); }}
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onMarkEntered(note.id); }}
             >
               Yes, entered
             </Button>
@@ -52,7 +55,7 @@ function CompassBadge({ note, onMarkEntered }) {
               size="sm"
               variant="ghost"
               className="h-6 text-xs flex-1"
-              onClick={() => setOpen(false)}
+              onClick={(e) => { e.stopPropagation(); setOpen(false); }}
             >
               Cancel
             </Button>
