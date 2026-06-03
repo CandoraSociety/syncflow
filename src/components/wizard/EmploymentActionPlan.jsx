@@ -348,7 +348,7 @@ const EMPLOYMENT_STATUS_LABELS = {
 
 function IntakeSummary({ client, notes, setNotes }) {
   const fields = [
-    { label: "Employment Status", value: EMPLOYMENT_STATUS_LABELS[client?.employment_status] || client?.employment_status },
+    { label: "Current Employment Status", value: EMPLOYMENT_STATUS_LABELS[client?.employment_status] || client?.employment_status },
     { label: "CLB Level", value: CLB_LABELS[client?.clb_level] || client?.clb_level },
     { label: "Service Stream", value: client?.service_type?.replace(/_/g, " ") },
     { label: "Career Objectives", value: client?.career_objectives },
