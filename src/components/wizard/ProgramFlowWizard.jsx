@@ -8,8 +8,8 @@ import ExposuresSupportsStep from "./ExposuresSupportsStep";
 
 const STEPS = [
   { key: "bit", label: "Barrier Identification", short: "BIT" },
-  { key: "barrier_action_plan", label: "Barrier Action Plan", short: "Action Plan" },
-  { key: "employment_action_plan", label: "Employment Action Plan", short: "Emp. Plan" },
+  { key: "barrier_action_plan", label: "Barrier Resolution Plan", short: "Barrier Resolution" },
+  { key: "employment_action_plan", label: "Employment Action Plan", short: "Emp. Action Plan" },
   { key: "internal_placement", label: "Internal Placement", short: "Placement", pathwaysOnly: true },
   { key: "exposures", label: "Exposure Courses & Supports", short: "Supports" },
 ];
