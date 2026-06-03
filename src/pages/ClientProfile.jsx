@@ -70,6 +70,27 @@ export default function ClientProfile() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Mini nav bar */}
+      <div className="sticky top-0 z-40 px-6 py-2 flex items-center gap-3" style={{ background: "hsl(231,64%,20%)" }}>
+        <img
+          src="https://media.base44.com/images/public/6a0025bc2848937e9e70bca5/6df7c66b7_Candoracirclelogo_noanniversary.png"
+          alt="Candora logo"
+          className="h-7 w-7 object-contain rounded-full shrink-0"
+        />
+        <button
+          onClick={() => navigate("/master")}
+          className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Master List
+        </button>
+        <span className="text-white/30 text-sm">·</span>
+        <button onClick={() => navigate("/dashboard")} className="text-sm text-white/70 hover:text-white transition-colors">My Dashboard</button>
+        <span className="text-white/30 text-sm">·</span>
+        <button onClick={() => navigate("/intake")} className="text-sm text-white/70 hover:text-white transition-colors">Intake</button>
+        <span className="text-white/30 text-sm">·</span>
+        <button onClick={() => navigate("/compass")} className="text-sm text-white/70 hover:text-white transition-colors">Compass</button>
+      </div>
+
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
