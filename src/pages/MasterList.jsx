@@ -113,7 +113,7 @@ export default function MasterList() {
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Name</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">HSID#</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Intake Date</th>
-                  <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Svc Start</th>
+                  <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Program Start</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Service Element</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Switches</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Program Status</th>
