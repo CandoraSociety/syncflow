@@ -247,9 +247,18 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     }
   }
 
-  async function handleToggleComplete(rowId) {
+  async function handleToggleComplete(row) {
+    const rowId = row.id;
     const isNowComplete = !completed[rowId];
     setCompleted(prev => ({ ...prev, [rowId]: isNowComplete }));
+
+    // For barrier rows: sync status back to BIT on the client entity
+    if (row.isBarrier && row.barrierN) {
+      const newStatus = isNowComplete ? "resolved" : "in_progress";
+      await base44.entities.Client.update(client.id, {
+        [`barrier_${row.barrierN}_status`]: newStatus,
+      });
+    }
   }
 
   if (!selectedItems || selectedItems.length === 0) {
@@ -320,7 +329,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
               {row.end && <span> – {format(row.end, "MMM d")}</span>}
             </div>
             <button
-              onClick={() => handleToggleComplete(row.id)}
+              onClick={() => handleToggleComplete(row)}
               title={isDone ? "Mark incomplete" : "Mark complete"}
               className={`shrink-0 rounded-full p-0.5 transition-colors ${isDone ? "text-green-600 hover:text-slate-400" : "text-slate-300 hover:text-green-500"}`}
             >
@@ -360,7 +369,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
             <CalendarDays className="w-3.5 h-3.5 ml-auto shrink-0 opacity-60" />
           </button>
           <button
-            onClick={() => handleToggleComplete(row.id)}
+            onClick={() => handleToggleComplete(row)}
             title={isDone ? "Mark incomplete" : "Mark complete"}
             className={`shrink-0 rounded-full p-0.5 transition-colors ${isDone ? "text-green-600 hover:text-slate-400" : "text-slate-400 hover:text-green-500"}`}
           >
