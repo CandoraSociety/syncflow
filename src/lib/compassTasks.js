@@ -14,7 +14,7 @@ import { base44 } from "@/api/base44Client";
  * @param {string} params.title
  * @param {string} params.instructions
  */
-export async function createCompassTask({ client_id, client_name, compass_hsid, task_type, title, instructions }) {
+export async function createCompassTask({ client_id, client_name, compass_hsid, task_type, title, instructions, assigned_worker, assigned_worker_name }) {
   try {
     // Check for existing pending task of same type for same client — replace it
     const existing = await base44.entities.CompassTask.filter({
@@ -43,6 +43,8 @@ export async function createCompassTask({ client_id, client_name, compass_hsid, 
       instructions,
       triggered_by,
       triggered_by_name,
+      assigned_worker: assigned_worker || "",
+      assigned_worker_name: assigned_worker_name || "",
       status: "pending",
     });
   } catch (err) {
@@ -175,6 +177,20 @@ export function taskServiceNavigation(client) {
       `Service navigation supports have been recorded for this client.\n\n` +
       `Date: ${client.service_navigation_date || "not set"}\n\n` +
       `Action: Record the service navigation activity in Compass.\n` +
+      `Client HSID#: ${client.compass_hsid || "unknown — check client profile"}`,
+  };
+}
+
+export function taskActionPlan(client) {
+  const items = (client.sdp_items || []).join(", ") || "see service plan";
+  return {
+    task_type: "action_plan",
+    title: `Employment Action Plan submitted: ${client.first_name} ${client.last_name}`,
+    instructions:
+      `An Employment Action Plan (EAP) has been completed and needs to be entered in Compass.\n\n` +
+      `Action Plan Items: ${items}\n\n` +
+      `Career Objectives: ${client.career_objectives || "not set"}\n\n` +
+      `Action: Enter the Employment Action Plan into the client's Compass service plan, including all selected SDP items and goals.\n` +
       `Client HSID#: ${client.compass_hsid || "unknown — check client profile"}`,
   };
 }

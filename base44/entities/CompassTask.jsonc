@@ -16,7 +16,7 @@
     },
     "task_type": {
       "type": "string",
-      "description": "Category of task (e.g. new_client, status_change, employment_outcome, etc.)"
+      "description": "Category of task (e.g. new_client, status_change, employment_outcome, action_plan, barriers_identified, etc.)"
     },
     "title": {
       "type": "string",
@@ -33,6 +33,14 @@
     "triggered_by_name": {
       "type": "string",
       "description": "Name of staff who triggered this task"
+    },
+    "assigned_worker": {
+      "type": "string",
+      "description": "Email of the career counsellor assigned to this client"
+    },
+    "assigned_worker_name": {
+      "type": "string",
+      "description": "Display name of the career counsellor assigned to this client"
     },
     "status": {
       "type": "string",

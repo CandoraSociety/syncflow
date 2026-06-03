@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, ChevronRight, Pencil, Copy, Check, Map, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { createCompassTask, taskServiceNavigation } from "@/lib/compassTasks";
+import { createCompassTask, taskActionPlan } from "@/lib/compassTasks";
 import ActionPlanRoadmap from "./ActionPlanRoadmap";
 
 const EMPLOYMENT_SUPPORT_TYPES = [
@@ -163,6 +163,16 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
     setSaving(true);
     const data = buildSaveData();
     await onSave(data);
+    // Trigger Compass task for action plan submission
+    const updatedClient = { ...client, ...data };
+    await createCompassTask({
+      client_id: client.id,
+      client_name: `${client.first_name} ${client.last_name}`,
+      compass_hsid: client.compass_hsid,
+      assigned_worker: client.assigned_worker,
+      assigned_worker_name: client.assigned_worker_name,
+      ...taskActionPlan(updatedClient),
+    });
     setSubmitted(true);
     setEditing(false);
     setSaving(false);
