@@ -113,8 +113,8 @@ export default function MasterList() {
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Name</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">HSID#</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Intake Date</th>
-                  <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Program Start</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Service Element</th>
+                  <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Program Start</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Switches</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Program Status</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Completion</th>
@@ -140,8 +140,8 @@ export default function MasterList() {
                    </td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.compass_hsid || "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.intake_date ? format(new Date(c.intake_date), "MMM d, yy") : "—"}</td>
-                    <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.service_start_date ? format(new Date(c.service_start_date), "MMM d, yy") : "—"}</td>
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{SERVICE_LABELS[c.service_type] || "—"}</td>
+                    <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.service_start_date ? format(new Date(c.service_start_date), "MMM d, yy") : "—"}</td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       {c.program_stream_switches?.length > 0 ? (
                         <div className="flex flex-col gap-0.5">
