@@ -401,7 +401,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
               onClick={() => setEditingItem(isEditing ? null : row.id)}
               className={`absolute h-full rounded-md border-2 flex items-center gap-1.5 px-2 transition-all shadow-sm hover:opacity-90
                 ${isDone ? "bg-green-100 border-green-500 text-green-800"
-                  : isStarted ? "bg-blue-100 border-blue-500 text-blue-800"
+                  : isStarted ? "bg-amber-100 border-amber-500 text-amber-800"
                   : row.colorClass}
                 ${isEditing ? "ring-2 ring-offset-1 ring-primary/50" : ""}
               `}
@@ -444,7 +444,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           onClick={() => setEditingItem(isEditing ? null : row.id)}
           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-left transition-all
             ${isDone ? "bg-green-50 border-green-400 text-green-800"
-              : isStarted ? "bg-blue-50 border-blue-400 text-blue-800"
+              : isStarted ? "bg-amber-50 border-amber-400 text-amber-800"
               : row.colorClass}
             ${isEditing ? "ring-2 ring-offset-1 ring-primary/50" : ""}
           `}
