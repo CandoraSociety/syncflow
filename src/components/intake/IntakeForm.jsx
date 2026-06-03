@@ -343,7 +343,7 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
                   <button
                     key={preset}
                     type="button"
-                    onClick={() => set("employment_history", form.employment_history ? `${form.employment_history}\n${preset}` : preset)}
+                    onClick={() => setForm(prev => ({ ...prev, employment_history: prev.employment_history ? `${prev.employment_history}\n${preset}` : preset }))}
                     className="text-xs px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400 transition-colors"
                   >
                     {preset}
