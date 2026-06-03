@@ -3,12 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Save, ChevronRight, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Save, ChevronRight, AlertCircle } from "lucide-react";
 
 export default function BarrierActionPlan({ client, onSave, onComplete }) {
   const barriersIdentified = client?.barriers_addressed;
+
+  const parseSteps = (raw) => {
+    if (!raw) return [""];
+    const lines = raw.split("\n").map(l => l.replace(/^[-•]\s*/, "").trim()).filter(Boolean);
+    return lines.length > 0 ? lines : [""];
+  };
 
   const getInitialPlans = () => {
     const plans = [];
@@ -18,7 +23,7 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
           barrier: client[`barrier_${n}`] === "Other"
             ? (client[`barrier_${n}_other`] || "Other")
             : client[`barrier_${n}`],
-          action_steps: client[`barrier_${n}_action_steps`] || "",
+          action_steps: parseSteps(client[`barrier_${n}_action_steps`]),
           timeline_start: client[`barrier_${n}_timeline_start`] || "",
           timeline_end: client[`barrier_${n}_timeline_end`] || "",
           responsible_party: client[`barrier_${n}_responsible`] || "",
@@ -36,6 +41,10 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
 
   const updatePlan = (i, field, val) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
 
+  const addStep = (i) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, action_steps: [...p.action_steps, ""] } : p));
+  const removeStep = (i, si) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, action_steps: p.action_steps.filter((_, sidx) => sidx !== si) } : p));
+  const updateStep = (i, si, val) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, action_steps: p.action_steps.map((s, sidx) => sidx === si ? val : s) } : p));
+
   const buildSaveData = () => {
     const data = {
       barrier_action_plan_completed: true,
@@ -45,7 +54,7 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
     for (let n = 1; n <= 3; n++) {
       const p = plans[n - 1];
       if (p) {
-        data[`barrier_${n}_action_steps`] = p.action_steps;
+        data[`barrier_${n}_action_steps`] = p.action_steps.filter(Boolean).join("\n");
         data[`barrier_${n}_timeline_start`] = p.timeline_start;
         data[`barrier_${n}_timeline_end`] = p.timeline_end;
         data[`barrier_${n}_responsible`] = p.responsible_party;
@@ -110,14 +119,26 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Label>Action Steps to Address This Barrier</Label>
-              <Textarea
-                rows={3}
-                value={plan.action_steps}
-                onChange={e => updatePlan(i, "action_steps", e.target.value)}
-                placeholder="List specific steps that will be taken to address this barrier..."
-              />
+              {plan.action_steps.map((step, si) => (
+                <div key={si} className="flex items-start gap-2">
+                  <span className="mt-2 text-xs font-semibold text-slate-400 w-5 shrink-0">{si + 1}.</span>
+                  <Input
+                    value={step}
+                    onChange={e => updateStep(i, si, e.target.value)}
+                    placeholder={`Action step ${si + 1}...`}
+                  />
+                  {plan.action_steps.length > 1 && (
+                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-red-400 hover:text-red-600" onClick={() => removeStep(i, si)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button variant="outline" size="sm" className="gap-1 mt-1" onClick={() => addStep(i)}>
+                <Plus className="w-3 h-3" /> Add Step
+              </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
