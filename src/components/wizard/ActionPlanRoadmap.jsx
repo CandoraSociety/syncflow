@@ -4,6 +4,7 @@ import { AlertTriangle, Calendar, CalendarDays, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
 
 const ACTION_PLAN_OPTIONS = [
   { key: "job_search_workshop", label: "Job Search Workshop" },
@@ -204,7 +205,7 @@ function DateEditor({ item, onSaveDates, onCancel }) {
   );
 }
 
-export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail, onSave }) {
+export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail }) {
   const [activeItem, setActiveItem] = useState(null);
   const [editingDates, setEditingDates] = useState(null); // row id being date-edited
 
@@ -247,12 +248,11 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   // Save dates for a row — barriers update client barrier fields, others update itemDetails
   async function handleSaveDates(row, startVal, endVal) {
     if (row.isBarrier && row.barrierN) {
-      // Update the barrier timeline fields on the client
-      const patch = {
+      // Update the barrier timeline fields directly on the client entity
+      await base44.entities.Client.update(client.id, {
         [`barrier_${row.barrierN}_timeline_start`]: startVal || null,
         [`barrier_${row.barrierN}_timeline_end`]: endVal || null,
-      };
-      await onSave(patch);
+      });
     } else {
       // Update itemDetails for action plan item
       const updatedDetails = {
@@ -263,7 +263,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           timeline_end: endVal || undefined,
         },
       };
-      await onSave({ sdp_item_details: updatedDetails });
+      await base44.entities.Client.update(client.id, { sdp_item_details: updatedDetails });
       onUpdateDetail?.(row.key, "timeline_start", startVal);
       onUpdateDetail?.(row.key, "timeline_end", endVal);
     }

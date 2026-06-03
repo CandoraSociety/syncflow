@@ -199,7 +199,6 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
           itemDetails={itemDetails}
           otherDesc={otherDesc}
           onUpdateDetail={updateDetail}
-          onSave={onSave}
         />
       )}
 
