@@ -91,6 +91,35 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     setProgressNotes(client?.roadmap_progress_notes || []);
   }, [client?.id]);
 
+  // On first load, log any items that have no progress note yet
+  useEffect(() => {
+    if (!selectedItems || selectedItems.length === 0) return;
+    const existingNotes = client?.roadmap_progress_notes || [];
+    const loggedKeys = new Set(existingNotes.map(n => n.item_key));
+
+    const rows = buildRows();
+    const missing = rows.filter(r => !loggedKeys.has(r.id));
+    if (missing.length === 0) return;
+
+    base44.auth.me().catch(() => null).then(me => {
+      const today = new Date().toISOString().slice(0, 10);
+      const newNotes = missing.map(r => ({
+        id: `added_${r.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        date: today,
+        event_type: "added",
+        item_label: r.label,
+        item_key: r.id,
+        note: `"${r.label}" is an item on the service plan${r.start ? ` — planned start: ${format(r.start, "yyyy-MM-dd")}` : ""}${r.end ? `, planned end: ${format(r.end, "yyyy-MM-dd")}` : ""}.`,
+        logged_by: me?.email || "",
+        logged_by_name: me?.full_name || me?.email || "",
+      }));
+      const updated = [...existingNotes, ...newNotes];
+      setProgressNotes(updated);
+      base44.entities.Client.update(client.id, { roadmap_progress_notes: updated });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client?.id, selectedItems?.join(",")]);
+
   function getBarriers() {
     const barriers = [];
     for (let n = 1; n <= 3; n++) {
