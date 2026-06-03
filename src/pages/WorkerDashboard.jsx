@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Users, Bell } from "lucide-react";
+import { LogOut, Users, Bell, Database } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { format, addDays, differenceInDays } from "date-fns";
 import ClientListControls, { applyFiltersAndSort } from "@/components/lists/ClientListControls";
 import { clientRowColor } from "@/lib/clientRowColor";
+import CompassTaskList from "@/components/compass/CompassTaskList";
 
 const SERVICE_LABELS = {
   direct_to_employment: "DEA",
@@ -39,10 +40,17 @@ export default function WorkerDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [clients, setClients] = useState([]);
+  const [compassTasks, setCompassTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [sortKey, setSortKey] = useState("intake_date_desc");
+  const [activeTab, setActiveTab] = useState("clients");
+
+  const loadCompassTasks = async (workerEmail) => {
+    const allTasks = await base44.entities.CompassTask.list("-created_date", 500);
+    setCompassTasks(allTasks.filter(t => t.assigned_worker === workerEmail));
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -54,6 +62,7 @@ export default function WorkerDashboard() {
         ? allClients.filter(c => c.barriers_addressed || c.assigned_worker === me.email)
         : allClients.filter(c => c.assigned_worker === me.email);
       setClients(myClients);
+      await loadCompassTasks(me.email);
       setLoading(false);
     };
     init();
@@ -61,6 +70,7 @@ export default function WorkerDashboard() {
 
   const isDawn = user?.email === "Dawn.williston@candorasociety.com";
   const displayed = applyFiltersAndSort(clients, search, filters, sortKey);
+  const pendingCompassCount = compassTasks.filter(t => t.status === "pending").length;
 
   // Upcoming 90-day follow-ups (due within 14 days, not yet done)
   const upcomingFollowups = clients.filter(c => {
@@ -100,7 +110,36 @@ export default function WorkerDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {clients.length === 0 ? (
+        {/* Tab switcher */}
+        <div className="flex gap-1 mb-5 bg-slate-100 rounded-lg p-1 w-fit">
+          <button
+            onClick={() => setActiveTab("clients")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === "clients" ? "bg-white shadow text-slate-800" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            <Users className="w-3.5 h-3.5" /> My Clients
+          </button>
+          <button
+            onClick={() => setActiveTab("compass")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === "compass" ? "bg-white shadow text-slate-800" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            <Database className="w-3.5 h-3.5" /> Compass Queue
+            {pendingCompassCount > 0 && (
+              <span className="bg-amber-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {pendingCompassCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {activeTab === "compass" && (
+          <CompassTaskList
+            tasks={compassTasks}
+            currentUser={user}
+            onRefresh={() => loadCompassTasks(user?.email)}
+          />
+        )}
+
+        {activeTab === "clients" && clients.length === 0 ? (
           <div className="text-center py-20 text-slate-400">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-lg font-medium">No clients yet</p>
