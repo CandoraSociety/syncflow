@@ -51,17 +51,39 @@ export default function ProgramStatusPanel({ client, onClientUpdate }) {
   const followupOverdue = daysUntilFollowup !== null && daysUntilFollowup < 0;
   const followupDone = !!client.followup_90day_status;
 
-  async function save(updates) {
+  async function addProgressNote(noteText, eventType) {
+    const me = await base44.auth.me().catch(() => null);
+    const newNote = {
+      id: `program_${eventType}_${Date.now()}`,
+      date: new Date().toISOString().slice(0, 10),
+      event_type: eventType,
+      item_label: "Program Status",
+      item_key: `program_${eventType}`,
+      note: noteText,
+      logged_by: me?.email || "",
+      logged_by_name: me?.full_name || me?.email || "",
+      compass_entered: false,
+    };
+    const existing = client.roadmap_progress_notes || [];
+    return [...existing, newNote];
+  }
+
+  async function save(updates, progressNotes) {
     setSaving(true);
-    const updated = await base44.entities.Client.update(client.id, updates);
-    onClientUpdate?.({ ...client, ...updates });
+    const payload = { ...updates };
+    if (progressNotes) payload.roadmap_progress_notes = progressNotes;
+    await base44.entities.Client.update(client.id, payload);
+    onClientUpdate?.({ ...client, ...payload });
     setSaving(false);
-    return updated;
   }
 
   async function handleStart() {
     if (!startDate) return;
-    await save({ program_status: "in_progress", service_start_date: startDate });
+    const notes = await addProgressNote(
+      `• Program marked as started — service start date: ${startDate}`,
+      "started"
+    );
+    await save({ program_status: "in_progress", service_start_date: startDate }, notes);
     createCompassTask({
       client_id: client.id, client_name: clientName, compass_hsid: client.compass_hsid || "",
       assigned_worker: client.assigned_worker || "", assigned_worker_name: client.assigned_worker_name || "",
@@ -82,7 +104,11 @@ export default function ProgramStatusPanel({ client, onClientUpdate }) {
     };
     if (postEmpStatus) updates.post_completion_employment_status = postEmpStatus;
     if (postEmpDate) updates.post_completion_employment_date = postEmpDate;
-    await save(updates);
+    const notes = await addProgressNote(
+      `• Program completed on ${completionDate}${postEmpStatus ? ` — employment status: ${postEmpStatus}` : ""}${postEmpDate ? `, employment start: ${postEmpDate}` : ""} — 90-day follow-up due: ${followup}`,
+      "completed"
+    );
+    await save(updates, notes);
     createCompassTask({
       client_id: client.id, client_name: clientName, compass_hsid: client.compass_hsid || "",
       assigned_worker: client.assigned_worker || "", assigned_worker_name: client.assigned_worker_name || "",
@@ -94,7 +120,11 @@ export default function ProgramStatusPanel({ client, onClientUpdate }) {
   }
 
   async function handleCancel() {
-    await save({ program_status: "cancelled", closed_reason: "cancelled", file_closed: true, closed_date: new Date().toISOString().slice(0, 10), closed_notes: cancelReason });
+    const notes = await addProgressNote(
+      `• Program marked as cancelled${cancelReason ? ` — reason: ${cancelReason}` : ""}`,
+      "cancelled"
+    );
+    await save({ program_status: "cancelled", closed_reason: "cancelled", file_closed: true, closed_date: new Date().toISOString().slice(0, 10), closed_notes: cancelReason }, notes);
     createCompassTask({
       client_id: client.id, client_name: clientName, compass_hsid: client.compass_hsid || "",
       assigned_worker: client.assigned_worker || "", assigned_worker_name: client.assigned_worker_name || "",
@@ -107,10 +137,14 @@ export default function ProgramStatusPanel({ client, onClientUpdate }) {
 
   async function handleFollowup() {
     if (!followupEmpStatus) return;
+    const notes = await addProgressNote(
+      `• 90-day follow-up recorded — employment status: ${followupEmpStatus}${followupEmpDate ? `, employment start: ${followupEmpDate}` : ""}`,
+      "followup_90day"
+    );
     await save({
       followup_90day_status: followupEmpStatus,
       post_completion_employment_date: followupEmpDate || client.post_completion_employment_date,
-    });
+    }, notes);
     createCompassTask({
       client_id: client.id, client_name: clientName, compass_hsid: client.compass_hsid || "",
       assigned_worker: client.assigned_worker || "", assigned_worker_name: client.assigned_worker_name || "",
