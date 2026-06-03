@@ -69,6 +69,20 @@ export function taskNewClient(client) {
   };
 }
 
+export function taskStreamSwitch(client, fromStream, toStream, reason) {
+  return {
+    task_type: "stream_switch",
+    title: `Program stream switched: ${client.first_name} ${client.last_name}`,
+    instructions:
+      `This client's program stream has been switched.\n\n` +
+      `From: ${fromStream?.replace(/_/g, " ")}\n` +
+      `To: ${toStream?.replace(/_/g, " ")}\n` +
+      `Reason: ${reason?.replace(/_/g, " ")}\n\n` +
+      `Action: Update the service element / stream in Compass to "${toStream?.replace(/_/g, " ")}".\n` +
+      `Client HSID#: ${client.compass_hsid || "unknown — check client profile"}`,
+  };
+}
+
 export function taskServiceTypeChange(client, newType) {
   return {
     task_type: "service_type_change",

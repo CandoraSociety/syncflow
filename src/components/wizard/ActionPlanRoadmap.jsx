@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, parseISO, isValid, differenceInDays, addDays, min, max } from "date-fns";
-import { AlertTriangle, Calendar, CalendarDays, Save, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Calendar, CalendarDays, Save, CheckCircle2, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -111,6 +111,15 @@ function DateEditor({ item, onSaveDates, onCancel, saving }) {
     </div>
   );
 }
+
+const STREAM_LABELS = {
+  direct_to_employment: "Direct to Employment (DEA)",
+  pathways: "Pathways",
+  casual: "Casual",
+  external_referral: "External Referral",
+  internal_referral: "Internal Referral",
+  not_eligible: "Not Eligible",
+};
 
 export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail }) {
   const [editingDates, setEditingDates] = useState(null);
@@ -388,8 +397,30 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     );
   }
 
+  const switches = client?.program_stream_switches || [];
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-6">
+      {/* Stream switch banner */}
+      {switches.length > 0 && (
+        <div className="bg-purple-50 border border-purple-300 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">⚠ Program Stream Switch{switches.length > 1 ? "es" : ""} on File</span>
+          </div>
+          <div className="space-y-1.5">
+            {switches.map((sw, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm flex-wrap">
+                <span className="text-xs text-purple-500 font-medium">{sw.date || "—"}</span>
+                <span className="bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded text-xs font-medium">{STREAM_LABELS[sw.from_stream] || sw.from_stream}</span>
+                <ArrowRight className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span className="bg-purple-100 text-purple-800 border border-purple-300 px-2 py-0.5 rounded text-xs font-semibold">{STREAM_LABELS[sw.to_stream] || sw.to_stream}</span>
+                {sw.reason && <span className="text-xs text-purple-500">({sw.reason.replace(/_/g, " ")})</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <h3 className="text-sm font-semibold text-slate-700">Action Plan Timeline</h3>
         <p className="text-xs text-slate-400 mt-0.5">Click any bar or card to set/edit dates. Click the checkmark to mark items complete.</p>

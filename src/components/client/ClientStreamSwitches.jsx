@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle, ArrowRight, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { base44 } from "@/api/base44Client";
+import { createCompassTask, taskStreamSwitch } from "@/lib/compassTasks";
 
 const STREAMS = [
   { value: "direct_to_employment", label: "Direct to Employment (DEA)" },
@@ -56,7 +58,42 @@ export default function ClientStreamSwitches({ client, onSave }) {
     const newSwitch = { ...form };
     if (form.reason !== "other") newSwitch.reason_other = "";
     const updated = [...switches, newSwitch];
+
+    // Save stream switch + update service_type
     await onSave({ program_stream_switches: updated, service_type: form.to_stream });
+
+    // Auto-log to StatusChange history
+    try {
+      let me = null;
+      try { me = await base44.auth.me(); } catch (_) {}
+      await base44.entities.StatusChange.create({
+        client_id: client.id,
+        client_name: `${client.first_name} ${client.last_name}`,
+        change_type: "stream_switch",
+        change_date: form.date,
+        from_value: STREAM_LABEL[form.from_stream] || form.from_stream,
+        to_value: STREAM_LABEL[form.to_stream] || form.to_stream,
+        notes: [
+          SWITCH_REASONS.find(r => r.value === form.reason)?.label || form.reason,
+          form.reason === "other" && form.reason_other ? form.reason_other : "",
+          form.notes,
+        ].filter(Boolean).join(" — "),
+        logged_by: me?.email || "",
+        logged_by_name: me?.full_name || me?.email || "",
+        billing_relevant: true,
+      });
+    } catch (_) {}
+
+    // Create Compass task
+    const t = taskStreamSwitch(client, form.from_stream, form.to_stream,
+      form.reason === "other" ? (form.reason_other || "Other") : (SWITCH_REASONS.find(r => r.value === form.reason)?.label || form.reason));
+    await createCompassTask({
+      client_id: client.id,
+      client_name: `${client.first_name} ${client.last_name}`,
+      compass_hsid: client.compass_hsid,
+      ...t,
+    });
+
     setAdding(false);
     setForm(emptySwitch());
     setSaving(false);

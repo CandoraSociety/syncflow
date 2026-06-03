@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, ShieldCheck } from "lucide-react";
+import { Save, ShieldCheck, ArrowRight, AlertTriangle } from "lucide-react";
 import { createCompassTask, taskServiceTypeChange, taskStatusChange } from "@/lib/compassTasks";
 
 const RESIDENCY_STATUSES = [
@@ -135,6 +135,37 @@ export default function ClientProfileOverview({ client, onSave }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Stream switch alert */}
+      {(client.program_stream_switches?.length > 0) && (
+        <div className="bg-purple-50 border-2 border-purple-400 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-purple-600 shrink-0" />
+            <span className="text-sm font-bold text-purple-800">
+              Program Stream Switch{client.program_stream_switches.length > 1 ? "es" : ""} on File
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {client.program_stream_switches.map((sw, i) => (
+              <div key={i} className="flex items-center gap-2 flex-wrap text-sm">
+                {sw.date && <span className="text-xs text-purple-500 font-medium">{sw.date}</span>}
+                <span className="bg-red-100 text-red-700 border border-red-200 px-2.5 py-0.5 rounded-lg text-xs font-medium">
+                  {SERVICE_TYPES.find(s => s.value === sw.from_stream)?.label || sw.from_stream || "Unknown"}
+                </span>
+                <ArrowRight className="w-4 h-4 text-purple-400 shrink-0" />
+                <span className="bg-purple-100 text-purple-800 border border-purple-300 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
+                  {SERVICE_TYPES.find(s => s.value === sw.to_stream)?.label || sw.to_stream || "Unknown"}
+                </span>
+                {sw.reason && (
+                  <span className="text-xs text-purple-500 italic">
+                    — {sw.reason === "other" && sw.reason_other ? sw.reason_other : sw.reason.replace(/_/g, " ")}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader><CardTitle className="text-base">Case Info</CardTitle></CardHeader>

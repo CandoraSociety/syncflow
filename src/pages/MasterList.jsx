@@ -143,9 +143,19 @@ export default function MasterList() {
                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{SERVICE_LABELS[c.service_type] || "—"}</td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       {c.program_stream_switches?.length > 0 ? (
-                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                          {c.program_stream_switches.length} switch{c.program_stream_switches.length > 1 ? "es" : ""}
-                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          {c.program_stream_switches.map((sw, i) => (
+                            <div key={i} className="flex items-center gap-1">
+                              <span className="text-xs bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                                {SERVICE_LABELS[sw.from_stream] || sw.from_stream || "?"}
+                              </span>
+                              <span className="text-slate-400 text-xs">→</span>
+                              <span className="text-xs bg-purple-100 text-purple-800 border border-purple-300 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap">
+                                {SERVICE_LABELS[sw.to_stream] || sw.to_stream || "?"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       ) : "—"}
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
