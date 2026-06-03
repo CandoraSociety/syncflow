@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, parseISO, isValid, differenceInDays, addDays, min, max } from "date-fns";
-import { AlertTriangle, Calendar, CalendarDays, Save } from "lucide-react";
+import { AlertTriangle, Calendar, CalendarDays, Save, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -45,100 +45,12 @@ const BAR_COLORS_LIGHT = [
   "bg-fuchsia-100 border-fuchsia-400 text-fuchsia-800",
 ];
 
-// Special color for barrier items
 const BARRIER_COLOR = "bg-amber-100 border-amber-400 text-amber-800";
 
 function parseDate(dateStr) {
   if (!dateStr) return null;
   const d = parseISO(dateStr);
   return isValid(d) ? d : null;
-}
-
-function getBarriers(client) {
-  const barriers = [];
-  for (let n = 1; n <= 3; n++) {
-    const type = client?.[`barrier_${n}`];
-    if (!type) continue;
-    const label = type === "Other" ? (client[`barrier_${n}_other`] || "Other") : type;
-    barriers.push({
-      n,
-      label,
-      status: client[`barrier_${n}_status`] || "unresolved",
-      notes: client[`barrier_${n}_notes`] || "",
-      action_steps: client[`barrier_${n}_action_steps`] || "",
-      timeline_start: client[`barrier_${n}_timeline_start`] || "",
-      timeline_end: client[`barrier_${n}_timeline_end`] || "",
-      responsible: client[`barrier_${n}_responsible`] || "",
-      resources: client[`barrier_${n}_resources`] || "",
-    });
-  }
-  return barriers;
-}
-
-// Build a flat list of renderable rows — barriers expanded individually
-function buildRows(selectedItems, itemDetails, otherDesc, client, barriers) {
-  const rows = [];
-  let colorIdx = 0;
-
-  selectedItems.forEach(key => {
-    if (key === "barrier_support") {
-      // Expand each barrier as its own row
-      barriers.forEach(b => {
-        rows.push({
-          id: `barrier_${b.n}`,
-          key: "barrier_support",
-          barrierN: b.n,
-          label: b.label,
-          detail: b,
-          start: parseDate(b.timeline_start),
-          end: parseDate(b.timeline_end),
-          colorClass: BARRIER_COLOR,
-          isBarrier: true,
-        });
-        colorIdx++;
-      });
-      // If no barriers defined yet, show a placeholder row
-      if (barriers.length === 0) {
-        rows.push({
-          id: "barrier_support",
-          key: "barrier_support",
-          barrierN: null,
-          label: "Address Barriers",
-          detail: {},
-          start: null,
-          end: null,
-          colorClass: BARRIER_COLOR,
-          isBarrier: true,
-        });
-      }
-    } else {
-      const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
-      const detail = itemDetails?.[key] || {};
-      const label = key === "other" ? (otherDesc || "Other") : opt?.label || key;
-      let start = null, end = null;
-      if (key === "internal_placement") {
-        start = parseDate(client?.placement_start_date);
-        end = parseDate(client?.placement_end_date);
-      } else {
-        start = parseDate(detail?.timeline_start);
-        end = parseDate(detail?.timeline_end);
-      }
-      rows.push({
-        id: key,
-        key,
-        barrierN: null,
-        label,
-        detail,
-        start,
-        end,
-        colorClass: BAR_COLORS_LIGHT[colorIdx % BAR_COLORS_LIGHT.length],
-        isBarrier: false,
-      });
-      colorIdx++;
-    }
-  });
-
-  return rows;
 }
 
 function getBarStyle(item, timelineStart, totalDays) {
@@ -152,18 +64,15 @@ function getBarStyle(item, timelineStart, totalDays) {
   return { left: `${left}%`, width: `${Math.min(width, 100 - left)}%` };
 }
 
-// Inline date editor for a row — calls back with updated dates
-function DateEditor({ item, onSaveDates, onCancel }) {
-  const [start, setStart] = useState(
-    item.isBarrier ? (item.detail.timeline_start || "") : (item.detail.timeline_start || "")
-  );
-  const [end, setEnd] = useState(
-    item.isBarrier ? (item.detail.timeline_end || "") : (item.detail.timeline_end || "")
-  );
+function DateEditor({ item, onSaveDates, onCancel, saving }) {
+  const [start, setStart] = useState(item.detail?.timeline_start || "");
+  const [end, setEnd] = useState(item.detail?.timeline_end || "");
 
   return (
-    <div className="mt-1 mb-2 mx-0 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-      <p className="text-xs font-semibold text-slate-600 mb-3">Set dates for: <span className="text-slate-800">{item.label}</span></p>
+    <div className="mt-1 mb-2 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <p className="text-xs font-semibold text-slate-600 mb-3">
+        Set dates for: <span className="text-slate-800">{item.label}</span>
+      </p>
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div className="space-y-1">
           <Label className="text-xs">Start Date</Label>
@@ -174,7 +83,6 @@ function DateEditor({ item, onSaveDates, onCancel }) {
           <Input type="date" value={end} onChange={e => setEnd(e.target.value)} />
         </div>
       </div>
-      {/* Details for barrier rows */}
       {item.isBarrier && item.detail && (
         <div className="space-y-1.5 pt-2 border-t border-slate-100 mt-2 text-xs text-slate-600">
           <div className="flex items-center gap-2">
@@ -188,26 +96,161 @@ function DateEditor({ item, onSaveDates, onCancel }) {
           {item.detail.notes && <p><span className="font-medium">Notes:</span> {item.detail.notes}</p>}
         </div>
       )}
-      {/* Details for non-barrier rows */}
-      {!item.isBarrier && (item.detail.goal || item.detail.notes) && (
+      {!item.isBarrier && (item.detail?.goal || item.detail?.notes) && (
         <div className="space-y-1.5 pt-2 border-t border-slate-100 mt-2 text-xs text-slate-600">
           {item.detail.goal && <p><span className="font-medium">Goal:</span> {item.detail.goal}</p>}
           {item.detail.notes && <p><span className="font-medium">Notes:</span> {item.detail.notes}</p>}
         </div>
       )}
       <div className="flex gap-2 mt-3">
-        <Button size="sm" onClick={() => onSaveDates(start, end)} className="gap-1.5">
-          <Save className="w-3.5 h-3.5" /> Save Dates
+        <Button size="sm" onClick={() => onSaveDates(start, end)} disabled={saving} className="gap-1.5">
+          <Save className="w-3.5 h-3.5" /> {saving ? "Saving…" : "Save Dates"}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel} disabled={saving}>Cancel</Button>
       </div>
     </div>
   );
 }
 
 export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail }) {
-  const [activeItem, setActiveItem] = useState(null);
-  const [editingDates, setEditingDates] = useState(null); // row id being date-edited
+  const [editingDates, setEditingDates] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // Local state to track dates and completions so UI updates immediately after save
+  const [localItemDetails, setLocalItemDetails] = useState(itemDetails || {});
+  const [localBarrierDates, setLocalBarrierDates] = useState({});
+  const [completed, setCompleted] = useState({}); // { rowId: true/false }
+
+  // Sync when parent itemDetails changes (e.g. on first load)
+  useEffect(() => {
+    setLocalItemDetails(itemDetails || {});
+  }, [JSON.stringify(itemDetails)]);
+
+  // Build barriers from client + localBarrierDates overrides
+  function getBarriers() {
+    const barriers = [];
+    for (let n = 1; n <= 3; n++) {
+      const type = client?.[`barrier_${n}`];
+      if (!type) continue;
+      const label = type === "Other" ? (client[`barrier_${n}_other`] || "Other") : type;
+      const localDates = localBarrierDates[n] || {};
+      barriers.push({
+        n,
+        label,
+        status: client[`barrier_${n}_status`] || "unresolved",
+        notes: client[`barrier_${n}_notes`] || "",
+        action_steps: client[`barrier_${n}_action_steps`] || "",
+        timeline_start: localDates.timeline_start ?? (client[`barrier_${n}_timeline_start`] || ""),
+        timeline_end: localDates.timeline_end ?? (client[`barrier_${n}_timeline_end`] || ""),
+        responsible: client[`barrier_${n}_responsible`] || "",
+        resources: client[`barrier_${n}_resources`] || "",
+      });
+    }
+    return barriers;
+  }
+
+  function buildRows() {
+    const rows = [];
+    let colorIdx = 0;
+    const barriers = getBarriers();
+
+    selectedItems.forEach(key => {
+      if (key === "barrier_support") {
+        barriers.forEach(b => {
+          rows.push({
+            id: `barrier_${b.n}`,
+            key: "barrier_support",
+            barrierN: b.n,
+            label: b.label,
+            detail: b,
+            start: parseDate(b.timeline_start),
+            end: parseDate(b.timeline_end),
+            colorClass: BARRIER_COLOR,
+            isBarrier: true,
+          });
+          colorIdx++;
+        });
+        if (barriers.length === 0) {
+          rows.push({
+            id: "barrier_support",
+            key: "barrier_support",
+            barrierN: null,
+            label: "Address Barriers",
+            detail: {},
+            start: null,
+            end: null,
+            colorClass: BARRIER_COLOR,
+            isBarrier: true,
+          });
+        }
+      } else {
+        const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
+        const detail = localItemDetails?.[key] || {};
+        const label = key === "other" ? (otherDesc || "Other") : opt?.label || key;
+        let start = null, end = null;
+        if (key === "internal_placement") {
+          start = parseDate(client?.placement_start_date);
+          end = parseDate(client?.placement_end_date);
+        } else {
+          start = parseDate(detail?.timeline_start);
+          end = parseDate(detail?.timeline_end);
+        }
+        rows.push({
+          id: key,
+          key,
+          barrierN: null,
+          label,
+          detail,
+          start,
+          end,
+          colorClass: BAR_COLORS_LIGHT[colorIdx % BAR_COLORS_LIGHT.length],
+          isBarrier: false,
+        });
+        colorIdx++;
+      }
+    });
+
+    return rows;
+  }
+
+  async function handleSaveDates(row, startVal, endVal) {
+    setSaving(true);
+    try {
+      if (row.isBarrier && row.barrierN) {
+        await base44.entities.Client.update(client.id, {
+          [`barrier_${row.barrierN}_timeline_start`]: startVal || null,
+          [`barrier_${row.barrierN}_timeline_end`]: endVal || null,
+        });
+        // Update local barrier dates immediately
+        setLocalBarrierDates(prev => ({
+          ...prev,
+          [row.barrierN]: { timeline_start: startVal || "", timeline_end: endVal || "" },
+        }));
+      } else {
+        const updatedDetails = {
+          ...localItemDetails,
+          [row.key]: {
+            ...(localItemDetails?.[row.key] || {}),
+            timeline_start: startVal || undefined,
+            timeline_end: endVal || undefined,
+          },
+        };
+        await base44.entities.Client.update(client.id, { sdp_item_details: updatedDetails });
+        // Update local item details immediately
+        setLocalItemDetails(updatedDetails);
+        onUpdateDetail?.(row.key, "timeline_start", startVal);
+        onUpdateDetail?.(row.key, "timeline_end", endVal);
+      }
+      setEditingDates(null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleComplete(rowId) {
+    const isNowComplete = !completed[rowId];
+    setCompleted(prev => ({ ...prev, [rowId]: isNowComplete }));
+  }
 
   if (!selectedItems || selectedItems.length === 0) {
     return (
@@ -217,13 +260,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     );
   }
 
-  const barriers = getBarriers(client);
-  const rows = buildRows(selectedItems, itemDetails, otherDesc, client, barriers);
-
+  const rows = buildRows();
   const rowsWithDates = rows.filter(r => r.start || r.end);
   const rowsWithoutDates = rows.filter(r => !r.start && !r.end);
 
-  // Compute timeline bounds
   const allStarts = rowsWithDates.map(r => r.start).filter(Boolean);
   const allEnds = rowsWithDates.map(r => r.end || r.start).filter(Boolean);
   const timelineStart = allStarts.length > 0 ? min(allStarts) : null;
@@ -245,39 +285,15 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
   const monthMarkers = getMonthMarkers();
 
-  // Save dates for a row — barriers update client barrier fields, others update itemDetails
-  async function handleSaveDates(row, startVal, endVal) {
-    if (row.isBarrier && row.barrierN) {
-      // Update the barrier timeline fields directly on the client entity
-      await base44.entities.Client.update(client.id, {
-        [`barrier_${row.barrierN}_timeline_start`]: startVal || null,
-        [`barrier_${row.barrierN}_timeline_end`]: endVal || null,
-      });
-    } else {
-      // Update itemDetails for action plan item
-      const updatedDetails = {
-        ...itemDetails,
-        [row.key]: {
-          ...(itemDetails?.[row.key] || {}),
-          timeline_start: startVal || undefined,
-          timeline_end: endVal || undefined,
-        },
-      };
-      await base44.entities.Client.update(client.id, { sdp_item_details: updatedDetails });
-      onUpdateDetail?.(row.key, "timeline_start", startVal);
-      onUpdateDetail?.(row.key, "timeline_end", endVal);
-    }
-    setEditingDates(null);
-  }
-
   function GanttRow({ row }) {
     const barStyle = getBarStyle(row, timelineStart, totalDays);
     const isEditing = editingDates === row.id;
+    const isDone = completed[row.id];
 
     return (
-      <div key={row.id}>
+      <div>
         <div className="flex items-center gap-2">
-          {/* Label */}
+          {/* Label + complete toggle */}
           <div className="w-36 shrink-0 text-right pr-2 flex items-center justify-end gap-1">
             {row.isBarrier && <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />}
             <span className="text-xs text-slate-600 font-medium leading-tight line-clamp-2">{row.label}</span>
@@ -286,17 +302,30 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           <div className="flex-1 relative h-8 bg-slate-50 rounded-md border border-slate-100">
             <button
               onClick={() => setEditingDates(isEditing ? null : row.id)}
-              className={`absolute h-full rounded-md border flex items-center px-2 transition-all shadow-sm hover:opacity-90 ${row.colorClass} ${isEditing ? "ring-2 ring-offset-1 ring-slate-400" : ""}`}
+              className={`absolute h-full rounded-md border-2 flex items-center gap-1.5 px-2 transition-all shadow-sm hover:opacity-90
+                ${isDone ? "bg-green-100 border-green-500 text-green-800" : row.colorClass}
+                ${isEditing ? "ring-2 ring-offset-1 ring-slate-400" : ""}
+              `}
               style={barStyle}
               title={row.label}
             >
+              {isDone && <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-green-600" />}
               <span className="text-xs font-medium truncate">{row.label}</span>
             </button>
           </div>
-          {/* Date range */}
-          <div className="w-28 shrink-0 text-xs text-slate-400">
-            {row.start && <span>{format(row.start, "MMM d")}</span>}
-            {row.end && <span> – {format(row.end, "MMM d")}</span>}
+          {/* Date range + complete button */}
+          <div className="w-40 shrink-0 flex items-center gap-2">
+            <div className="text-xs text-slate-400 flex-1">
+              {row.start && <span>{format(row.start, "MMM d")}</span>}
+              {row.end && <span> – {format(row.end, "MMM d")}</span>}
+            </div>
+            <button
+              onClick={() => handleToggleComplete(row.id)}
+              title={isDone ? "Mark incomplete" : "Mark complete"}
+              className={`shrink-0 rounded-full p-0.5 transition-colors ${isDone ? "text-green-600 hover:text-slate-400" : "text-slate-300 hover:text-green-500"}`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
         {isEditing && (
@@ -304,6 +333,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
             item={row}
             onSaveDates={(s, e) => handleSaveDates(row, s, e)}
             onCancel={() => setEditingDates(null)}
+            saving={saving}
           />
         )}
       </div>
@@ -312,21 +342,37 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
   function UndatedCard({ row }) {
     const isEditing = editingDates === row.id;
+    const isDone = completed[row.id];
+
     return (
-      <div key={row.id}>
-        <button
-          onClick={() => setEditingDates(isEditing ? null : row.id)}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all hover:shadow-sm ${row.colorClass} ${isEditing ? "ring-2 ring-offset-1 ring-slate-400" : ""}`}
-        >
-          {row.isBarrier && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
-          <span className="text-sm font-medium truncate">{row.label}</span>
-          <CalendarDays className="w-3.5 h-3.5 ml-auto shrink-0 opacity-60" />
-        </button>
+      <div>
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-left transition-all
+          ${isDone ? "bg-green-50 border-green-400 text-green-800" : row.colorClass}
+          ${isEditing ? "ring-2 ring-offset-1 ring-slate-400" : ""}
+        `}>
+          <button
+            className="flex-1 flex items-center gap-2 text-left"
+            onClick={() => setEditingDates(isEditing ? null : row.id)}
+          >
+            {row.isBarrier && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+            {isDone && <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-green-600" />}
+            <span className="text-sm font-medium truncate">{row.label}</span>
+            <CalendarDays className="w-3.5 h-3.5 ml-auto shrink-0 opacity-60" />
+          </button>
+          <button
+            onClick={() => handleToggleComplete(row.id)}
+            title={isDone ? "Mark incomplete" : "Mark complete"}
+            className={`shrink-0 rounded-full p-0.5 transition-colors ${isDone ? "text-green-600 hover:text-slate-400" : "text-slate-400 hover:text-green-500"}`}
+          >
+            <CheckCircle2 className="w-4 h-4" />
+          </button>
+        </div>
         {isEditing && (
           <DateEditor
             item={row}
             onSaveDates={(s, e) => handleSaveDates(row, s, e)}
             onCancel={() => setEditingDates(null)}
+            saving={saving}
           />
         )}
       </div>
@@ -337,14 +383,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-6">
       <div>
         <h3 className="text-sm font-semibold text-slate-700">Action Plan Timeline</h3>
-        <p className="text-xs text-slate-400 mt-0.5">Each barrier is shown individually. Click any bar or card to set/edit dates.</p>
+        <p className="text-xs text-slate-400 mt-0.5">Click any bar or card to set/edit dates. Click the checkmark to mark items complete.</p>
       </div>
 
       {/* Gantt chart */}
       {rowsWithDates.length > 0 && (
         <div className="overflow-x-auto">
           <div className="min-w-[500px]">
-            {/* Month header */}
             <div className="relative h-6 mb-3 ml-36 border-b border-slate-200">
               {monthMarkers.map((m, i) => (
                 <div key={i} className="absolute top-0 flex flex-col items-start" style={{ left: `${m.pct}%` }}>
