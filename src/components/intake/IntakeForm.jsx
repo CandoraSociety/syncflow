@@ -62,6 +62,15 @@ const EMPLOYMENT_STATUSES = [
   { value: "underemployed", label: "Underemployed" },
 ];
 
+const CAREER_PRESETS = [
+  "Administrative / Clerical", "Agriculture / Farming", "Automotive / Trades",
+  "Childcare / Early Education", "Construction / Labourer", "Customer Service / Retail",
+  "Driving / Transportation", "Food Service / Hospitality", "Healthcare / Personal Support",
+  "Housekeeping / Cleaning", "IT / Technology", "Landscaping / Grounds",
+  "Manufacturing / Warehouse", "Oil & Gas / Energy", "Security / Safety",
+  "Social Services / Nonprofit", "Skilled Trades / Apprenticeship", "Teaching / Tutoring",
+];
+
 const VEHICLE_OPTIONS = [
   { value: "yes", label: "Yes" },
   { value: "no_has_license", label: "No (has driver's license)" },
@@ -327,6 +336,21 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
               rows={4}
               placeholder="Summarize relevant work history, education, certifications..."
             />
+            <div className="mt-2">
+              <p className="text-xs text-slate-500 mb-1.5">Quick add career type:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {CAREER_PRESETS.map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => set("employment_history", form.employment_history ? `${form.employment_history}\n${preset}` : preset)}
+                    className="text-xs px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400 transition-colors"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="space-y-1 md:col-span-2">
             <Label>Resumes & Documents</Label>
