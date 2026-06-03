@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CheckCircle2, Circle, AlertTriangle } from "lucide-react";
-import { format, parseISO, isValid } from "date-fns";
+import { format, parseISO, isValid, differenceInDays, addDays, min, max } from "date-fns";
+import { AlertTriangle, Calendar, Info } from "lucide-react";
 
 const ACTION_PLAN_OPTIONS = [
   { key: "job_search_workshop", label: "Job Search Workshop" },
@@ -28,18 +28,44 @@ const BARRIER_STATUS_COLORS = {
   resolved: "bg-green-100 text-green-700",
 };
 
+// Color palette for timeline bars
+const BAR_COLORS = [
+  "bg-blue-500",
+  "bg-purple-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-cyan-500",
+  "bg-indigo-500",
+  "bg-orange-500",
+  "bg-teal-500",
+  "bg-fuchsia-500",
+];
+
+const BAR_COLORS_LIGHT = [
+  "bg-blue-100 border-blue-400 text-blue-800",
+  "bg-purple-100 border-purple-400 text-purple-800",
+  "bg-emerald-100 border-emerald-400 text-emerald-800",
+  "bg-amber-100 border-amber-400 text-amber-800",
+  "bg-rose-100 border-rose-400 text-rose-800",
+  "bg-cyan-100 border-cyan-400 text-cyan-800",
+  "bg-indigo-100 border-indigo-400 text-indigo-800",
+  "bg-orange-100 border-orange-400 text-orange-800",
+  "bg-teal-100 border-teal-400 text-teal-800",
+  "bg-fuchsia-100 border-fuchsia-400 text-fuchsia-800",
+];
+
 function parseDate(dateStr) {
   if (!dateStr) return null;
   const d = parseISO(dateStr);
   return isValid(d) ? d : null;
 }
 
-function formatDateShort(dateStr) {
+function formatShort(dateStr) {
   const d = parseDate(dateStr);
-  return d ? format(d, "MMM d, yyyy") : dateStr;
+  return d ? format(d, "MMM d") : "";
 }
 
-// Build enriched barrier data from client fields
 function getBarriers(client) {
   const barriers = [];
   for (let n = 1; n <= 3; n++) {
@@ -61,15 +87,24 @@ function getBarriers(client) {
   return barriers;
 }
 
-// Get earliest start date for an item (for sorting)
-function getItemStartDate(key, detail, client, barriers) {
+function getItemDates(key, detail, client, barriers) {
   if (key === "barrier_support") {
-    const dates = barriers.map(b => parseDate(b.timeline_start)).filter(Boolean);
-    if (dates.length > 0) return dates.reduce((a, b) => a < b ? a : b);
-    return null;
+    const starts = barriers.map(b => parseDate(b.timeline_start)).filter(Boolean);
+    const ends = barriers.map(b => parseDate(b.timeline_end)).filter(Boolean);
+    const start = starts.length > 0 ? min(starts) : null;
+    const end = ends.length > 0 ? max(ends) : null;
+    return { start, end };
   }
-  if (key === "internal_placement") return parseDate(client?.placement_start_date);
-  return parseDate(detail?.timeline_start) || null;
+  if (key === "internal_placement") {
+    return {
+      start: parseDate(client?.placement_start_date),
+      end: parseDate(client?.placement_end_date),
+    };
+  }
+  return {
+    start: parseDate(detail?.timeline_start),
+    end: parseDate(detail?.timeline_end),
+  };
 }
 
 export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc }) {
@@ -85,138 +120,193 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
   const barriers = getBarriers(client);
 
-  // Build enriched item list with sort dates
-  const enrichedItems = selectedItems.map(key => ({
-    key,
-    sortDate: getItemStartDate(key, itemDetails?.[key] || {}, client, barriers),
-  }));
+  // Build items with date info
+  const items = selectedItems.map((key, i) => {
+    const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
+    const detail = itemDetails?.[key] || {};
+    const label = key === "other" ? (otherDesc || "Other") : opt?.label || key;
+    const { start, end } = getItemDates(key, detail, client, barriers);
+    return { key, label, detail, start, end, colorIdx: i % BAR_COLORS.length };
+  });
 
-  // Sort: items with dates first (ascending), then items without dates in original order
-  const withDates = enrichedItems.filter(i => i.sortDate).sort((a, b) => a.sortDate - b.sortDate);
-  const withoutDates = enrichedItems.filter(i => !i.sortDate);
-  const sortedItems = [...withDates, ...withoutDates];
+  const itemsWithDates = items.filter(i => i.start || i.end);
+  const itemsWithoutDates = items.filter(i => !i.start && !i.end);
+
+  // Compute timeline bounds
+  const allStarts = itemsWithDates.map(i => i.start).filter(Boolean);
+  const allEnds = itemsWithDates.map(i => i.end || i.start).filter(Boolean);
+  const timelineStart = allStarts.length > 0 ? min(allStarts) : null;
+  const timelineEnd = allEnds.length > 0 ? max(allEnds) : null;
+  const totalDays = timelineStart && timelineEnd ? Math.max(differenceInDays(timelineEnd, timelineStart), 1) : 1;
+
+  // Generate month markers for the header
+  function getMonthMarkers() {
+    if (!timelineStart || !timelineEnd) return [];
+    const markers = [];
+    let current = new Date(timelineStart.getFullYear(), timelineStart.getMonth(), 1);
+    while (current <= timelineEnd) {
+      const offsetDays = differenceInDays(current, timelineStart);
+      const pct = Math.max(0, (offsetDays / totalDays) * 100);
+      markers.push({ label: format(current, "MMM yyyy"), pct });
+      current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+    }
+    return markers;
+  }
+
+  const monthMarkers = getMonthMarkers();
+
+  function getBarStyle(item) {
+    const start = item.start || timelineStart;
+    const end = item.end || (item.start ? addDays(item.start, 7) : timelineEnd);
+    if (!start || !timelineStart) return { left: "0%", width: "100%" };
+    const leftDays = differenceInDays(start, timelineStart);
+    const widthDays = Math.max(differenceInDays(end, start), 1);
+    const left = (leftDays / totalDays) * 100;
+    const width = Math.max((widthDays / totalDays) * 100, 2);
+    return { left: `${left}%`, width: `${Math.min(width, 100 - left)}%` };
+  }
+
+  const DetailPanel = ({ item }) => {
+    const isBarrierSupport = item.key === "barrier_support";
+    return (
+      <div className="mt-2 mb-3 mx-2 bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+        {isBarrierSupport && barriers.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Barriers to Address</p>
+            {barriers.map(b => (
+              <div key={b.n} className="border border-slate-200 rounded-lg p-3 bg-slate-50 space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-slate-800 text-sm">{b.label}</span>
+                  {b.status && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BARRIER_STATUS_COLORS[b.status] || "bg-slate-100 text-slate-600"}`}>
+                      {b.status.replace("_", " ")}
+                    </span>
+                  )}
+                </div>
+                {(b.timeline_start || b.timeline_end) && (
+                  <p className="text-xs text-slate-600">
+                    <span className="font-medium">Timeline:</span>{" "}
+                    {[b.timeline_start && formatShort(b.timeline_start), b.timeline_end && formatShort(b.timeline_end)].filter(Boolean).join(" – ")}
+                  </p>
+                )}
+                {b.action_steps && <p className="text-xs text-slate-600"><span className="font-medium">Action Steps:</span> {b.action_steps}</p>}
+                {b.responsible && <p className="text-xs text-slate-600"><span className="font-medium">Responsible:</span> {b.responsible}</p>}
+                {b.resources && <p className="text-xs text-slate-600"><span className="font-medium">Resources:</span> {b.resources}</p>}
+                {b.notes && <p className="text-xs text-slate-600"><span className="font-medium">Notes:</span> {b.notes}</p>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {item.detail.goal && <p className="text-sm text-slate-700"><span className="font-medium">Goal:</span> {item.detail.goal}</p>}
+            {(item.start || item.end) && (
+              <p className="text-sm text-slate-700">
+                <span className="font-medium">Timeline:</span>{" "}
+                {[item.start && format(item.start, "MMM d, yyyy"), item.end && format(item.end, "MMM d, yyyy")].filter(Boolean).join(" – ")}
+              </p>
+            )}
+            {item.detail.notes && <p className="text-sm text-slate-700"><span className="font-medium">Notes:</span> {item.detail.notes}</p>}
+            {!item.detail.goal && !item.start && !item.end && !item.detail.notes && (
+              <p className="text-xs text-slate-400 italic">No additional details recorded for this item.</p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6">
-      <h3 className="text-sm font-semibold text-slate-700 mb-1">Action Plan Roadmap</h3>
-      <p className="text-xs text-slate-400 mb-4">Items with dates are sorted chronologically. Click any item for details.</p>
-      <div className="relative">
-        {sortedItems.map(({ key }, i) => {
-          const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
-          const detail = itemDetails?.[key] || {};
-          const label = key === "other" ? (otherDesc || "Other") : opt?.label || key;
-          const isActive = activeItem === key;
-          const isBarrierSupport = key === "barrier_support";
-
-          // Display timeline string
-          let timelineDisplay = detail.timeline || "";
-          if (isBarrierSupport && barriers.length > 0) {
-            const allStarts = barriers.map(b => b.timeline_start).filter(Boolean);
-            const allEnds = barriers.map(b => b.timeline_end).filter(Boolean);
-            if (allStarts.length > 0 || allEnds.length > 0) {
-              const earliest = allStarts.length > 0 ? allStarts.reduce((a, b) => a < b ? a : b) : null;
-              const latest = allEnds.length > 0 ? allEnds.reduce((a, b) => a > b ? a : b) : null;
-              timelineDisplay = [earliest && formatDateShort(earliest), latest && formatDateShort(latest)].filter(Boolean).join(" – ");
-            }
-          }
-          if (key === "internal_placement" && client?.placement_start_date) {
-            timelineDisplay = [formatDateShort(client.placement_start_date), client.placement_end_date && formatDateShort(client.placement_end_date)].filter(Boolean).join(" – ");
-          }
-
-          const hasDetail = detail.goal || detail.timeline || detail.notes || isBarrierSupport;
-
-          return (
-            <div key={key}>
-              <button
-                onClick={() => setActiveItem(isActive ? null : key)}
-                className={`w-full flex gap-4 p-4 rounded-xl border transition-all text-left ${
-                  isActive ? "border-primary bg-primary/5" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
-                }`}
-              >
-                <div className={`flex-shrink-0 w-9 h-9 rounded-full border-2 flex items-center justify-center ${
-                  isActive ? "border-primary text-primary" :
-                  isBarrierSupport ? "border-amber-400 text-amber-600" :
-                  "border-slate-300 text-slate-400"
-                }`}>
-                  {isBarrierSupport
-                    ? <AlertTriangle className="w-4 h-4" />
-                    : <span className="text-xs font-bold">{i + 1}</span>
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-800 text-sm">{label}</div>
-                  {isBarrierSupport && barriers.length > 0 && !isActive && (
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      {barriers.map(b => b.label).join(", ")}
-                    </div>
-                  )}
-                  {timelineDisplay && !isActive && (
-                    <div className="text-xs text-slate-500 mt-0.5">Timeline: {timelineDisplay}</div>
-                  )}
-                </div>
-                <div className="shrink-0">
-                  {hasDetail ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Circle className="w-4 h-4 text-slate-300" />}
-                </div>
-              </button>
-
-              {isActive && (
-                <div className="ml-14 -mt-1 mb-1 bg-primary/5 border border-primary/20 border-t-0 rounded-b-xl px-4 py-3 space-y-3">
-                  {/* Barrier support: show each barrier */}
-                  {isBarrierSupport && barriers.length > 0 ? (
-                    <div className="space-y-3">
-                      {barriers.map(b => (
-                        <div key={b.n} className="border border-slate-200 rounded-lg p-3 bg-white space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-slate-800 text-sm">{b.label}</span>
-                            {b.status && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BARRIER_STATUS_COLORS[b.status] || "bg-slate-100 text-slate-600"}`}>
-                                {b.status.replace("_", " ")}
-                              </span>
-                            )}
-                          </div>
-                          {(b.timeline_start || b.timeline_end) && (
-                            <p className="text-xs text-slate-600">
-                              <span className="font-medium">Timeline:</span>{" "}
-                              {[b.timeline_start && formatDateShort(b.timeline_start), b.timeline_end && formatDateShort(b.timeline_end)].filter(Boolean).join(" – ")}
-                            </p>
-                          )}
-                          {b.action_steps && (
-                            <p className="text-xs text-slate-600"><span className="font-medium">Action Steps:</span> {b.action_steps}</p>
-                          )}
-                          {b.responsible && (
-                            <p className="text-xs text-slate-600"><span className="font-medium">Responsible:</span> {b.responsible}</p>
-                          )}
-                          {b.resources && (
-                            <p className="text-xs text-slate-600"><span className="font-medium">Resources:</span> {b.resources}</p>
-                          )}
-                          {b.notes && (
-                            <p className="text-xs text-slate-600"><span className="font-medium">Notes:</span> {b.notes}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <>
-                      {detail.goal && <p className="text-sm text-slate-700"><span className="font-medium">Goal:</span> {detail.goal}</p>}
-                      {timelineDisplay && <p className="text-sm text-slate-700"><span className="font-medium">Timeline:</span> {timelineDisplay}</p>}
-                      {detail.notes && <p className="text-sm text-slate-700"><span className="font-medium">Notes:</span> {detail.notes}</p>}
-                      {!detail.goal && !timelineDisplay && !detail.notes && (
-                        <p className="text-xs text-slate-400 italic">No additional details recorded for this item.</p>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {i < sortedItems.length - 1 && (
-                <div className="flex justify-start pl-5 my-0.5">
-                  <div className="w-0.5 h-4 bg-slate-200 ml-4" />
-                </div>
-              )}
-            </div>
-          );
-        })}
+    <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-6">
+      <div>
+        <h3 className="text-sm font-semibold text-slate-700">Action Plan Timeline</h3>
+        <p className="text-xs text-slate-400 mt-0.5">Overlapping items are shown on separate rows. Click any bar for details.</p>
       </div>
+
+      {/* Gantt chart section */}
+      {itemsWithDates.length > 0 && (
+        <div className="overflow-x-auto">
+          <div className="min-w-[500px]">
+            {/* Month header */}
+            <div className="relative h-6 mb-3 ml-36 border-b border-slate-200">
+              {monthMarkers.map((m, i) => (
+                <div key={i} className="absolute top-0 flex flex-col items-start" style={{ left: `${m.pct}%` }}>
+                  <span className="text-xs text-slate-400 whitespace-nowrap">{m.label}</span>
+                  <div className="w-px h-2 bg-slate-200 mt-0.5" />
+                </div>
+              ))}
+            </div>
+
+            {/* Rows */}
+            <div className="space-y-2">
+              {itemsWithDates.map((item) => {
+                const barStyle = getBarStyle(item);
+                const isActive = activeItem === item.key;
+                const isBarrier = item.key === "barrier_support";
+                const colorClass = BAR_COLORS_LIGHT[item.colorIdx];
+
+                return (
+                  <div key={item.key}>
+                    <div className="flex items-center gap-2">
+                      {/* Label */}
+                      <div className="w-36 shrink-0 text-right pr-2">
+                        <span className="text-xs text-slate-600 font-medium leading-tight line-clamp-2">{item.label}</span>
+                      </div>
+                      {/* Bar track */}
+                      <div className="flex-1 relative h-8 bg-slate-50 rounded-md border border-slate-100">
+                        <button
+                          onClick={() => setActiveItem(isActive ? null : item.key)}
+                          className={`absolute h-full rounded-md border flex items-center px-2 transition-all shadow-sm hover:opacity-90 ${colorClass} ${isActive ? "ring-2 ring-offset-1 ring-slate-400" : ""}`}
+                          style={barStyle}
+                          title={item.label}
+                        >
+                          {isBarrier && <AlertTriangle className="w-3 h-3 shrink-0 mr-1" />}
+                          <span className="text-xs font-medium truncate">{item.label}</span>
+                        </button>
+                      </div>
+                      {/* Date range label */}
+                      <div className="w-28 shrink-0 text-xs text-slate-400">
+                        {item.start && <span>{format(item.start, "MMM d")}</span>}
+                        {item.end && item.end !== item.start && <span> – {format(item.end, "MMM d")}</span>}
+                      </div>
+                    </div>
+                    {isActive && <DetailPanel item={item} />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Items without dates */}
+      {itemsWithoutDates.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Items Without Set Dates</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {itemsWithoutDates.map((item) => {
+              const isActive = activeItem === item.key;
+              const isBarrier = item.key === "barrier_support";
+              const colorClass = BAR_COLORS_LIGHT[item.colorIdx];
+              return (
+                <div key={item.key}>
+                  <button
+                    onClick={() => setActiveItem(isActive ? null : item.key)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all hover:shadow-sm ${colorClass} ${isActive ? "ring-2 ring-offset-1 ring-slate-400" : ""}`}
+                  >
+                    {isBarrier && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+                    <span className="text-sm font-medium truncate">{item.label}</span>
+                    <Info className="w-3.5 h-3.5 ml-auto shrink-0 opacity-50" />
+                  </button>
+                  {isActive && <DetailPanel item={item} />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
