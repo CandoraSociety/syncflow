@@ -30,6 +30,15 @@ const EMPTY_FILTERS = {
   followup_90day_status: "",
 };
 
+function programStatusLabel(c) {
+  if (c.program_status === "complete" && !c.followup_90day_status) return "Complete (Follow-Up Period)";
+  if (c.program_status === "in_progress") return "In Progress";
+  if (c.program_status === "complete") return "Complete";
+  if (c.program_status === "incomplete") return "Incomplete";
+  if (c.program_status === "cancelled") return "Cancelled";
+  return c.program_status?.replace("_", " ") || null;
+}
+
 const CLOSED_REASON_LABELS = {
   completed: "Completed", cancelled: "Cancelled", incomplete: "Incomplete",
   withdrew: "Withdrew", relocated: "Relocated", no_longer_eligible: "No Longer Eligible",
@@ -163,7 +172,7 @@ export default function MasterList() {
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       {c.program_status ? (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROGRAM_STATUS_COLORS[c.program_status] || "bg-slate-100 text-slate-600"}`}>
-                          {c.program_status.replace("_", " ")}
+                          {programStatusLabel(c)}
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
