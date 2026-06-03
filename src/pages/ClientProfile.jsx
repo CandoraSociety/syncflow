@@ -10,7 +10,7 @@ import ClientReferrals from "@/components/client/ClientReferrals";
 import ClientEmployment from "@/components/client/ClientEmployment";
 import ClientFinancials from "@/components/client/ClientFinancials";
 import ClientStreamSwitches from "@/components/client/ClientStreamSwitches";
-import ClientTraining from "@/components/client/ClientTraining";
+import ClientPlacements from "@/components/client/ClientPlacements";
 import ClientStatusHistory from "@/components/client/ClientStatusHistory";
 import StatusChangeDialog from "@/components/client/StatusChangeDialog";
 import { createCompassTask, taskFileClosed } from "@/lib/compassTasks";
@@ -141,7 +141,7 @@ export default function ClientProfile() {
             <TabsTrigger value="referrals">Referrals</TabsTrigger>
             <TabsTrigger value="employment">Employment</TabsTrigger>
             <TabsTrigger value="financials">Financials</TabsTrigger>
-            <TabsTrigger value="training">Training Log</TabsTrigger>
+            <TabsTrigger value="training">Placements</TabsTrigger>
             <TabsTrigger value="status_history">Status History</TabsTrigger>
             <TabsTrigger value="stream_switches" className="relative">
               Stream Switches
@@ -169,7 +169,7 @@ export default function ClientProfile() {
             <ClientFinancials clientId={id} clientName={`${client.first_name} ${client.last_name}`} />
           </TabsContent>
           <TabsContent value="training">
-            <ClientTraining client={client} />
+            <ClientPlacements client={client} />
           </TabsContent>
           <TabsContent value="status_history">
             <ClientStatusHistory key={statusHistoryKey} clientId={id} />

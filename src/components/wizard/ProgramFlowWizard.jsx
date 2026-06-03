@@ -11,7 +11,7 @@ const STEPS = [
   { key: "bit", label: "Barrier Identification", short: "BIT" },
   { key: "barrier_action_plan", label: "Barrier Resolution Plan", short: "Barrier Resolution" },
   { key: "employment_action_plan", label: "Employment Action Plan", short: "Emp. Action Plan" },
-  { key: "internal_placement", label: "Internal Placement", short: "Placement", pathwaysOnly: true },
+  { key: "internal_placement", label: "Placement", short: "Placement", pathwaysOnly: true },
   { key: "exposures", label: "Exposure Courses & Supports", short: "Supports" },
   { key: "roadmap", label: "Action Plan Roadmap", short: "Roadmap" },
 ];

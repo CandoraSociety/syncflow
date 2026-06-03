@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, ChevronRight, Mail, CheckCircle2, Clock, Pencil } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { base44 } from "@/api/base44Client";
 
 const INTERNAL_PLACEMENTS = [
@@ -28,6 +29,8 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
     placement_end_date: client?.placement_end_date || "",
     placement_supervisor: client?.placement_supervisor || "",
     placement_schedule: client?.placement_schedule || "",
+    paid_external_placement: client?.paid_external_placement || false,
+    external_employer: client?.external_employer || "",
   });
   const [saving, setSaving] = useState(false);
   const [emailSent, setEmailSent] = useState(client?.placement_request_sent || false);
@@ -69,8 +72,8 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Step 4 — Internal Placement</h2>
-          <p className="text-sm text-slate-500 mt-1">Set up and coordinate the client's internal placement (Pathways stream).</p>
+          <h2 className="text-lg font-bold text-slate-800">Step 4 — Placement</h2>
+          <p className="text-sm text-slate-500 mt-1">Set up internal and/or external placement details for this client.</p>
         </div>
         {submitted && !editing && (
           <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2">
@@ -105,12 +108,14 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
         <Card>
           <CardHeader><CardTitle className="text-base">Placement Details</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-700">
-            <div><span className="text-xs font-semibold text-slate-500 block">Placement Type</span>{placementLabel}</div>
+            <div><span className="text-xs font-semibold text-slate-500 block">Internal Placement Type</span>{placementLabel}</div>
             {form.placement_start_date && <div><span className="text-xs font-semibold text-slate-500 block">Start Date</span>{form.placement_start_date}</div>}
             {form.placement_end_date && <div><span className="text-xs font-semibold text-slate-500 block">End Date</span>{form.placement_end_date}</div>}
             {form.placement_supervisor && <div><span className="text-xs font-semibold text-slate-500 block">Supervisor</span>{form.placement_supervisor}</div>}
             {form.placement_schedule && <div><span className="text-xs font-semibold text-slate-500 block">Schedule</span>{form.placement_schedule}</div>}
             {form.internal_placement_details && <div className="col-span-2"><span className="text-xs font-semibold text-slate-500 block">Details / Goals</span>{form.internal_placement_details}</div>}
+            {form.external_employer && <div><span className="text-xs font-semibold text-slate-500 block">External Employer</span>{form.external_employer}</div>}
+            <div><span className="text-xs font-semibold text-slate-500 block">Paid External Placement</span>{form.paid_external_placement ? "Planned" : "Not planned"}</div>
           </CardContent>
         </Card>
       )}
@@ -155,6 +160,29 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
                     <Textarea rows={4} value={form.internal_placement_details} onChange={e => set("internal_placement_details", e.target.value)} placeholder="Job description, skills to develop, goals, any special considerations..." />
                   </div>
                 </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">External Placement</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <Label>External Employer Name</Label>
+                <Input
+                  value={form.external_employer}
+                  onChange={e => set("external_employer", e.target.value)}
+                  placeholder="Employer name..."
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch checked={form.paid_external_placement} onCheckedChange={v => set("paid_external_placement", v)} />
+                <Label>Paid external placement planned</Label>
+              </div>
+              {form.paid_external_placement && (
+                <p className="text-xs text-slate-500 italic bg-slate-50 border border-slate-200 rounded px-3 py-2">
+                  Financial details for this placement can be recorded in the <strong>Financials</strong> section once confirmed.
+                </p>
               )}
             </CardContent>
           </Card>
