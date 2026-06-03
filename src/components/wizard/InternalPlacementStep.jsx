@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, ChevronRight, Mail, CheckCircle2, Clock } from "lucide-react";
+import { Save, ChevronRight, Mail, CheckCircle2, Clock, Pencil } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const INTERNAL_PLACEMENTS = [
@@ -17,6 +17,10 @@ const INTERNAL_PLACEMENTS = [
 ];
 
 export default function InternalPlacementStep({ client, onSave, onComplete }) {
+  const isCompleted = !!client?.placement_request_sent;
+
+  const [submitted, setSubmitted] = useState(isCompleted);
+  const [editing, setEditing] = useState(!isCompleted);
   const [form, setForm] = useState({
     internal_placement: client?.internal_placement || "",
     internal_placement_details: client?.internal_placement_details || "",
@@ -28,7 +32,6 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
   const [saving, setSaving] = useState(false);
   const [emailSent, setEmailSent] = useState(client?.placement_request_sent || false);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [prevPlacement, setPrevPlacement] = useState(client?.internal_placement || "");
 
   const set = (field, val) => setForm(prev => ({ ...prev, [field]: val }));
 
@@ -36,6 +39,8 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
     setSaving(true);
     await onSave({ ...form, placement_request_sent: emailSent });
     setSaving(false);
+    setSubmitted(true);
+    setEditing(false);
     if (andContinue) onComplete?.();
   };
 
@@ -54,23 +59,29 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
     await onSave({ placement_request_sent: true });
     setEmailSent(true);
     setSendingEmail(false);
+    setSubmitted(true);
+    setEditing(false);
   };
 
-  const placementLabel = INTERNAL_PLACEMENTS.find(p => p.value === form.internal_placement)?.label || "";
+  const placementLabel = INTERNAL_PLACEMENTS.find(p => p.value === form.internal_placement)?.label || form.internal_placement || "—";
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-slate-800">Step 4 — Internal Placement</h2>
-        <p className="text-sm text-slate-500 mt-1">Set up and coordinate the client's internal placement (Pathways stream).</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800">Step 4 — Internal Placement</h2>
+          <p className="text-sm text-slate-500 mt-1">Set up and coordinate the client's internal placement (Pathways stream).</p>
+        </div>
+        {submitted && !editing && (
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2">
+            <Pencil className="w-4 h-4" /> Edit
+          </Button>
+        )}
       </div>
 
       {/* Placement request status — always visible */}
       <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${emailSent ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}`}>
-        {emailSent
-          ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-          : <Clock className="w-5 h-5 text-amber-500 shrink-0" />
-        }
+        {emailSent ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" /> : <Clock className="w-5 h-5 text-amber-500 shrink-0" />}
         <div className="flex-1">
           <p className={`text-sm font-semibold ${emailSent ? "text-green-700" : "text-amber-700"}`}>
             {emailSent ? "Placement Request Sent" : "Placement Request Not Yet Sent"}
@@ -78,11 +89,10 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
           <p className={`text-xs ${emailSent ? "text-green-600" : "text-amber-600"}`}>
             {emailSent
               ? "The relevant supervisor has been notified of this placement request."
-              : "Save placement details below, then click 'Send Placement Request' to notify the supervisor."
-            }
+              : "Save placement details below, then click 'Send Placement Request' to notify the supervisor."}
           </p>
         </div>
-        {!emailSent && form.internal_placement && (
+        {!emailSent && form.internal_placement && editing && (
           <Button size="sm" onClick={handleSendRequest} disabled={sendingEmail} className="gap-2 bg-amber-600 hover:bg-amber-700 text-white shrink-0">
             <Mail className="w-4 h-4" />
             {sendingEmail ? "Sending…" : "Send Request"}
@@ -90,61 +100,86 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
         )}
       </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Placement Details</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1">
-            <Label>Placement Type</Label>
-            <Select value={form.internal_placement} onValueChange={v => set("internal_placement", v)}>
-              <SelectTrigger><SelectValue placeholder="Select placement type" /></SelectTrigger>
-              <SelectContent>
-                {INTERNAL_PLACEMENTS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Read-only summary */}
+      {submitted && !editing && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Placement Details</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-700">
+            <div><span className="text-xs font-semibold text-slate-500 block">Placement Type</span>{placementLabel}</div>
+            {form.placement_start_date && <div><span className="text-xs font-semibold text-slate-500 block">Start Date</span>{form.placement_start_date}</div>}
+            {form.placement_end_date && <div><span className="text-xs font-semibold text-slate-500 block">End Date</span>{form.placement_end_date}</div>}
+            {form.placement_supervisor && <div><span className="text-xs font-semibold text-slate-500 block">Supervisor</span>{form.placement_supervisor}</div>}
+            {form.placement_schedule && <div><span className="text-xs font-semibold text-slate-500 block">Schedule</span>{form.placement_schedule}</div>}
+            {form.internal_placement_details && <div className="col-span-2"><span className="text-xs font-semibold text-slate-500 block">Details / Goals</span>{form.internal_placement_details}</div>}
+          </CardContent>
+        </Card>
+      )}
 
-          {form.internal_placement && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label>Expected Start Date</Label>
-                  <Input type="date" value={form.placement_start_date} onChange={e => set("placement_start_date", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Expected End Date</Label>
-                  <Input type="date" value={form.placement_end_date} onChange={e => set("placement_end_date", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Supervisor</Label>
-                  <Input value={form.placement_supervisor} onChange={e => set("placement_supervisor", e.target.value)} placeholder="Supervisor name..." />
-                </div>
-                <div className="space-y-1">
-                  <Label>Schedule</Label>
-                  <Input value={form.placement_schedule} onChange={e => set("placement_schedule", e.target.value)} placeholder="e.g. Mon–Fri 9am–1pm" />
-                </div>
-              </div>
+      {/* Edit view */}
+      {editing && (
+        <>
+          <Card>
+            <CardHeader><CardTitle className="text-base">Placement Details</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-1">
-                <Label>Placement Details / Goals</Label>
-                <Textarea
-                  rows={4}
-                  value={form.internal_placement_details}
-                  onChange={e => set("internal_placement_details", e.target.value)}
-                  placeholder="Job description, skills to develop, goals, any special considerations..."
-                />
+                <Label>Placement Type</Label>
+                <Select value={form.internal_placement} onValueChange={v => set("internal_placement", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select placement type" /></SelectTrigger>
+                  <SelectContent>
+                    {INTERNAL_PLACEMENTS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+              {form.internal_placement && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label>Expected Start Date</Label>
+                      <Input type="date" value={form.placement_start_date} onChange={e => set("placement_start_date", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Expected End Date</Label>
+                      <Input type="date" value={form.placement_end_date} onChange={e => set("placement_end_date", e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Supervisor</Label>
+                      <Input value={form.placement_supervisor} onChange={e => set("placement_supervisor", e.target.value)} placeholder="Supervisor name..." />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Schedule</Label>
+                      <Input value={form.placement_schedule} onChange={e => set("placement_schedule", e.target.value)} placeholder="e.g. Mon–Fri 9am–1pm" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Placement Details / Goals</Label>
+                    <Textarea rows={4} value={form.internal_placement_details} onChange={e => set("internal_placement_details", e.target.value)} placeholder="Job description, skills to develop, goals, any special considerations..." />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-      <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
-          <Save className="w-4 h-4 mr-2" /> {saving ? "Saving…" : "Save"}
-        </Button>
-        <Button onClick={() => handleSave(true)} disabled={saving} className="gap-2">
-          {saving ? "Saving…" : "Save & Continue"} <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
+          <div className="flex items-center justify-between">
+            {submitted && <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>}
+            <div className="flex gap-3 ml-auto">
+              <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
+                <Save className="w-4 h-4 mr-2" /> {saving ? "Saving…" : "Save"}
+              </Button>
+              <Button onClick={() => handleSave(true)} disabled={saving} className="gap-2">
+                {saving ? "Saving…" : submitted ? "Save & Continue" : "Finish & Continue"} <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {submitted && !editing && (
+        <div className="flex justify-end">
+          <Button onClick={onComplete} className="gap-2">
+            Continue to Next Step <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

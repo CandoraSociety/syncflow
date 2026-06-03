@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save, ChevronRight, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Save, ChevronRight, AlertCircle, Pencil, CheckCircle2 } from "lucide-react";
 
 export default function BarrierActionPlan({ client, onSave, onComplete }) {
   const barriersIdentified = client?.barriers_addressed;
+  const isCompleted = !!client?.barrier_action_plan_completed;
 
   const parseSteps = (raw) => {
     if (!raw) return [""];
@@ -19,9 +20,7 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
     for (let n = 1; n <= 3; n++) {
       if (client?.[`barrier_${n}`]) {
         plans.push({
-          barrier: client[`barrier_${n}`] === "Other"
-            ? (client[`barrier_${n}_other`] || "Other")
-            : client[`barrier_${n}`],
+          barrier: client[`barrier_${n}`] === "Other" ? (client[`barrier_${n}_other`] || "Other") : client[`barrier_${n}`],
           action_steps: parseSteps(client[`barrier_${n}_action_steps`]),
           timeline_start: client[`barrier_${n}_timeline_start`] || "",
           timeline_end: client[`barrier_${n}_timeline_end`] || "",
@@ -33,6 +32,8 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
     return plans;
   };
 
+  const [submitted, setSubmitted] = useState(isCompleted);
+  const [editing, setEditing] = useState(!isCompleted);
   const [plans, setPlans] = useState(getInitialPlans());
   const [saving, setSaving] = useState(false);
 
@@ -60,6 +61,8 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
     setSaving(true);
     await onSave(buildSaveData());
     setSaving(false);
+    setSubmitted(true);
+    setEditing(false);
     if (andContinue) onComplete?.();
   };
 
@@ -98,78 +101,119 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Resolution Plan</h2>
-        <p className="text-sm text-slate-500 mt-1">For each identified barrier, create a concrete resolution plan with timelines.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Resolution Plan</h2>
+          <p className="text-sm text-slate-500 mt-1">For each identified barrier, create a concrete resolution plan with timelines.</p>
+        </div>
+        {submitted && !editing && (
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2">
+            <Pencil className="w-4 h-4" /> Edit
+          </Button>
+        )}
       </div>
 
-      {plans.map((plan, i) => (
-        <Card key={i}>
-          <CardHeader>
-            <CardTitle className="text-base text-slate-700">
-              Barrier #{i + 1}: {plan.barrier}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Action Steps to Address This Barrier</Label>
-              {plan.action_steps.map((step, si) => (
-                <div key={si} className="flex items-start gap-2">
-                  <span className="mt-2 text-xs font-semibold text-slate-400 w-5 shrink-0">{si + 1}.</span>
-                  <Input
-                    value={step}
-                    onChange={e => updateStep(i, si, e.target.value)}
-                    placeholder={`Action step ${si + 1}...`}
-                  />
-                  {plan.action_steps.length > 1 && (
-                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-red-400 hover:text-red-600" onClick={() => removeStep(i, si)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+      {/* Read-only summary */}
+      {submitted && !editing && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-green-700">
+            <CheckCircle2 className="w-5 h-5 text-green-500" />
+            <span className="text-sm font-semibold">Barrier Resolution Plan Completed</span>
+          </div>
+          {plans.map((plan, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-slate-700">Barrier #{i + 1}: {plan.barrier}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1 text-sm text-slate-600">
+                {plan.action_steps.filter(Boolean).length > 0 && (
+                  <div>
+                    <span className="font-medium text-xs text-slate-500">Action Steps:</span>
+                    <ul className="mt-1 space-y-0.5">
+                      {plan.action_steps.filter(Boolean).map((s, si) => <li key={si} className="flex gap-2"><span className="text-slate-400">{si + 1}.</span>{s}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {(plan.timeline_start || plan.timeline_end) && (
+                  <p><span className="font-medium text-xs text-slate-500">Timeline: </span>{[plan.timeline_start, plan.timeline_end].filter(Boolean).join(" – ")}</p>
+                )}
+                {plan.responsible_party && <p><span className="font-medium text-xs text-slate-500">Responsible: </span>{plan.responsible_party}</p>}
+                {plan.resources_needed && <p><span className="font-medium text-xs text-slate-500">Resources: </span>{plan.resources_needed}</p>}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Edit view */}
+      {editing && (
+        <>
+          {plans.map((plan, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <CardTitle className="text-base text-slate-700">Barrier #{i + 1}: {plan.barrier}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Action Steps to Address This Barrier</Label>
+                  {plan.action_steps.map((step, si) => (
+                    <div key={si} className="flex items-start gap-2">
+                      <span className="mt-2 text-xs font-semibold text-slate-400 w-5 shrink-0">{si + 1}.</span>
+                      <Input value={step} onChange={e => updateStep(i, si, e.target.value)} placeholder={`Action step ${si + 1}...`} />
+                      {plan.action_steps.length > 1 && (
+                        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-red-400 hover:text-red-600" onClick={() => removeStep(i, si)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" className="gap-1 mt-1" onClick={() => addStep(i)}>
+                    <Plus className="w-3 h-3" /> Add Step
+                  </Button>
                 </div>
-              ))}
-              <Button variant="outline" size="sm" className="gap-1 mt-1" onClick={() => addStep(i)}>
-                <Plus className="w-3 h-3" /> Add Step
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label>Start Date</Label>
+                    <Input type="date" value={plan.timeline_start} onChange={e => updatePlan(i, "timeline_start", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Target Completion Date</Label>
+                    <Input type="date" value={plan.timeline_end} onChange={e => updatePlan(i, "timeline_end", e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Responsible Party</Label>
+                    <Input value={plan.responsible_party} onChange={e => updatePlan(i, "responsible_party", e.target.value)} placeholder="e.g. Client, Career Counsellor..." />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Resources / Referrals Needed</Label>
+                    <Input value={plan.resources_needed} onChange={e => updatePlan(i, "resources_needed", e.target.value)} placeholder="e.g. Referral to mental health services..." />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          <div className="flex items-center justify-between">
+            {submitted && <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>}
+            <div className="flex gap-3 ml-auto">
+              <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
+                <Save className="w-4 h-4 mr-2" /> {saving ? "Saving…" : "Save"}
+              </Button>
+              <Button onClick={() => handleSave(true)} disabled={saving} className="gap-2">
+                {saving ? "Saving…" : submitted ? "Save & Continue" : "Finish & Continue"} <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>Start Date</Label>
-                <Input type="date" value={plan.timeline_start} onChange={e => updatePlan(i, "timeline_start", e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label>Target Completion Date</Label>
-                <Input type="date" value={plan.timeline_end} onChange={e => updatePlan(i, "timeline_end", e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label>Responsible Party</Label>
-                <Input
-                  value={plan.responsible_party}
-                  onChange={e => updatePlan(i, "responsible_party", e.target.value)}
-                  placeholder="e.g. Client, Career Counsellor, Service Navigator..."
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Resources / Referrals Needed</Label>
-                <Input
-                  value={plan.resources_needed}
-                  onChange={e => updatePlan(i, "resources_needed", e.target.value)}
-                  placeholder="e.g. Referral to mental health services..."
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+        </>
+      )}
 
-      <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
-          <Save className="w-4 h-4 mr-2" /> {saving ? "Saving…" : "Save"}
-        </Button>
-        <Button onClick={() => handleSave(true)} disabled={saving} className="gap-2">
-          {saving ? "Saving…" : "Save & Continue"} <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
+      {submitted && !editing && (
+        <div className="flex justify-end">
+          <Button onClick={onComplete} className="gap-2">
+            Continue to Next Step <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
