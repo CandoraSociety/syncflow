@@ -60,7 +60,7 @@ export default function ClientProfile() {
 
   if (loading) return (
     <div className="fixed inset-0 flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 rounded-full animate-spin candora-spin" />
     </div>
   );
 
@@ -91,21 +91,21 @@ export default function ClientProfile() {
         <button onClick={() => navigate("/compass")} className="text-sm text-white/70 hover:text-white transition-colors">Compass</button>
       </div>
 
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4">
+      <div className="border-b px-6 py-4 flex items-center justify-between gap-4" style={{ background: "hsl(44,100%,88%)", borderColor: "hsl(42,100%,70%)" }}>
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} style={{ color: "hsl(231,64%,20%)" }}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-800">
+              <h1 className="text-xl font-bold" style={{ color: "hsl(231,64%,20%)" }}>
                 {client.first_name} {client.last_name}
               </h1>
               {client.file_closed && (
                 <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Closed</span>
               )}
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm" style={{ color: "hsl(231,55%,40%)" }}>
               {client.compass_hsid ? `HSID: ${client.compass_hsid}` : ""}
               {client.compass_hsid && client.service_type ? " · " : ""}
               {client.service_type ? client.service_type.replace(/_/g, " ") : ""}

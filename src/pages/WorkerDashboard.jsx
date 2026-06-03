@@ -62,20 +62,20 @@ export default function WorkerDashboard() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 rounded-full animate-spin candora-spin" />
     </div>
   );
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+      <header className="px-6 py-4 flex items-center justify-between" style={{ background: "hsl(231,64%,20%)" }}>
         <div>
-          <h1 className="text-xl font-bold text-slate-800">
+          <h1 className="text-xl font-bold text-white">
             {isDawn ? "Service Navigator Dashboard" : "My Clients"}
           </h1>
-          <p className="text-sm text-slate-500">Welcome, {user?.full_name}</p>
+          <p className="text-sm text-white/60">Welcome, {user?.full_name}</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => base44.auth.logout()}>
+        <Button variant="ghost" size="icon" onClick={() => base44.auth.logout()} className="text-white/70 hover:text-white hover:bg-white/10">
           <LogOut className="w-4 h-4" />
         </Button>
       </header>
@@ -105,23 +105,22 @@ export default function WorkerDashboard() {
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
+                  <thead className="border-b border-slate-200" style={{ background: "hsl(231,64%,20%)" }}>
                     <tr>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Name</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">HSID#</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Service</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Switches</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Program Status</th>
-
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">CLB</th>
-                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 1</th>}
-                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 2</th>}
-                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Barrier 3</th>}
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Post-Comp. Status</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Post-Comp. Emp. Start</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">90-Day Status</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Svc Nav</th>
-                      <th className="text-left px-3 py-3 font-semibold text-slate-600 whitespace-nowrap">Intake Date</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Name</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">HSID#</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Service</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Switches</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Program Status</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">CLB</th>
+                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Barrier 1</th>}
+                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Barrier 2</th>}
+                      {isDawn && <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Barrier 3</th>}
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Post-Comp. Status</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Post-Comp. Emp. Start</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">90-Day Status</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Svc Nav</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Intake Date</th>
                       <th className="px-3 py-3" />
                     </tr>
                   </thead>
@@ -129,8 +128,8 @@ export default function WorkerDashboard() {
                     {displayed.map(c => (
                       <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-3 py-2.5 font-medium whitespace-nowrap">
-                          <Link to={`/client/${c.id}`} className="text-blue-700 hover:underline">
-                            {c.first_name} {c.last_name}
+                          <Link to={`/client/${c.id}`} className="font-semibold hover:underline" style={{ color: "hsl(231,64%,28%)" }}>
+                           {c.first_name} {c.last_name}
                           </Link>
                         </td>
                         <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{c.compass_hsid || "—"}</td>

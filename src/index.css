@@ -105,4 +105,10 @@
   a:hover, button:hover, [role="button"]:hover {
     @apply bg-accent/5;
   }
+
+  /* Candora: loading spinner uses navy */
+  .candora-spin {
+    border-color: hsl(44,100%,88%);
+    border-top-color: hsl(231,64%,20%);
+  }
 }
