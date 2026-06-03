@@ -31,7 +31,8 @@ export default function ProgramFlowWizard({ client, onSave }) {
         return client?.action_plan_submitted ? "done" : client?.bit_completed ? "active" : "pending";
       case "internal_placement":
         if (!isPathways) return "skipped";
-        return client?.internal_placement && client.internal_placement !== "none" ? "active" : "pending";
+        if (!client?.internal_placement || client.internal_placement === "none") return "pending";
+        return client?.placement_request_sent ? "done" : "active";
       case "exposures":
         return (client?.exposure_course || client?.paid_external_placement || client?.employment_supports || client?.external_employer)
           ? "done"

@@ -74,7 +74,7 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
           <AlertCircle className="w-10 h-10 text-slate-300 mb-3" />
           <p className="text-slate-500 font-medium">No barriers have been identified.</p>
           <p className="text-slate-400 text-sm mt-1">Return to Step 1 to identify barriers if applicable.</p>
-          <Button className="mt-4 gap-2" onClick={onComplete}>
+          <Button className="mt-4 gap-2" onClick={async () => { await onSave({ barrier_action_plan_completed: true }); onComplete?.(); }}>
             Skip to Next Step <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
@@ -89,7 +89,7 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
           <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Resolution Plan</h2>
           <p className="text-sm text-slate-500 mt-1">Please complete the BIT first to identify barriers.</p>
         </div>
-        <Button className="gap-2" onClick={onComplete}>
+        <Button className="gap-2" onClick={async () => { await onSave({ barrier_action_plan_completed: true }); onComplete?.(); }}>
           Continue <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

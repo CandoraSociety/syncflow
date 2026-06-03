@@ -168,19 +168,21 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
           <h2 className="text-lg font-bold text-slate-800">Step 3 — Employment Action Plan</h2>
           <p className="text-sm text-slate-500 mt-1">Build a customized action plan to guide the client's pathway to employment.</p>
         </div>
-        {submitted && !editing && (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          {selectedItems.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => setShowRoadmap(v => !v)} className="gap-2">
               <Map className="w-4 h-4" /> {showRoadmap ? "Hide" : "View"} Roadmap
             </Button>
+          )}
+          {submitted && !editing && (
             <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2">
               <Pencil className="w-4 h-4" /> Edit Plan
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {showRoadmap && submitted && (
+      {showRoadmap && selectedItems.length > 0 && (
         <ActionPlanRoadmap client={client} selectedItems={selectedItems} itemDetails={itemDetails} />
       )}
 
