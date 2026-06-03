@@ -78,14 +78,14 @@ export default function ClientServicePlan({ client, onSave }) {
   const handleBarriersToggle = async (checked) => {
     set("barriers_addressed", checked);
     if (checked) {
-      // Send alert to service navigator
+      // Best-effort email — don't block if external email fails
       const barriers = [form.barrier_1, form.barrier_2, form.barrier_3].filter(Boolean);
-      await base44.functions.invoke("sendAlertEmail", {
+      base44.functions.invoke("sendAlertEmail", {
         alert_type: "barriers",
         client_name: `${client.first_name} ${client.last_name}`,
         client_id: client.id,
         barriers,
-      });
+      }).catch(() => {});
     }
   };
 

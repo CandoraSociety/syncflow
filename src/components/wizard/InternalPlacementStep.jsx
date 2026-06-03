@@ -42,7 +42,7 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
   const handleSendRequest = async () => {
     setSendingEmail(true);
     await onSave({ ...form, placement_request_sent: false });
-    await base44.functions.invoke("sendAlertEmail", {
+    base44.functions.invoke("sendAlertEmail", {
       alert_type: "internal_placement",
       client_name: `${client.first_name} ${client.last_name}`,
       client_id: client.id,
@@ -50,7 +50,7 @@ export default function InternalPlacementStep({ client, onSave, onComplete }) {
       details: form.internal_placement_details,
       start_date: form.placement_start_date,
       supervisor: form.placement_supervisor,
-    });
+    }).catch(() => {});
     await onSave({ placement_request_sent: true });
     setEmailSent(true);
     setSendingEmail(false);

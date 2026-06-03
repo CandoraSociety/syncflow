@@ -113,12 +113,13 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
         compass_hsid: client.compass_hsid,
         ...t,
       });
-      await base44.functions.invoke("sendAlertEmail", {
+      // Best-effort email — don't block save if it fails
+      base44.functions.invoke("sendAlertEmail", {
         alert_type: "barriers",
         client_name: `${client.first_name} ${client.last_name}`,
         client_id: client.id,
         barriers: barriers.map(b => b.type === "Other" ? b.other_description || "Other" : b.type).filter(Boolean),
-      });
+      }).catch(() => {});
     }
 
     setSaving(false);
