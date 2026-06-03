@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { createCompassTask } from "@/lib/compassTasks";
 import RoadmapItemPanel from "./RoadmapItemPanel";
 import RoadmapProgressNotes from "./RoadmapProgressNotes";
+import ProgramStatusPanel from "./ProgramStatusPanel";
 
 const ACTION_PLAN_OPTIONS = [
   { key: "job_search_workshop", label: "Job Search Workshop" },
@@ -73,7 +74,7 @@ function getBarStyle(item, timelineStart, totalDays) {
   return { left: `${left}%`, width: `${Math.min(width, 100 - left)}%` };
 }
 
-export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail }) {
+export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail, onClientUpdate }) {
   const [editingItem, setEditingItem] = useState(null); // row.id
   const [saving, setSaving] = useState(false);
 
@@ -469,6 +470,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
   return (
     <div className="space-y-6">
+      {/* Program status panel — always at top */}
+      <ProgramStatusPanel client={client} onClientUpdate={onClientUpdate} />
+
       <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-6">
         {/* Stream switch banner */}
         {switches.length > 0 && (

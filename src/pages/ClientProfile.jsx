@@ -175,7 +175,7 @@ export default function ClientProfile() {
           </TabsList>
 
           <TabsContent value="program_flow">
-            <ProgramFlowWizard client={client} onSave={handleSave} />
+            <ProgramFlowWizard client={client} onSave={handleSave} onClientUpdate={(updates) => setClient(prev => ({ ...prev, ...updates }))} />
           </TabsContent>
           <TabsContent value="overview">
             <ClientProfileOverview client={client} onSave={handleSave} />

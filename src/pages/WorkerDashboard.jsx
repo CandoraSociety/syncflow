@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Users } from "lucide-react";
+import { LogOut, Users, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
+import { format, addDays, differenceInDays } from "date-fns";
 import ClientListControls, { applyFiltersAndSort } from "@/components/lists/ClientListControls";
 import { clientRowColor } from "@/lib/clientRowColor";
 
@@ -61,6 +61,23 @@ export default function WorkerDashboard() {
   const isDawn = user?.email === "Dawn.williston@candorasociety.com";
   const displayed = applyFiltersAndSort(clients, search, filters, sortKey);
 
+  // Upcoming 90-day follow-ups (due within 14 days, not yet done)
+  const upcomingFollowups = clients.filter(c => {
+    if (c.followup_90day_status) return false; // already done
+    const followupDate = c.followup_90day_date
+      ? new Date(c.followup_90day_date)
+      : c.completion_date
+        ? addDays(new Date(c.completion_date), 90)
+        : null;
+    if (!followupDate) return false;
+    const days = differenceInDays(followupDate, new Date());
+    return days <= 14; // within 14 days (includes overdue)
+  }).sort((a, b) => {
+    const dateA = a.followup_90day_date || (a.completion_date ? format(addDays(new Date(a.completion_date), 90), "yyyy-MM-dd") : "");
+    const dateB = b.followup_90day_date || (b.completion_date ? format(addDays(new Date(b.completion_date), 90), "yyyy-MM-dd") : "");
+    return dateA.localeCompare(dateB);
+  });
+
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="w-8 h-8 border-4 rounded-full animate-spin candora-spin" />
@@ -92,6 +109,44 @@ export default function WorkerDashboard() {
           </div>
         ) : (
           <>
+            {/* Upcoming 90-day follow-ups alert panel */}
+            {upcomingFollowups.length > 0 && (
+              <div className="mb-4 border border-amber-300 bg-amber-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bell className="w-4 h-4 text-amber-600 animate-bounce" />
+                  <span className="text-sm font-bold text-amber-800">Upcoming 90-Day Follow-Ups</span>
+                  <span className="ml-auto text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-semibold">{upcomingFollowups.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {upcomingFollowups.map(c => {
+                    const followupDate = c.followup_90day_date
+                      ? new Date(c.followup_90day_date)
+                      : addDays(new Date(c.completion_date), 90);
+                    const days = differenceInDays(followupDate, new Date());
+                    const isOverdue = days < 0;
+                    const isUrgent = days >= 0 && days <= 5;
+                    return (
+                      <div key={c.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-sm ${isOverdue ? "bg-red-50 border-red-300" : isUrgent ? "bg-amber-100 border-amber-300 animate-pulse" : "bg-white border-amber-200"}`}>
+                        <div className="flex items-center gap-2">
+                          <Bell className={`w-3.5 h-3.5 shrink-0 ${isOverdue ? "text-red-500" : "text-amber-500"}`} />
+                          <Link to={`/client/${c.id}`} className="font-semibold hover:underline" style={{ color: "hsl(231,64%,28%)" }}>
+                            {c.first_name} {c.last_name}
+                          </Link>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-slate-500">Due: {format(followupDate, "MMM d, yyyy")}</span>
+                          <span className={`font-bold px-2 py-0.5 rounded-full ${isOverdue ? "bg-red-100 text-red-700" : isUrgent ? "bg-amber-200 text-amber-800" : "bg-blue-100 text-blue-700"}`}>
+                            {isOverdue ? `${Math.abs(days)}d overdue` : days === 0 ? "Today!" : `${days}d`}
+                          </span>
+                          <Link to={`/client/${c.id}`}><Button size="sm" variant="outline" className="text-xs h-6 px-2">Go to Client</Button></Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 text-slate-600 mb-2">
               <Users className="w-4 h-4" />
               <span className="text-sm font-medium">{displayed.length} of {clients.length} client{clients.length !== 1 ? "s" : ""}</span>

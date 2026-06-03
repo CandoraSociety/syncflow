@@ -16,7 +16,7 @@ const STEPS = [
   { key: "roadmap", label: "Action Plan Roadmap", short: "Roadmap" },
 ];
 
-export default function ProgramFlowWizard({ client, onSave }) {
+export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
   const [activeStep, setActiveStep] = useState("bit");
 
   const isPathways = client?.service_type === "pathways";
@@ -119,7 +119,7 @@ export default function ProgramFlowWizard({ client, onSave }) {
               <p className="text-sm text-slate-500 mt-1">Full timeline and overview of the client's employment action plan.</p>
             </div>
             {client?.action_plan_submitted && client?.sdp_items?.length > 0
-              ? <ActionPlanRoadmap client={client} selectedItems={client.sdp_items} itemDetails={client.sdp_item_details || {}} />
+              ? <ActionPlanRoadmap client={client} selectedItems={client.sdp_items} itemDetails={client.sdp_item_details || {}} onClientUpdate={onClientUpdate} />
               : <div className="flex flex-col items-center justify-center py-16 text-center text-slate-400">
                   <Map className="w-10 h-10 mb-3 text-slate-300" />
                   <p className="font-medium">No action plan submitted yet.</p>
