@@ -275,6 +275,10 @@
       "type": "boolean",
       "description": "Employment Action Plan submitted"
     },
+    "action_plan_compass_entered": {
+      "type": "boolean",
+      "description": "Employment Action Plan has been entered into Compass"
+    },
     "barrier_1": {
       "type": "string",
       "description": "Primary barrier type"

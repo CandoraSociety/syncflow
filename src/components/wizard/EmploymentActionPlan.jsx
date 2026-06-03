@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, ChevronRight, Pencil, Copy, Check, Map } from "lucide-react";
+import { Save, ChevronRight, Pencil, Copy, Check, Map, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskServiceNavigation } from "@/lib/compassTasks";
 import ActionPlanRoadmap from "./ActionPlanRoadmap";
@@ -122,6 +122,8 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
+  const [compassEntered, setCompassEntered] = useState(client?.action_plan_compass_entered || false);
+  const [markingCompass, setMarkingCompass] = useState(false);
 
   const compassText = buildCompassText(selectedItems, otherDesc, itemDetails, client, notes);
 
@@ -139,6 +141,14 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
     navigator.clipboard.writeText(compassText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleMarkCompassEntered = async () => {
+    setMarkingCompass(true);
+    const newVal = !compassEntered;
+    await onSave({ action_plan_compass_entered: newVal });
+    setCompassEntered(newVal);
+    setMarkingCompass(false);
   };
 
   const buildSaveData = () => ({
@@ -188,32 +198,69 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
 
       {/* Read-only view */}
       {submitted && !editing && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Current Action Plan</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {selectedItems.length === 0 && <p className="text-slate-400 text-sm italic">No items selected.</p>}
-              {selectedItems.map(key => {
-                const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
-                const detail = itemDetails[key] || {};
-                return (
-                  <div key={key} className="flex flex-col gap-1 border border-slate-100 rounded-lg p-3 bg-slate-50">
-                    <span className="font-medium text-slate-800 text-sm">✓ {key === "other" ? (otherDesc || "Other") : opt?.label}</span>
-                    {detail.support_type && <span className="text-xs text-slate-500">Support Type: {detail.support_type}</span>}
-                    {detail.timeline && <span className="text-xs text-slate-500">Timeline: {detail.timeline}</span>}
-                    {detail.notes && <span className="text-xs text-slate-500">Notes: {detail.notes}</span>}
-                  </div>
-                );
-              })}
-            </div>
-            {notes && (
-              <div className="mt-4 pt-4 border-t border-slate-100">
-                <p className="text-xs text-slate-500 font-medium">Additional Notes:</p>
-                <p className="text-sm text-slate-700 mt-1">{notes}</p>
+        <>
+          <Card>
+            <CardHeader><CardTitle className="text-base">Current Action Plan</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {selectedItems.length === 0 && <p className="text-slate-400 text-sm italic">No items selected.</p>}
+                {selectedItems.map(key => {
+                  const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
+                  const detail = itemDetails[key] || {};
+                  return (
+                    <div key={key} className="flex flex-col gap-1 border border-slate-100 rounded-lg p-3 bg-slate-50">
+                      <span className="font-medium text-slate-800 text-sm">✓ {key === "other" ? (otherDesc || "Other") : opt?.label}</span>
+                      {detail.support_type && <span className="text-xs text-slate-500">Support Type: {detail.support_type}</span>}
+                      {detail.timeline && <span className="text-xs text-slate-500">Timeline: {detail.timeline}</span>}
+                      {detail.notes && <span className="text-xs text-slate-500">Notes: {detail.notes}</span>}
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </CardContent>
-        </Card>
+              {notes && (
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium">Additional Notes:</p>
+                  <p className="text-sm text-slate-700 mt-1">{notes}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Compass entry — always visible until marked as entered */}
+          {!compassEntered ? (
+            <Card className="border-amber-300 bg-amber-50">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span className="text-amber-800">For Entry into Compass</span>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={handleCopy} className="gap-2">
+                      {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                      {copied ? "Copied!" : "Copy"}
+                    </Button>
+                    <Button size="sm" onClick={handleMarkCompassEntered} disabled={markingCompass} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {markingCompass ? "Saving…" : "Mark as Entered"}
+                    </Button>
+                  </div>
+                </CardTitle>
+                <p className="text-xs text-amber-700">Copy and paste into Compass, then mark as entered to dismiss this notice.</p>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-sm text-slate-700 whitespace-pre-wrap bg-white border border-amber-200 rounded-lg p-3 min-h-16">
+                  {compassText || "No action plan items to display."}
+                </pre>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Action plan entered into Compass.</span>
+              <button onClick={handleMarkCompassEntered} disabled={markingCompass} className="ml-auto text-xs text-slate-400 hover:text-slate-600 underline">
+                Undo
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Edit view */}
