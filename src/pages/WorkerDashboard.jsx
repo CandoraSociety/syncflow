@@ -5,6 +5,7 @@ import { LogOut, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import ClientListControls, { applyFiltersAndSort } from "@/components/lists/ClientListControls";
+import { clientRowColor } from "@/lib/clientRowColor";
 
 const SERVICE_LABELS = {
   direct_to_employment: "DEA",
@@ -126,7 +127,7 @@ export default function WorkerDashboard() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {displayed.map(c => (
-                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={c.id} className={`transition-colors ${clientRowColor(c)}`}>
                         <td className="px-3 py-2.5 font-medium whitespace-nowrap">
                           <Link to={`/client/${c.id}`} className="font-semibold hover:underline" style={{ color: "hsl(231,64%,28%)" }}>
                            {c.first_name} {c.last_name}
