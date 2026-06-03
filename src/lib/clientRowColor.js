@@ -5,7 +5,8 @@
  * 🔴 Red    — bad ending (cancelled, incomplete, withdrew, etc.)
  * 🟢 Green  — fully complete including 90-day follow-up
  * 🔵 Blue   — program complete, now in follow-up period
- * 🟡 Yellow — in progress (or no status yet)
+ * 🟡 Yellow — in progress only
+ * ⬜ None   — not started
  */
 export function clientRowColor(client) {
   const ps = client.program_status;
@@ -22,6 +23,9 @@ export function clientRowColor(client) {
   // Program complete, in follow-up period
   if (ps === "complete") return "bg-blue-50 hover:bg-blue-100";
 
-  // In progress / default
-  return "bg-yellow-50 hover:bg-yellow-100";
+  // In progress
+  if (ps === "in_progress") return "bg-yellow-50 hover:bg-yellow-100";
+
+  // No status yet — no colour
+  return "";
 }
