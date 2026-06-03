@@ -50,10 +50,38 @@ export default function ExposuresSupportsStep({ client, onSave }) {
       </div>
 
       {submitted && !editing && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-green-50 border-green-200">
-          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-          <p className="text-sm font-semibold text-green-700">Program Flow Wizard Complete</p>
-        </div>
+        <>
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-green-50 border-green-200">
+            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+            <p className="text-sm font-semibold text-green-700">Program Flow Wizard Complete</p>
+          </div>
+          <Card>
+            <CardHeader><CardTitle className="text-base">Planned Supports & Placements</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-700">
+              <div className="flex items-center gap-3">
+                <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${form.exposure_course ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
+                  {form.exposure_course && <span className="text-white text-xs font-bold">✓</span>}
+                </span>
+                <span className={form.exposure_course ? "font-medium" : "text-slate-400"}>Exposure Course / Training{form.exposure_course ? " — Planned" : " — Not planned"}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${form.paid_external_placement ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
+                  {form.paid_external_placement && <span className="text-white text-xs font-bold">✓</span>}
+                </span>
+                <span className={form.paid_external_placement ? "font-medium" : "text-slate-400"}>Paid External Placement{form.paid_external_placement ? " — Planned" : " — Not planned"}</span>
+              </div>
+              {form.external_employer && (
+                <div className="ml-7 text-xs text-slate-500">Employer: <span className="font-medium text-slate-700">{form.external_employer}</span></div>
+              )}
+              <div className="flex items-center gap-3">
+                <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${form.employment_supports ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
+                  {form.employment_supports && <span className="text-white text-xs font-bold">✓</span>}
+                </span>
+                <span className={form.employment_supports ? "font-medium" : "text-slate-400"}>Employment Supports (PPE, tools, etc.){form.employment_supports ? " — Planned" : " — Not planned"}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {editing && (

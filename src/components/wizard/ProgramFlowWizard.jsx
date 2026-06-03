@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { CheckCircle2, Circle, ChevronRight, Lock } from "lucide-react";
+import { CheckCircle2, Circle, Map } from "lucide-react";
 import BarrierIdentificationTool from "./BarrierIdentificationTool";
 import BarrierActionPlan from "./BarrierActionPlan";
 import EmploymentActionPlan from "./EmploymentActionPlan";
 import InternalPlacementStep from "./InternalPlacementStep";
 import ExposuresSupportsStep from "./ExposuresSupportsStep";
+import ActionPlanRoadmap from "./ActionPlanRoadmap";
 
 const STEPS = [
   { key: "bit", label: "Barrier Identification", short: "BIT" },
@@ -12,6 +13,7 @@ const STEPS = [
   { key: "employment_action_plan", label: "Employment Action Plan", short: "Emp. Action Plan" },
   { key: "internal_placement", label: "Internal Placement", short: "Placement", pathwaysOnly: true },
   { key: "exposures", label: "Exposure Courses & Supports", short: "Supports" },
+  { key: "roadmap", label: "Action Plan Roadmap", short: "Roadmap" },
 ];
 
 export default function ProgramFlowWizard({ client, onSave }) {
@@ -37,6 +39,8 @@ export default function ProgramFlowWizard({ client, onSave }) {
         return (client?.exposure_course || client?.paid_external_placement || client?.employment_supports || client?.external_employer)
           ? "done"
           : "active";
+      case "roadmap":
+        return client?.action_plan_submitted ? "active" : "pending";
       default:
         return "pending";
     }
@@ -58,8 +62,8 @@ export default function ProgramFlowWizard({ client, onSave }) {
           {steps.map((step, i) => {
             const status = getStepStatus(step.key);
             const cfg = statusConfig[status];
-            const Icon = cfg.icon;
             const isActive = activeStep === step.key;
+            const isRoadmap = step.key === "roadmap";
             return (
               <button
                 key={step.key}
@@ -71,7 +75,10 @@ export default function ProgramFlowWizard({ client, onSave }) {
                 }`}
               >
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isActive ? "border-white/60 bg-white/20" : cfg.ring}`}>
-                  <span className={`text-xs font-bold ${isActive ? "text-white" : cfg.text}`}>{i + 1}</span>
+                  {isRoadmap
+                    ? <Map className={`w-3 h-3 ${isActive ? "text-white" : cfg.text}`} />
+                    : <span className={`text-xs font-bold ${isActive ? "text-white" : cfg.text}`}>{i + 1}</span>
+                  }
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{step.short}</div>
@@ -104,6 +111,22 @@ export default function ProgramFlowWizard({ client, onSave }) {
         )}
         {activeStep === "exposures" && (
           <ExposuresSupportsStep client={client} onSave={onSave} />
+        )}
+        {activeStep === "roadmap" && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Action Plan Roadmap</h2>
+              <p className="text-sm text-slate-500 mt-1">Full timeline and overview of the client's employment action plan.</p>
+            </div>
+            {client?.action_plan_submitted && client?.sdp_items?.length > 0
+              ? <ActionPlanRoadmap client={client} selectedItems={client.sdp_items} itemDetails={client.sdp_item_details || {}} />
+              : <div className="flex flex-col items-center justify-center py-16 text-center text-slate-400">
+                  <Map className="w-10 h-10 mb-3 text-slate-300" />
+                  <p className="font-medium">No action plan submitted yet.</p>
+                  <p className="text-sm mt-1">Complete Step 3 to generate the roadmap.</p>
+                </div>
+            }
+          </div>
         )}
       </div>
     </div>
