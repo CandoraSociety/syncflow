@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ClipboardList, ChevronDown, ChevronUp, CheckCircle2, Play, Plus, Trash2, Copy } from "lucide-react";
-import { format } from "date-fns";
+import { ClipboardList, ChevronDown, ChevronUp, CheckCircle2, Play, Plus, Trash2, Copy, AlertCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const EVENT_ICONS = {
@@ -17,6 +16,53 @@ const EVENT_COLORS = {
   manual: "border-slate-300 bg-slate-50",
 };
 
+function CompassBadge({ note, onMarkEntered }) {
+  const [open, setOpen] = useState(false);
+  const entered = note.compass_entered;
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        onClick={() => { if (!entered) setOpen(o => !o); }}
+        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors ${
+          entered
+            ? "bg-green-100 border-green-300 text-green-700 cursor-default"
+            : "bg-red-100 border-red-300 text-red-700 hover:bg-red-200 cursor-pointer"
+        }`}
+        title={entered ? `Entered into Compass${note.compass_entered_by_name ? ` by ${note.compass_entered_by_name}` : ""}` : "Not yet entered into Compass — click to mark entered"}
+      >
+        {entered
+          ? <><CheckCircle2 className="w-3 h-3" /> In Compass</>
+          : <><AlertCircle className="w-3 h-3" /> Enter in Compass</>
+        }
+      </button>
+
+      {open && !entered && (
+        <div className="absolute right-0 top-7 z-20 bg-white border border-slate-200 rounded-lg shadow-lg p-3 w-48 text-xs space-y-2">
+          <p className="text-slate-600 font-medium">Mark as entered in Compass?</p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="h-6 text-xs flex-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => { setOpen(false); onMarkEntered(note.id); }}
+            >
+              Yes, entered
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-xs flex-1"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RoadmapProgressNotes({ notes = [], clientId, onNotesUpdate }) {
   const [expanded, setExpanded] = useState(true);
   const [manualNote, setManualNote] = useState("");
@@ -24,6 +70,17 @@ export default function RoadmapProgressNotes({ notes = [], clientId, onNotesUpda
   const [saving, setSaving] = useState(false);
 
   const formatted = [...notes].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  async function handleMarkEntered(noteId) {
+    const me = await base44.auth.me().catch(() => null);
+    const updated = notes.map(n =>
+      n.id === noteId
+        ? { ...n, compass_entered: true, compass_entered_date: new Date().toISOString().slice(0, 10), compass_entered_by: me?.email || "", compass_entered_by_name: me?.full_name || me?.email || "" }
+        : n
+    );
+    await base44.entities.Client.update(clientId, { roadmap_progress_notes: updated });
+    onNotesUpdate(updated);
+  }
 
   async function handleAddManual() {
     if (!manualNote.trim()) return;
@@ -38,6 +95,7 @@ export default function RoadmapProgressNotes({ notes = [], clientId, onNotesUpda
       note: manualNote.trim(),
       logged_by: me?.email || "",
       logged_by_name: me?.full_name || me?.email || "",
+      compass_entered: false,
     };
     const updated = [...notes, newNote];
     await base44.entities.Client.update(clientId, { roadmap_progress_notes: updated });
@@ -60,6 +118,8 @@ export default function RoadmapProgressNotes({ notes = [], clientId, onNotesUpda
     navigator.clipboard.writeText(text);
   }
 
+  const pendingCompass = notes.filter(n => !n.compass_entered).length;
+
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
       {/* Header */}
@@ -72,6 +132,11 @@ export default function RoadmapProgressNotes({ notes = [], clientId, onNotesUpda
           <ClipboardList className="w-4 h-4 text-white/80" />
           <span className="text-sm font-semibold text-white">Client Progress Status Notes</span>
           <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-medium">{notes.length}</span>
+          {pendingCompass > 0 && (
+            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+              {pendingCompass} need Compass entry
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {notes.length > 0 && (
@@ -92,14 +157,14 @@ export default function RoadmapProgressNotes({ notes = [], clientId, onNotesUpda
           {/* Note log */}
           {formatted.length === 0 ? (
             <p className="text-xs text-slate-400 text-center py-4">
-              Progress notes will appear here as items are added, started, or completed on the roadmap.
+              Progress notes will appear here as items are started or completed on the roadmap.
             </p>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {formatted.map(n => (
                 <div key={n.id} className={`flex items-start gap-3 p-3 rounded-lg border text-xs ${EVENT_COLORS[n.event_type] || "border-slate-200 bg-white"}`}>
                   <div className="shrink-0 mt-0.5">
-                    {EVENT_ICONS[n.event_type] || EVENT_ICONS.added}
+                    {EVENT_ICONS[n.event_type] || EVENT_ICONS.manual}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -108,13 +173,19 @@ export default function RoadmapProgressNotes({ notes = [], clientId, onNotesUpda
                       {n.logged_by_name && <span className="text-slate-400">· {n.logged_by_name}</span>}
                     </div>
                     <p className="text-slate-600 mt-0.5 leading-relaxed">{n.note}</p>
+                    {n.compass_entered && n.compass_entered_by_name && (
+                      <p className="text-green-600 mt-1 text-xs">Entered in Compass by {n.compass_entered_by_name} on {n.compass_entered_date}</p>
+                    )}
                   </div>
-                  <button
-                    onClick={() => handleDelete(n.id)}
-                    className="shrink-0 text-slate-300 hover:text-red-400 transition-colors p-0.5"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <CompassBadge note={n} onMarkEntered={handleMarkEntered} />
+                    <button
+                      onClick={() => handleDelete(n.id)}
+                      className="shrink-0 text-slate-300 hover:text-red-400 transition-colors p-0.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

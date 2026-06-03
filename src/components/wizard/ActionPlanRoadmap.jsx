@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { format, parseISO, isValid, differenceInDays, addDays, min, max } from "date-fns";
 import { AlertTriangle, Calendar, CalendarDays, CheckCircle2, ArrowRight, Play } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { createCompassTask } from "@/lib/compassTasks";
 import RoadmapItemPanel from "./RoadmapItemPanel";
 import RoadmapProgressNotes from "./RoadmapProgressNotes";
 
@@ -242,8 +243,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
       // 3. Generate progress notes — only when status actually changes to started or completed
       let updatedNotes = progressNotes;
+      const clientName = `${client.first_name} ${client.last_name}`;
+
       if (status === "started" && prevStatus !== "started") {
-        // Find and update existing note for this item if it exists, otherwise add new
         const existingIdx = updatedNotes.findIndex(n => n.item_key === row.id);
         const me = await base44.auth.me().catch(() => null);
         const noteText = `• Client started ${row.label}${startedDate ? ` on ${startedDate}` : ""} — in progress`;
@@ -256,6 +258,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           note: noteText,
           logged_by: me?.email || "",
           logged_by_name: me?.full_name || me?.email || "",
+          compass_entered: false,
         };
         if (existingIdx >= 0) {
           updatedNotes = [...updatedNotes];
@@ -264,20 +267,40 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           updatedNotes = [...updatedNotes, noteObj];
         }
         setProgressNotes(updatedNotes);
+        // Create Compass task
+        createCompassTask({
+          client_id: client.id,
+          client_name: clientName,
+          compass_hsid: client.compass_hsid || "",
+          assigned_worker: client.assigned_worker || "",
+          assigned_worker_name: client.assigned_worker_name || "",
+          task_type: `roadmap_started_${row.id}`,
+          title: `Service plan item started: ${row.label} — ${clientName}`,
+          instructions:
+            `A service plan item has been marked as started and needs to be recorded in Compass.\n\n` +
+            `Client: ${clientName}\n` +
+            `HSID#: ${client.compass_hsid || "unknown — check client profile"}\n\n` +
+            `Item: ${row.label}\n` +
+            `Started: ${startedDate || "not specified"}\n` +
+            `Status: In progress\n\n` +
+            `Action: Update this item in the client's Compass service plan to reflect the start date and in-progress status.`,
+        });
       } else if (status === "completed" && prevStatus !== "completed") {
         const existingIdx = updatedNotes.findIndex(n => n.item_key === row.id);
         const me = await base44.auth.me().catch(() => null);
         const actualStart = startedDate || newStatusObj.started_date || "";
-        const noteText = `• Client started ${row.label}${actualStart ? ` on ${actualStart}` : ""} — completed on ${completedDate || new Date().toISOString().slice(0, 10)}`;
+        const actualCompleted = completedDate || new Date().toISOString().slice(0, 10);
+        const noteText = `• Client started ${row.label}${actualStart ? ` on ${actualStart}` : ""} — completed on ${actualCompleted}`;
         const noteObj = {
           id: existingIdx >= 0 ? updatedNotes[existingIdx].id : `completed_${row.id}_${Date.now()}`,
-          date: completedDate || new Date().toISOString().slice(0, 10),
+          date: actualCompleted,
           event_type: "completed",
           item_label: row.label,
           item_key: row.id,
           note: noteText,
           logged_by: me?.email || "",
           logged_by_name: me?.full_name || me?.email || "",
+          compass_entered: false,
         };
         if (existingIdx >= 0) {
           updatedNotes = [...updatedNotes];
@@ -286,6 +309,24 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           updatedNotes = [...updatedNotes, noteObj];
         }
         setProgressNotes(updatedNotes);
+        // Create Compass task
+        createCompassTask({
+          client_id: client.id,
+          client_name: clientName,
+          compass_hsid: client.compass_hsid || "",
+          assigned_worker: client.assigned_worker || "",
+          assigned_worker_name: client.assigned_worker_name || "",
+          task_type: `roadmap_completed_${row.id}`,
+          title: `Service plan item completed: ${row.label} — ${clientName}`,
+          instructions:
+            `A service plan item has been marked as completed and needs to be recorded in Compass.\n\n` +
+            `Client: ${clientName}\n` +
+            `HSID#: ${client.compass_hsid || "unknown — check client profile"}\n\n` +
+            `Item: ${row.label}\n` +
+            `Started: ${actualStart || "not specified"}\n` +
+            `Completed: ${actualCompleted}\n\n` +
+            `Action: Update this item in the client's Compass service plan to reflect the completion date.`,
+        });
       }
 
       // 4. Persist both item status and notes
