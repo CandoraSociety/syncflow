@@ -68,10 +68,10 @@ export default function ClientEmployment({ client, onSave }) {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader><CardTitle className="text-base">Employment Status</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Current Employment Status</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>Employment Status</Label>
+            <Label>Current Employment Status</Label>
             <Select value={form.employment_status} onValueChange={v => set("employment_status", v)}>
               <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
               <SelectContent>{EMPLOYMENT_CODES.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}</SelectContent>
