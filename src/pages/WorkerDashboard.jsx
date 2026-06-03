@@ -173,8 +173,8 @@ export default function WorkerDashboard() {
                       {isDawn && <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Barrier 1</th>}
                       {isDawn && <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Barrier 2</th>}
                       {isDawn && <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Barrier 3</th>}
-                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Post-Comp. Status</th>
-                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Post-Comp. Emp. Start</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Employment Status</th>
+                      <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Employment Start Date</th>
                       <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">90-Day Status</th>
                       <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Svc Nav</th>
                       <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Intake Date</th>

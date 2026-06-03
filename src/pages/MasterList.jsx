@@ -26,7 +26,8 @@ const PROGRAM_STATUS_COLORS = {
 const EMPTY_FILTERS = {
   service_type: "", program_status: "", employment_status: "",
   clb_level: "", assigned_worker: "", age_min: "", age_max: "",
-  duration_min: "", duration_max: "",
+  duration_min: "", duration_max: "", referral_source: "", residency_status: "",
+  followup_90day_status: "",
 };
 
 const CLOSED_REASON_LABELS = {
@@ -118,8 +119,8 @@ export default function MasterList() {
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Switches</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Program Status</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Completion</th>
-                  <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Post-Comp. Status</th>
-                  <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Post-Comp. Emp. Start</th>
+                  <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Employment Status</th>
+                  <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Employment Start Date</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">90-Day Date</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">90-Day Status</th>
                   <th className="text-left px-3 py-3 font-semibold text-white whitespace-nowrap">Svc Nav</th>

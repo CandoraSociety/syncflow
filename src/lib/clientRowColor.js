@@ -14,17 +14,17 @@ export function clientRowColor(client) {
 
   // Bad endings
   const badEndings = ["cancelled", "incomplete", "withdrew", "relocated", "no_longer_eligible", "no_contact", "duplicate"];
-  if (ps === "incomplete" || ps === "cancelled") return "bg-red-50 hover:bg-red-100";
-  if (client.file_closed && badEndings.includes(cr)) return "bg-red-50 hover:bg-red-100";
+  if (ps === "incomplete" || ps === "cancelled") return "bg-red-100 hover:bg-red-200";
+  if (client.file_closed && badEndings.includes(cr)) return "bg-red-100 hover:bg-red-200";
 
   // Fully complete including follow-up
-  if (ps === "complete" && client.followup_90day_status) return "bg-green-50 hover:bg-green-100";
+  if (ps === "complete" && client.followup_90day_status) return "bg-green-100 hover:bg-green-200";
 
   // Program complete, in follow-up period
-  if (ps === "complete") return "bg-blue-50 hover:bg-blue-100";
+  if (ps === "complete") return "bg-blue-100 hover:bg-blue-200";
 
   // In progress
-  if (ps === "in_progress") return "bg-yellow-50 hover:bg-yellow-100";
+  if (ps === "in_progress") return "bg-yellow-100 hover:bg-yellow-200";
 
   // No status yet — no colour
   return "";

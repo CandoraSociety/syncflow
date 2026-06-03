@@ -37,6 +37,13 @@ const PROGRAM_STATUS_OPTIONS = [
 
 const EMP_STATUS_OPTIONS = ["E-RF", "E-UF", "E-PT", "UE", "UE-LA", "UE-S", "NA"];
 
+const FOLLOWUP_STATUS_OPTIONS = [
+  { value: "E-RF", label: "E-RF" }, { value: "E-UF", label: "E-UF" },
+  { value: "E-PT", label: "E-PT" }, { value: "UE", label: "UE" },
+  { value: "UE-LA", label: "UE-LA" }, { value: "UE-S", label: "UE-S" },
+  { value: "NA", label: "NA" }, { value: "no_contact", label: "No Contact" },
+];
+
 const REFERRAL_SOURCE_OPTIONS = [
   { value: "self", label: "Self" },
   { value: "family_friend", label: "Family / Friend" },
@@ -115,6 +122,7 @@ export function applyFiltersAndSort(clients, search, filters, sortKey) {
   if (filters.employment_status) result = result.filter(c => c.employment_status === filters.employment_status);
   if (filters.clb_level) result = result.filter(c => c.clb_level === filters.clb_level);
   if (filters.assigned_worker) result = result.filter(c => c.assigned_worker_name?.toLowerCase().includes(filters.assigned_worker.toLowerCase()));
+  if (filters.followup_90day_status) result = result.filter(c => c.followup_90day_status === filters.followup_90day_status);
   if (filters.referral_source) result = result.filter(c => c.referral_source === filters.referral_source);
   if (filters.residency_status) result = result.filter(c => c.residency_status === filters.residency_status);
 
@@ -172,6 +180,7 @@ export default function ClientListControls({ search, onSearch, filters, onFilter
     service_type: "", program_status: "", employment_status: "",
     clb_level: "", assigned_worker: "", age_min: "", age_max: "",
     duration_min: "", duration_max: "", referral_source: "", residency_status: "",
+    followup_90day_status: "",
   });
 
   return (
@@ -302,6 +311,12 @@ export default function ClientListControls({ search, onSearch, filters, onFilter
             value={filters.residency_status}
             onChange={v => onFilters({ ...filters, residency_status: v })}
             options={RESIDENCY_OPTIONS}
+          />
+          <FilterSelect
+            label="90-Day Status"
+            value={filters.followup_90day_status}
+            onChange={v => onFilters({ ...filters, followup_90day_status: v })}
+            options={FOLLOWUP_STATUS_OPTIONS}
           />
 
           {/* Duration in program */}
