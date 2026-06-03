@@ -6,17 +6,15 @@ import { format } from "date-fns";
 import { base44 } from "@/api/base44Client";
 
 const EVENT_ICONS = {
-  added: <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-xs flex items-center justify-center font-bold">+</span>,
   started: <Play className="w-3.5 h-3.5 text-blue-600" />,
   completed: <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />,
-  dates_set: <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-xs flex items-center justify-center">📅</span>,
+  manual: <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 text-xs flex items-center justify-center font-bold">+</span>,
 };
 
 const EVENT_COLORS = {
-  added: "border-slate-300 bg-slate-50",
   started: "border-blue-200 bg-blue-50",
   completed: "border-green-200 bg-green-50",
-  dates_set: "border-slate-200 bg-white",
+  manual: "border-slate-300 bg-slate-50",
 };
 
 export default function RoadmapProgressNotes({ notes = [], clientId, onNotesUpdate }) {

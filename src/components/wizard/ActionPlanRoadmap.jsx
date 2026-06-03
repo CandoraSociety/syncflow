@@ -91,34 +91,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     setProgressNotes(client?.roadmap_progress_notes || []);
   }, [client?.id]);
 
-  // On first load, log any items that have no progress note yet
-  useEffect(() => {
-    if (!selectedItems || selectedItems.length === 0) return;
-    const existingNotes = client?.roadmap_progress_notes || [];
-    const loggedKeys = new Set(existingNotes.map(n => n.item_key));
 
-    const rows = buildRows();
-    const missing = rows.filter(r => !loggedKeys.has(r.id));
-    if (missing.length === 0) return;
-
-    base44.auth.me().catch(() => null).then(me => {
-      const today = new Date().toISOString().slice(0, 10);
-      const newNotes = missing.map(r => ({
-        id: `added_${r.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        date: today,
-        event_type: "added",
-        item_label: r.label,
-        item_key: r.id,
-        note: `"${r.label}" is an item on the service plan${r.start ? ` — planned start: ${format(r.start, "yyyy-MM-dd")}` : ""}${r.end ? `, planned end: ${format(r.end, "yyyy-MM-dd")}` : ""}.`,
-        logged_by: me?.email || "",
-        logged_by_name: me?.full_name || me?.email || "",
-      }));
-      const updated = [...existingNotes, ...newNotes];
-      setProgressNotes(updated);
-      base44.entities.Client.update(client.id, { roadmap_progress_notes: updated });
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client?.id, selectedItems?.join(",")]);
 
   function getBarriers() {
     const barriers = [];
@@ -267,29 +240,52 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       const updatedItemStatus = { ...itemStatus, [row.id]: newStatusObj };
       setItemStatus(updatedItemStatus);
 
-      // 3. Generate progress notes
+      // 3. Generate progress notes — only when status actually changes to started or completed
       let updatedNotes = progressNotes;
       if (status === "started" && prevStatus !== "started") {
-        updatedNotes = await addProgressNote(
-          "started", row.label, row.id,
-          `"${row.label}" has been started as an item on the service plan${startedDate ? ` — actual start date: ${startedDate}` : ""}.${notes ? ` Notes: ${notes}` : ""}`
-        );
+        // Find and update existing note for this item if it exists, otherwise add new
+        const existingIdx = updatedNotes.findIndex(n => n.item_key === row.id);
+        const me = await base44.auth.me().catch(() => null);
+        const noteText = `• Client started ${row.label}${startedDate ? ` on ${startedDate}` : ""} — in progress`;
+        const noteObj = {
+          id: existingIdx >= 0 ? updatedNotes[existingIdx].id : `started_${row.id}_${Date.now()}`,
+          date: startedDate || new Date().toISOString().slice(0, 10),
+          event_type: "started",
+          item_label: row.label,
+          item_key: row.id,
+          note: noteText,
+          logged_by: me?.email || "",
+          logged_by_name: me?.full_name || me?.email || "",
+        };
+        if (existingIdx >= 0) {
+          updatedNotes = [...updatedNotes];
+          updatedNotes[existingIdx] = noteObj;
+        } else {
+          updatedNotes = [...updatedNotes, noteObj];
+        }
+        setProgressNotes(updatedNotes);
       } else if (status === "completed" && prevStatus !== "completed") {
-        updatedNotes = await addProgressNote(
-          "completed", row.label, row.id,
-          `"${row.label}" has been completed${completedDate ? ` — completion date: ${completedDate}` : ""}${startedDate || newStatusObj.started_date ? `, started: ${startedDate || newStatusObj.started_date}` : ""}.${notes ? ` Notes: ${notes}` : ""}`
-        );
-      } else if ((startDate || endDate) && (!row.start && !row.end) && prevStatus === "planned") {
-        // Dates newly added for the first time = "added to service plan" note
-        updatedNotes = await addProgressNote(
-          "added", row.label, row.id,
-          `"${row.label}" has been added as an item on the service plan${startDate ? ` — planned start: ${startDate}` : ""}${endDate ? `, planned end: ${endDate}` : ""}.`
-        );
-      } else if (startDate || endDate) {
-        updatedNotes = await addProgressNote(
-          "dates_set", row.label, row.id,
-          `Dates updated for "${row.label}"${startDate ? ` — planned start: ${startDate}` : ""}${endDate ? `, planned end: ${endDate}` : ""}.`
-        );
+        const existingIdx = updatedNotes.findIndex(n => n.item_key === row.id);
+        const me = await base44.auth.me().catch(() => null);
+        const actualStart = startedDate || newStatusObj.started_date || "";
+        const noteText = `• Client started ${row.label}${actualStart ? ` on ${actualStart}` : ""} — completed on ${completedDate || new Date().toISOString().slice(0, 10)}`;
+        const noteObj = {
+          id: existingIdx >= 0 ? updatedNotes[existingIdx].id : `completed_${row.id}_${Date.now()}`,
+          date: completedDate || new Date().toISOString().slice(0, 10),
+          event_type: "completed",
+          item_label: row.label,
+          item_key: row.id,
+          note: noteText,
+          logged_by: me?.email || "",
+          logged_by_name: me?.full_name || me?.email || "",
+        };
+        if (existingIdx >= 0) {
+          updatedNotes = [...updatedNotes];
+          updatedNotes[existingIdx] = noteObj;
+        } else {
+          updatedNotes = [...updatedNotes, noteObj];
+        }
+        setProgressNotes(updatedNotes);
       }
 
       // 4. Persist both item status and notes
