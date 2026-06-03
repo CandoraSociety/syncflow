@@ -217,6 +217,9 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
       {/* Edit view */}
       {editing && (
         <>
+          {/* Intake Summary — auto-populated from intake */}
+          <IntakeSummary client={client} notes={notes} setNotes={setNotes} />
+
           {/* Action Plan Items */}
           {CATEGORIES.map(cat => {
             const catItems = ACTION_PLAN_OPTIONS.filter(o => o.category === cat.key);
@@ -325,6 +328,59 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
         </div>
       )}
     </div>
+  );
+}
+
+const CLB_LABELS = {
+  clb_1: "CLB 1", clb_2: "CLB 2", clb_3: "CLB 3", clb_4: "CLB 4",
+  clb_5: "CLB 5", clb_6: "CLB 6", clb_7: "CLB 7", clb_8: "CLB 8",
+  clb_9: "CLB 9", clb_10: "CLB 10", clb_11: "CLB 11", clb_12: "CLB 12",
+  native_english_french: "Native English/French Speaker",
+};
+
+const EMPLOYMENT_STATUS_LABELS = {
+  "E-RF": "Employed – Related Field", "E-UF": "Employed – Unrelated Field",
+  "E-PT": "Employed – Part Time", "UE": "Unemployed",
+  "UE-LA": "Unemployed – Long-term Absent", "UE-S": "Unemployed – Student", "NA": "N/A",
+};
+
+function IntakeSummary({ client, notes, setNotes }) {
+  const fields = [
+    { label: "Employment Status", value: EMPLOYMENT_STATUS_LABELS[client?.employment_status] || client?.employment_status },
+    { label: "CLB Level", value: CLB_LABELS[client?.clb_level] || client?.clb_level },
+    { label: "Service Stream", value: client?.service_type?.replace(/_/g, " ") },
+    { label: "Career Objectives", value: client?.career_objectives },
+    { label: "Employment History", value: client?.employment_history },
+    { label: "Intake Notes", value: client?.intake_notes },
+  ].filter(f => f.value);
+
+  if (fields.length === 0) return null;
+
+  return (
+    <Card className="border-blue-200 bg-blue-50/50">
+      <CardHeader>
+        <CardTitle className="text-base text-blue-800">Client Intake Summary</CardTitle>
+        <p className="text-xs text-blue-600">Auto-populated from intake. Use this to inform the plan below.</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {fields.map(f => (
+            <div key={f.label} className="space-y-0.5">
+              <p className="text-xs font-semibold text-blue-700">{f.label}</p>
+              <p className="text-sm text-slate-700 bg-white border border-blue-100 rounded px-2 py-1 whitespace-pre-wrap">{f.value}</p>
+            </div>
+          ))}
+        </div>
+        {(client?.internal_referrals?.length > 0 || client?.external_referrals?.length > 0) && (
+          <div className="space-y-0.5">
+            <p className="text-xs font-semibold text-blue-700">Referrals at Intake</p>
+            <p className="text-sm text-slate-700 bg-white border border-blue-100 rounded px-2 py-1">
+              {[...(client?.internal_referrals || []), ...(client?.external_referrals || [])].join(", ")}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
