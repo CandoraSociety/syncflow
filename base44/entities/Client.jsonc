@@ -521,6 +521,44 @@
           }
         }
       }
+    },
+    "roadmap_item_status": {
+      "type": "object",
+      "description": "Per-item status tracking: { [itemId]: { status: 'planned'|'started'|'completed', started_date, completed_date, case_manager_notes } }"
+    },
+    "roadmap_progress_notes": {
+      "type": "array",
+      "description": "Auto-generated client progress status notes from roadmap events",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "added|started|completed|dates_set"
+          },
+          "item_label": {
+            "type": "string"
+          },
+          "item_key": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "logged_by": {
+            "type": "string"
+          },
+          "logged_by_name": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [
