@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Save, ChevronRight, AlertCircle } from "lucide-react";
 
 export default function BarrierActionPlan({ client, onSave, onComplete }) {
@@ -29,12 +30,18 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
   };
 
   const [plans, setPlans] = useState(getInitialPlans());
+  const [serviceNav, setServiceNav] = useState(client?.service_navigation_supports || false);
+  const [serviceNavDate, setServiceNavDate] = useState(client?.service_navigation_date || "");
   const [saving, setSaving] = useState(false);
 
   const updatePlan = (i, field, val) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
 
   const buildSaveData = () => {
-    const data = { barrier_action_plan_completed: true };
+    const data = {
+      barrier_action_plan_completed: true,
+      service_navigation_supports: serviceNav,
+      service_navigation_date: serviceNavDate,
+    };
     for (let n = 1; n <= 3; n++) {
       const p = plans[n - 1];
       if (p) {
@@ -141,6 +148,23 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
           </CardContent>
         </Card>
       ))}
+
+      {/* Service Navigation Supports */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Service Navigation Supports</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Switch checked={serviceNav} onCheckedChange={setServiceNav} />
+            <Label>Client received service navigation supports</Label>
+          </div>
+          {serviceNav && (
+            <div className="space-y-1">
+              <Label>Service Navigation Date</Label>
+              <Input type="date" value={serviceNavDate} onChange={e => setServiceNavDate(e.target.value)} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Save, ChevronRight, AlertTriangle } from "lucide-react";
+
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskBarriersIdentified } from "@/lib/compassTasks";
 
@@ -55,8 +56,6 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
 
   const [barriersIdentified, setBarriersIdentified] = useState(client?.barriers_addressed || false);
   const [barriers, setBarriers] = useState(initialBarriers);
-  const [serviceNav, setServiceNav] = useState(client?.service_navigation_supports || false);
-  const [serviceNavDate, setServiceNavDate] = useState(client?.service_navigation_date || "");
   const [saving, setSaving] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -84,8 +83,6 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
   const buildSaveData = () => {
     const data = {
       barriers_addressed: barriersIdentified,
-      service_navigation_supports: serviceNav,
-      service_navigation_date: serviceNavDate,
       bit_completed: true,
     };
     // Write up to 3 barriers back to flat fields
@@ -151,23 +148,6 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
           </div>
         </div>
       )}
-
-      {/* Service Navigation */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">Service Navigation Supports</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Switch checked={serviceNav} onCheckedChange={setServiceNav} />
-            <Label>Client received service navigation supports</Label>
-          </div>
-          {serviceNav && (
-            <div className="space-y-1">
-              <Label>Service Navigation Date</Label>
-              <Input type="date" value={serviceNavDate} onChange={e => setServiceNavDate(e.target.value)} />
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* BIT Toggle */}
       <Card>
