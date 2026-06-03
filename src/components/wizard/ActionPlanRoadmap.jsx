@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { format, parseISO, isValid, differenceInDays, addDays, min, max } from "date-fns";
-import { AlertTriangle, Calendar, Info } from "lucide-react";
+import { AlertTriangle, Calendar, CalendarDays, Save } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 const ACTION_PLAN_OPTIONS = [
   { key: "job_search_workshop", label: "Job Search Workshop" },
@@ -28,20 +31,6 @@ const BARRIER_STATUS_COLORS = {
   resolved: "bg-green-100 text-green-700",
 };
 
-// Color palette for timeline bars
-const BAR_COLORS = [
-  "bg-blue-500",
-  "bg-purple-500",
-  "bg-emerald-500",
-  "bg-amber-500",
-  "bg-rose-500",
-  "bg-cyan-500",
-  "bg-indigo-500",
-  "bg-orange-500",
-  "bg-teal-500",
-  "bg-fuchsia-500",
-];
-
 const BAR_COLORS_LIGHT = [
   "bg-blue-100 border-blue-400 text-blue-800",
   "bg-purple-100 border-purple-400 text-purple-800",
@@ -55,15 +44,13 @@ const BAR_COLORS_LIGHT = [
   "bg-fuchsia-100 border-fuchsia-400 text-fuchsia-800",
 ];
 
+// Special color for barrier items
+const BARRIER_COLOR = "bg-amber-100 border-amber-400 text-amber-800";
+
 function parseDate(dateStr) {
   if (!dateStr) return null;
   const d = parseISO(dateStr);
   return isValid(d) ? d : null;
-}
-
-function formatShort(dateStr) {
-  const d = parseDate(dateStr);
-  return d ? format(d, "MMM d") : "";
 }
 
 function getBarriers(client) {
@@ -87,28 +74,139 @@ function getBarriers(client) {
   return barriers;
 }
 
-function getItemDates(key, detail, client, barriers) {
-  if (key === "barrier_support") {
-    const starts = barriers.map(b => parseDate(b.timeline_start)).filter(Boolean);
-    const ends = barriers.map(b => parseDate(b.timeline_end)).filter(Boolean);
-    const start = starts.length > 0 ? min(starts) : null;
-    const end = ends.length > 0 ? max(ends) : null;
-    return { start, end };
-  }
-  if (key === "internal_placement") {
-    return {
-      start: parseDate(client?.placement_start_date),
-      end: parseDate(client?.placement_end_date),
-    };
-  }
-  return {
-    start: parseDate(detail?.timeline_start),
-    end: parseDate(detail?.timeline_end),
-  };
+// Build a flat list of renderable rows — barriers expanded individually
+function buildRows(selectedItems, itemDetails, otherDesc, client, barriers) {
+  const rows = [];
+  let colorIdx = 0;
+
+  selectedItems.forEach(key => {
+    if (key === "barrier_support") {
+      // Expand each barrier as its own row
+      barriers.forEach(b => {
+        rows.push({
+          id: `barrier_${b.n}`,
+          key: "barrier_support",
+          barrierN: b.n,
+          label: b.label,
+          detail: b,
+          start: parseDate(b.timeline_start),
+          end: parseDate(b.timeline_end),
+          colorClass: BARRIER_COLOR,
+          isBarrier: true,
+        });
+        colorIdx++;
+      });
+      // If no barriers defined yet, show a placeholder row
+      if (barriers.length === 0) {
+        rows.push({
+          id: "barrier_support",
+          key: "barrier_support",
+          barrierN: null,
+          label: "Address Barriers",
+          detail: {},
+          start: null,
+          end: null,
+          colorClass: BARRIER_COLOR,
+          isBarrier: true,
+        });
+      }
+    } else {
+      const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
+      const detail = itemDetails?.[key] || {};
+      const label = key === "other" ? (otherDesc || "Other") : opt?.label || key;
+      let start = null, end = null;
+      if (key === "internal_placement") {
+        start = parseDate(client?.placement_start_date);
+        end = parseDate(client?.placement_end_date);
+      } else {
+        start = parseDate(detail?.timeline_start);
+        end = parseDate(detail?.timeline_end);
+      }
+      rows.push({
+        id: key,
+        key,
+        barrierN: null,
+        label,
+        detail,
+        start,
+        end,
+        colorClass: BAR_COLORS_LIGHT[colorIdx % BAR_COLORS_LIGHT.length],
+        isBarrier: false,
+      });
+      colorIdx++;
+    }
+  });
+
+  return rows;
 }
 
-export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc }) {
+function getBarStyle(item, timelineStart, totalDays) {
+  const start = item.start || timelineStart;
+  const end = item.end || (item.start ? addDays(item.start, 7) : null);
+  if (!start || !timelineStart || !end) return { left: "0%", width: "30%" };
+  const leftDays = differenceInDays(start, timelineStart);
+  const widthDays = Math.max(differenceInDays(end, start), 1);
+  const left = (leftDays / totalDays) * 100;
+  const width = Math.max((widthDays / totalDays) * 100, 2);
+  return { left: `${left}%`, width: `${Math.min(width, 100 - left)}%` };
+}
+
+// Inline date editor for a row — calls back with updated dates
+function DateEditor({ item, onSaveDates, onCancel }) {
+  const [start, setStart] = useState(
+    item.isBarrier ? (item.detail.timeline_start || "") : (item.detail.timeline_start || "")
+  );
+  const [end, setEnd] = useState(
+    item.isBarrier ? (item.detail.timeline_end || "") : (item.detail.timeline_end || "")
+  );
+
+  return (
+    <div className="mt-1 mb-2 mx-0 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <p className="text-xs font-semibold text-slate-600 mb-3">Set dates for: <span className="text-slate-800">{item.label}</span></p>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Start Date</Label>
+          <Input type="date" value={start} onChange={e => setStart(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">End Date</Label>
+          <Input type="date" value={end} onChange={e => setEnd(e.target.value)} />
+        </div>
+      </div>
+      {/* Details for barrier rows */}
+      {item.isBarrier && item.detail && (
+        <div className="space-y-1.5 pt-2 border-t border-slate-100 mt-2 text-xs text-slate-600">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Status:</span>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${BARRIER_STATUS_COLORS[item.detail.status] || "bg-slate-100 text-slate-600"}`}>
+              {(item.detail.status || "unresolved").replace("_", " ")}
+            </span>
+          </div>
+          {item.detail.action_steps && <p><span className="font-medium">Action Steps:</span> {item.detail.action_steps}</p>}
+          {item.detail.responsible && <p><span className="font-medium">Responsible:</span> {item.detail.responsible}</p>}
+          {item.detail.notes && <p><span className="font-medium">Notes:</span> {item.detail.notes}</p>}
+        </div>
+      )}
+      {/* Details for non-barrier rows */}
+      {!item.isBarrier && (item.detail.goal || item.detail.notes) && (
+        <div className="space-y-1.5 pt-2 border-t border-slate-100 mt-2 text-xs text-slate-600">
+          {item.detail.goal && <p><span className="font-medium">Goal:</span> {item.detail.goal}</p>}
+          {item.detail.notes && <p><span className="font-medium">Notes:</span> {item.detail.notes}</p>}
+        </div>
+      )}
+      <div className="flex gap-2 mt-3">
+        <Button size="sm" onClick={() => onSaveDates(start, end)} className="gap-1.5">
+          <Save className="w-3.5 h-3.5" /> Save Dates
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail, onSave }) {
   const [activeItem, setActiveItem] = useState(null);
+  const [editingDates, setEditingDates] = useState(null); // row id being date-edited
 
   if (!selectedItems || selectedItems.length === 0) {
     return (
@@ -119,27 +217,18 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   }
 
   const barriers = getBarriers(client);
+  const rows = buildRows(selectedItems, itemDetails, otherDesc, client, barriers);
 
-  // Build items with date info
-  const items = selectedItems.map((key, i) => {
-    const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
-    const detail = itemDetails?.[key] || {};
-    const label = key === "other" ? (otherDesc || "Other") : opt?.label || key;
-    const { start, end } = getItemDates(key, detail, client, barriers);
-    return { key, label, detail, start, end, colorIdx: i % BAR_COLORS.length };
-  });
-
-  const itemsWithDates = items.filter(i => i.start || i.end);
-  const itemsWithoutDates = items.filter(i => !i.start && !i.end);
+  const rowsWithDates = rows.filter(r => r.start || r.end);
+  const rowsWithoutDates = rows.filter(r => !r.start && !r.end);
 
   // Compute timeline bounds
-  const allStarts = itemsWithDates.map(i => i.start).filter(Boolean);
-  const allEnds = itemsWithDates.map(i => i.end || i.start).filter(Boolean);
+  const allStarts = rowsWithDates.map(r => r.start).filter(Boolean);
+  const allEnds = rowsWithDates.map(r => r.end || r.start).filter(Boolean);
   const timelineStart = allStarts.length > 0 ? min(allStarts) : null;
   const timelineEnd = allEnds.length > 0 ? max(allEnds) : null;
   const totalDays = timelineStart && timelineEnd ? Math.max(differenceInDays(timelineEnd, timelineStart), 1) : 1;
 
-  // Generate month markers for the header
   function getMonthMarkers() {
     if (!timelineStart || !timelineEnd) return [];
     const markers = [];
@@ -155,75 +244,104 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
   const monthMarkers = getMonthMarkers();
 
-  function getBarStyle(item) {
-    const start = item.start || timelineStart;
-    const end = item.end || (item.start ? addDays(item.start, 7) : timelineEnd);
-    if (!start || !timelineStart) return { left: "0%", width: "100%" };
-    const leftDays = differenceInDays(start, timelineStart);
-    const widthDays = Math.max(differenceInDays(end, start), 1);
-    const left = (leftDays / totalDays) * 100;
-    const width = Math.max((widthDays / totalDays) * 100, 2);
-    return { left: `${left}%`, width: `${Math.min(width, 100 - left)}%` };
+  // Save dates for a row — barriers update client barrier fields, others update itemDetails
+  async function handleSaveDates(row, startVal, endVal) {
+    if (row.isBarrier && row.barrierN) {
+      // Update the barrier timeline fields on the client
+      const patch = {
+        [`barrier_${row.barrierN}_timeline_start`]: startVal || null,
+        [`barrier_${row.barrierN}_timeline_end`]: endVal || null,
+      };
+      await onSave(patch);
+    } else {
+      // Update itemDetails for action plan item
+      const updatedDetails = {
+        ...itemDetails,
+        [row.key]: {
+          ...(itemDetails?.[row.key] || {}),
+          timeline_start: startVal || undefined,
+          timeline_end: endVal || undefined,
+        },
+      };
+      await onSave({ sdp_item_details: updatedDetails });
+      onUpdateDetail?.(row.key, "timeline_start", startVal);
+      onUpdateDetail?.(row.key, "timeline_end", endVal);
+    }
+    setEditingDates(null);
   }
 
-  const DetailPanel = ({ item }) => {
-    const isBarrierSupport = item.key === "barrier_support";
+  function GanttRow({ row }) {
+    const barStyle = getBarStyle(row, timelineStart, totalDays);
+    const isEditing = editingDates === row.id;
+
     return (
-      <div className="mt-2 mb-3 mx-2 bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
-        {isBarrierSupport && barriers.length > 0 ? (
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Barriers to Address</p>
-            {barriers.map(b => (
-              <div key={b.n} className="border border-slate-200 rounded-lg p-3 bg-slate-50 space-y-1.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-slate-800 text-sm">{b.label}</span>
-                  {b.status && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BARRIER_STATUS_COLORS[b.status] || "bg-slate-100 text-slate-600"}`}>
-                      {b.status.replace("_", " ")}
-                    </span>
-                  )}
-                </div>
-                {(b.timeline_start || b.timeline_end) && (
-                  <p className="text-xs text-slate-600">
-                    <span className="font-medium">Timeline:</span>{" "}
-                    {[b.timeline_start && formatShort(b.timeline_start), b.timeline_end && formatShort(b.timeline_end)].filter(Boolean).join(" – ")}
-                  </p>
-                )}
-                {b.action_steps && <p className="text-xs text-slate-600"><span className="font-medium">Action Steps:</span> {b.action_steps}</p>}
-                {b.responsible && <p className="text-xs text-slate-600"><span className="font-medium">Responsible:</span> {b.responsible}</p>}
-                {b.resources && <p className="text-xs text-slate-600"><span className="font-medium">Resources:</span> {b.resources}</p>}
-                {b.notes && <p className="text-xs text-slate-600"><span className="font-medium">Notes:</span> {b.notes}</p>}
-              </div>
-            ))}
+      <div key={row.id}>
+        <div className="flex items-center gap-2">
+          {/* Label */}
+          <div className="w-36 shrink-0 text-right pr-2 flex items-center justify-end gap-1">
+            {row.isBarrier && <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />}
+            <span className="text-xs text-slate-600 font-medium leading-tight line-clamp-2">{row.label}</span>
           </div>
-        ) : (
-          <div className="space-y-1.5">
-            {item.detail.goal && <p className="text-sm text-slate-700"><span className="font-medium">Goal:</span> {item.detail.goal}</p>}
-            {(item.start || item.end) && (
-              <p className="text-sm text-slate-700">
-                <span className="font-medium">Timeline:</span>{" "}
-                {[item.start && format(item.start, "MMM d, yyyy"), item.end && format(item.end, "MMM d, yyyy")].filter(Boolean).join(" – ")}
-              </p>
-            )}
-            {item.detail.notes && <p className="text-sm text-slate-700"><span className="font-medium">Notes:</span> {item.detail.notes}</p>}
-            {!item.detail.goal && !item.start && !item.end && !item.detail.notes && (
-              <p className="text-xs text-slate-400 italic">No additional details recorded for this item.</p>
-            )}
+          {/* Bar track */}
+          <div className="flex-1 relative h-8 bg-slate-50 rounded-md border border-slate-100">
+            <button
+              onClick={() => setEditingDates(isEditing ? null : row.id)}
+              className={`absolute h-full rounded-md border flex items-center px-2 transition-all shadow-sm hover:opacity-90 ${row.colorClass} ${isEditing ? "ring-2 ring-offset-1 ring-slate-400" : ""}`}
+              style={barStyle}
+              title={row.label}
+            >
+              <span className="text-xs font-medium truncate">{row.label}</span>
+            </button>
           </div>
+          {/* Date range */}
+          <div className="w-28 shrink-0 text-xs text-slate-400">
+            {row.start && <span>{format(row.start, "MMM d")}</span>}
+            {row.end && <span> – {format(row.end, "MMM d")}</span>}
+          </div>
+        </div>
+        {isEditing && (
+          <DateEditor
+            item={row}
+            onSaveDates={(s, e) => handleSaveDates(row, s, e)}
+            onCancel={() => setEditingDates(null)}
+          />
         )}
       </div>
     );
-  };
+  }
+
+  function UndatedCard({ row }) {
+    const isEditing = editingDates === row.id;
+    return (
+      <div key={row.id}>
+        <button
+          onClick={() => setEditingDates(isEditing ? null : row.id)}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all hover:shadow-sm ${row.colorClass} ${isEditing ? "ring-2 ring-offset-1 ring-slate-400" : ""}`}
+        >
+          {row.isBarrier && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+          <span className="text-sm font-medium truncate">{row.label}</span>
+          <CalendarDays className="w-3.5 h-3.5 ml-auto shrink-0 opacity-60" />
+        </button>
+        {isEditing && (
+          <DateEditor
+            item={row}
+            onSaveDates={(s, e) => handleSaveDates(row, s, e)}
+            onCancel={() => setEditingDates(null)}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-6">
       <div>
         <h3 className="text-sm font-semibold text-slate-700">Action Plan Timeline</h3>
-        <p className="text-xs text-slate-400 mt-0.5">Overlapping items are shown on separate rows. Click any bar for details.</p>
+        <p className="text-xs text-slate-400 mt-0.5">Each barrier is shown individually. Click any bar or card to set/edit dates.</p>
       </div>
 
-      {/* Gantt chart section */}
-      {itemsWithDates.length > 0 && (
+      {/* Gantt chart */}
+      {rowsWithDates.length > 0 && (
         <div className="overflow-x-auto">
           <div className="min-w-[500px]">
             {/* Month header */}
@@ -235,75 +353,22 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                 </div>
               ))}
             </div>
-
-            {/* Rows */}
             <div className="space-y-2">
-              {itemsWithDates.map((item) => {
-                const barStyle = getBarStyle(item);
-                const isActive = activeItem === item.key;
-                const isBarrier = item.key === "barrier_support";
-                const colorClass = BAR_COLORS_LIGHT[item.colorIdx];
-
-                return (
-                  <div key={item.key}>
-                    <div className="flex items-center gap-2">
-                      {/* Label */}
-                      <div className="w-36 shrink-0 text-right pr-2">
-                        <span className="text-xs text-slate-600 font-medium leading-tight line-clamp-2">{item.label}</span>
-                      </div>
-                      {/* Bar track */}
-                      <div className="flex-1 relative h-8 bg-slate-50 rounded-md border border-slate-100">
-                        <button
-                          onClick={() => setActiveItem(isActive ? null : item.key)}
-                          className={`absolute h-full rounded-md border flex items-center px-2 transition-all shadow-sm hover:opacity-90 ${colorClass} ${isActive ? "ring-2 ring-offset-1 ring-slate-400" : ""}`}
-                          style={barStyle}
-                          title={item.label}
-                        >
-                          {isBarrier && <AlertTriangle className="w-3 h-3 shrink-0 mr-1" />}
-                          <span className="text-xs font-medium truncate">{item.label}</span>
-                        </button>
-                      </div>
-                      {/* Date range label */}
-                      <div className="w-28 shrink-0 text-xs text-slate-400">
-                        {item.start && <span>{format(item.start, "MMM d")}</span>}
-                        {item.end && item.end !== item.start && <span> – {format(item.end, "MMM d")}</span>}
-                      </div>
-                    </div>
-                    {isActive && <DetailPanel item={item} />}
-                  </div>
-                );
-              })}
+              {rowsWithDates.map(row => <GanttRow key={row.id} row={row} />)}
             </div>
           </div>
         </div>
       )}
 
       {/* Items without dates */}
-      {itemsWithoutDates.length > 0 && (
+      {rowsWithoutDates.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Calendar className="w-4 h-4 text-slate-400" />
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Items Without Set Dates</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Items Without Set Dates — click to add</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {itemsWithoutDates.map((item) => {
-              const isActive = activeItem === item.key;
-              const isBarrier = item.key === "barrier_support";
-              const colorClass = BAR_COLORS_LIGHT[item.colorIdx];
-              return (
-                <div key={item.key}>
-                  <button
-                    onClick={() => setActiveItem(isActive ? null : item.key)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-all hover:shadow-sm ${colorClass} ${isActive ? "ring-2 ring-offset-1 ring-slate-400" : ""}`}
-                  >
-                    {isBarrier && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
-                    <span className="text-sm font-medium truncate">{item.label}</span>
-                    <Info className="w-3.5 h-3.5 ml-auto shrink-0 opacity-50" />
-                  </button>
-                  {isActive && <DetailPanel item={item} />}
-                </div>
-              );
-            })}
+            {rowsWithoutDates.map(row => <UndatedCard key={row.id} row={row} />)}
           </div>
         </div>
       )}

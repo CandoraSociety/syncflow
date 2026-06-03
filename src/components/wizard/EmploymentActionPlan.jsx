@@ -193,7 +193,14 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
       </div>
 
       {showRoadmap && selectedItems.length > 0 && (
-        <ActionPlanRoadmap client={client} selectedItems={selectedItems} itemDetails={itemDetails} />
+        <ActionPlanRoadmap
+          client={client}
+          selectedItems={selectedItems}
+          itemDetails={itemDetails}
+          otherDesc={otherDesc}
+          onUpdateDetail={updateDetail}
+          onSave={onSave}
+        />
       )}
 
       {/* Read-only view */}
