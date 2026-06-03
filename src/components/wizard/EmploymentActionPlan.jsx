@@ -1,15 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { Save, ChevronRight, Pencil, Copy, Check, ChevronDown, ChevronUp, Map } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Save, ChevronRight, Pencil, Copy, Check, Map } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskServiceNavigation } from "@/lib/compassTasks";
 import ActionPlanRoadmap from "./ActionPlanRoadmap";
+
+const EMPLOYMENT_SUPPORT_TYPES = [
+  "PPE (Personal Protective Equipment)",
+  "Work Boots / Safety Footwear",
+  "Tools / Equipment",
+  "Work Clothing / Uniform",
+  "Transportation Support",
+  "Licensing / Certification Fees",
+  "Other",
+];
 
 const ACTION_PLAN_OPTIONS = [
   { key: "job_search_workshop", label: "Job Search Workshop", category: "workshops" },
@@ -40,31 +50,80 @@ const CATEGORIES = [
   { key: "other", label: "Other" },
 ];
 
-function buildCompassText(items, otherDesc) {
+function buildCompassText(items, otherDesc, itemDetails, client, notes) {
   if (items.length === 0) return "";
   const lines = items.map(key => {
     const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
     if (key === "other") return `• ${otherDesc || "Other (see notes)"}`;
     return `• ${opt?.label || key}`;
   });
-  return `Employment Action Plan:\n${lines.join("\n")}`;
+
+  let text = `Employment Action Plan:\n${lines.join("\n")}`;
+
+  // Barriers section
+  const barriers = [];
+  for (let n = 1; n <= 3; n++) {
+    const b = client?.[`barrier_${n}`];
+    if (!b) continue;
+    const label = b === "Other" ? (client[`barrier_${n}_other`] || "Other") : b;
+    const start = client[`barrier_${n}_timeline_start`];
+    const end = client[`barrier_${n}_timeline_end`];
+    const timeline = start || end ? ` (${[start, end].filter(Boolean).join(" – ")})` : "";
+    barriers.push(`  • ${label}${timeline}`);
+  }
+  if (barriers.length > 0) {
+    text += `\n\nBarriers to Address:\n${barriers.join("\n")}`;
+  }
+
+  // Exposure courses
+  if (items.includes("exposure_course")) {
+    text += `\n\nExposure Course/Training: Planned`;
+  }
+
+  // Internal placement
+  if (client?.internal_placement && client.internal_placement !== "none") {
+    const placements = {
+      cleaning_arc: "Cleaning Services (ARC)",
+      food_services_onsite: "Food Services (Onsite)",
+      food_services_offsite: "Food Services (Offsite)",
+      reception: "Reception",
+      childcare: "Childcare",
+    };
+    const label = placements[client.internal_placement] || client.internal_placement;
+    const start = client.placement_start_date;
+    const end = client.placement_end_date;
+    const timeline = start || end ? ` (${[start, end].filter(Boolean).join(" – ")})` : "";
+    text += `\n\nInternal Placement: ${label}${timeline}`;
+    if (client.placement_supervisor) text += `\n  Supervisor: ${client.placement_supervisor}`;
+  }
+
+  // Paraphrased notes
+  if (notes?.trim()) {
+    text += `\n\nAdditional Notes: ${notes.trim()}`;
+  }
+
+  return text;
 }
 
 export default function EmploymentActionPlan({ client, onSave, onComplete }) {
   const [submitted, setSubmitted] = useState(client?.action_plan_submitted || false);
   const [editing, setEditing] = useState(!client?.action_plan_submitted);
-  const [selectedItems, setSelectedItems] = useState(client?.sdp_items || []);
+
+  // Auto-populate barrier_support if barriers were identified
+  const hasBarriers = client?.barriers_addressed && client?.barrier_1;
+  const defaultItems = client?.sdp_items
+    ? client.sdp_items
+    : hasBarriers ? ["barrier_support"] : [];
+
+  const [selectedItems, setSelectedItems] = useState(defaultItems);
   const [itemDetails, setItemDetails] = useState(client?.sdp_item_details || {});
-  const [expanded, setExpanded] = useState({});
   const [otherDesc, setOtherDesc] = useState(client?.sdp_other_desc || "");
   const [notes, setNotes] = useState(client?.sdp_notes || "");
-  const [serviceNav, setServiceNav] = useState(client?.service_navigation_supports || false);
-  const [serviceNavDate, setServiceNavDate] = useState(client?.service_navigation_date || "");
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
 
-  const compassText = buildCompassText(selectedItems, otherDesc);
+  const compassText = buildCompassText(selectedItems, otherDesc, itemDetails, client, notes);
 
   const toggleItem = (key) => {
     setSelectedItems(prev =>
@@ -75,8 +134,6 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
   const updateDetail = (key, field, val) => {
     setItemDetails(prev => ({ ...prev, [key]: { ...(prev[key] || {}), [field]: val } }));
   };
-
-  const toggleExpand = (key) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
 
   const handleCopy = () => {
     navigator.clipboard.writeText(compassText);
@@ -89,8 +146,6 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
     sdp_item_details: itemDetails,
     sdp_other_desc: otherDesc,
     sdp_notes: notes,
-    service_navigation_supports: serviceNav,
-    service_navigation_date: serviceNavDate,
     action_plan_submitted: true,
   });
 
@@ -98,18 +153,6 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
     setSaving(true);
     const data = buildSaveData();
     await onSave(data);
-
-    if (serviceNav && !client?.service_navigation_supports) {
-      const updatedClient = { ...client, ...data };
-      const t = taskServiceNavigation(updatedClient);
-      await createCompassTask({
-        client_id: client.id,
-        client_name: `${client.first_name} ${client.last_name}`,
-        compass_hsid: client.compass_hsid,
-        ...t,
-      });
-    }
-
     setSubmitted(true);
     setEditing(false);
     setSaving(false);
@@ -154,7 +197,7 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
                 return (
                   <div key={key} className="flex flex-col gap-1 border border-slate-100 rounded-lg p-3 bg-slate-50">
                     <span className="font-medium text-slate-800 text-sm">✓ {key === "other" ? (otherDesc || "Other") : opt?.label}</span>
-                    {detail.goal && <span className="text-xs text-slate-500">Goal: {detail.goal}</span>}
+                    {detail.support_type && <span className="text-xs text-slate-500">Support Type: {detail.support_type}</span>}
                     {detail.timeline && <span className="text-xs text-slate-500">Timeline: {detail.timeline}</span>}
                     {detail.notes && <span className="text-xs text-slate-500">Notes: {detail.notes}</span>}
                   </div>
@@ -174,34 +217,60 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
       {/* Edit view */}
       {editing && (
         <>
-          {/* Service Navigation */}
-          <Card>
-            <CardHeader><CardTitle className="text-base">Service Navigation Supports</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Switch checked={serviceNav} onCheckedChange={setServiceNav} />
-                <Label>Client received service navigation supports</Label>
-              </div>
-              {serviceNav && (
-                <div className="space-y-1">
-                  <Label>Service Navigation Date</Label>
-                  <Input type="date" value={serviceNavDate} onChange={e => setServiceNavDate(e.target.value)} />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Action Plan Items */}
           {CATEGORIES.map(cat => {
             const catItems = ACTION_PLAN_OPTIONS.filter(o => o.category === cat.key);
+            let filteredItems = catItems;
             if (cat.key === "placement" && !isPathways) {
-              // Hide internal placement for non-pathways
-              const filtered = catItems.filter(o => o.key !== "internal_placement");
-              if (filtered.length === 0) return null;
-              return <ActionPlanCategory key={cat.key} cat={cat} items={filtered} selectedItems={selectedItems} itemDetails={itemDetails} expanded={expanded} otherDesc={otherDesc} onToggle={toggleItem} onExpand={toggleExpand} onUpdateDetail={updateDetail} onOtherDesc={setOtherDesc} />;
+              filteredItems = catItems.filter(o => o.key !== "internal_placement");
+              if (filteredItems.length === 0) return null;
+            }
+            // "barrier_support" auto-populated — show as read-only if barriers present
+            if (cat.key === "supports" && hasBarriers) {
+              const others = filteredItems.filter(o => o.key !== "barrier_support");
+              return (
+                <Card key={cat.key}>
+                  <CardHeader><CardTitle className="text-sm text-slate-600 font-semibold">{cat.label}</CardTitle></CardHeader>
+                  <CardContent className="space-y-2">
+                    {/* barrier_support auto-populated */}
+                    <div className="flex items-center gap-3 p-3 border border-primary/20 rounded-lg bg-primary/5">
+                      <Checkbox checked disabled />
+                      <span className="text-sm font-medium text-slate-700">Address Barriers (per BIT) — auto-included</span>
+                    </div>
+                    {others.map(opt => (
+                      <ActionPlanItem
+                        key={opt.key}
+                        opt={opt}
+                        isSelected={selectedItems.includes(opt.key)}
+                        detail={itemDetails[opt.key] || {}}
+                        otherDesc={otherDesc}
+                        onToggle={toggleItem}
+                        onUpdateDetail={updateDetail}
+                        onOtherDesc={setOtherDesc}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              );
             }
             return (
-              <ActionPlanCategory key={cat.key} cat={cat} items={catItems} selectedItems={selectedItems} itemDetails={itemDetails} expanded={expanded} otherDesc={otherDesc} onToggle={toggleItem} onExpand={toggleExpand} onUpdateDetail={updateDetail} onOtherDesc={setOtherDesc} />
+              <Card key={cat.key}>
+                <CardHeader><CardTitle className="text-sm text-slate-600 font-semibold">{cat.label}</CardTitle></CardHeader>
+                <CardContent className="space-y-2">
+                  {filteredItems.map(opt => (
+                    <ActionPlanItem
+                      key={opt.key}
+                      opt={opt}
+                      isSelected={selectedItems.includes(opt.key)}
+                      detail={itemDetails[opt.key] || {}}
+                      otherDesc={otherDesc}
+                      onToggle={toggleItem}
+                      onUpdateDetail={updateDetail}
+                      onOtherDesc={setOtherDesc}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
             );
           })}
 
@@ -213,7 +282,7 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
             </CardContent>
           </Card>
 
-          {/* Compass auto-populate field */}
+          {/* Compass entry — placed after internal placement info is available */}
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader>
               <CardTitle className="text-base flex items-center justify-between">
@@ -223,7 +292,7 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
                   {copied ? "Copied!" : "Copy"}
                 </Button>
               </CardTitle>
-              <p className="text-xs text-slate-500">Auto-populated from your selections above. Copy and paste into Compass.</p>
+              <p className="text-xs text-slate-500">Auto-populated from your selections above, including barriers, timelines, placements, and notes. Copy and paste into Compass.</p>
             </CardHeader>
             <CardContent>
               <pre className="text-sm text-slate-700 whitespace-pre-wrap bg-white border border-slate-200 rounded-lg p-3 min-h-16">
@@ -241,7 +310,7 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
                 <Save className="w-4 h-4 mr-2" /> {saving ? "Saving…" : "Save"}
               </Button>
               <Button onClick={() => handleSubmit(true)} disabled={saving} className="gap-2">
-                {saving ? "Saving…" : "Save & Continue"} <ChevronRight className="w-4 h-4" />
+                {saving ? "Saving…" : submitted ? "Save & Continue" : "Finish & Continue"} <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -259,57 +328,63 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
   );
 }
 
-function ActionPlanCategory({ cat, items, selectedItems, itemDetails, expanded, otherDesc, onToggle, onExpand, onUpdateDetail, onOtherDesc }) {
+function ActionPlanItem({ opt, isSelected, detail, otherDesc, onToggle, onUpdateDetail, onOtherDesc }) {
+  const isEmploymentSupport = opt.key === "employment_supports";
+  const isOther = opt.key === "other";
+  // Auto-expand when selected (no manual toggle needed)
+  const showDetail = isSelected;
+
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-sm text-slate-600 font-semibold">{cat.label}</CardTitle></CardHeader>
-      <CardContent className="space-y-2">
-        {items.map(opt => {
-          const isSelected = selectedItems.includes(opt.key);
-          const isExpanded = expanded[opt.key];
-          const detail = itemDetails[opt.key] || {};
-          return (
-            <div key={opt.key} className="border border-slate-200 rounded-lg overflow-hidden">
-              <div
-                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-slate-50"}`}
-                onClick={() => onToggle(opt.key)}
-              >
-                <Checkbox checked={isSelected} onCheckedChange={() => onToggle(opt.key)} onClick={e => e.stopPropagation()} />
-                <span className={`flex-1 text-sm ${isSelected ? "font-medium text-slate-800" : "text-slate-600"}`}>{opt.label}</span>
-                {isSelected && (
-                  <button onClick={e => { e.stopPropagation(); onExpand(opt.key); }} className="text-slate-400 hover:text-slate-600">
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
-                )}
-              </div>
-              {isSelected && isExpanded && (
-                <div className="px-4 pb-4 pt-2 bg-slate-50 border-t border-slate-100 space-y-3">
-                  {opt.key === "other" && (
-                    <div className="space-y-1">
-                      <Label className="text-xs">Describe this item</Label>
-                      <Input value={otherDesc} onChange={e => onOtherDesc(e.target.value)} placeholder="Describe the action plan item..." />
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Goal / Objective</Label>
-                      <Input value={detail.goal || ""} onChange={e => onUpdateDetail(opt.key, "goal", e.target.value)} placeholder="What is the goal for this item?" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Target Timeline</Label>
-                      <Input value={detail.timeline || ""} onChange={e => onUpdateDetail(opt.key, "timeline", e.target.value)} placeholder="e.g. Within 2 weeks, by March 15..." />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Notes</Label>
-                    <Textarea rows={2} value={detail.notes || ""} onChange={e => onUpdateDetail(opt.key, "notes", e.target.value)} placeholder="Any additional details..." />
-                  </div>
-                </div>
-              )}
+    <div className="border border-slate-200 rounded-lg overflow-hidden">
+      <div
+        className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-slate-50"}`}
+        onClick={() => onToggle(opt.key)}
+      >
+        <Checkbox checked={isSelected} onCheckedChange={() => onToggle(opt.key)} onClick={e => e.stopPropagation()} />
+        <span className={`flex-1 text-sm ${isSelected ? "font-medium text-slate-800" : "text-slate-600"}`}>{opt.label}</span>
+      </div>
+      {showDetail && (
+        <div className="px-4 pb-4 pt-2 bg-slate-50 border-t border-slate-100 space-y-3">
+          {isOther && (
+            <div className="space-y-1">
+              <Label className="text-xs">Describe this item</Label>
+              <Input value={otherDesc} onChange={e => onOtherDesc(e.target.value)} placeholder="Describe the action plan item..." />
             </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+          )}
+          {isEmploymentSupport ? (
+            <>
+              <div className="space-y-1">
+                <Label className="text-xs">Employment Support Type</Label>
+                <Select value={detail.support_type || ""} onValueChange={v => onUpdateDetail(opt.key, "support_type", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select support type..." /></SelectTrigger>
+                  <SelectContent>
+                    {EMPLOYMENT_SUPPORT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Target Timeline</Label>
+                <Input value={detail.timeline || ""} onChange={e => onUpdateDetail(opt.key, "timeline", e.target.value)} placeholder="e.g. Within 2 weeks, by March 15..." />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Description / Notes</Label>
+                <Textarea rows={2} value={detail.notes || ""} onChange={e => onUpdateDetail(opt.key, "notes", e.target.value)} placeholder="Any additional details..." />
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Target Timeline</Label>
+                <Input value={detail.timeline || ""} onChange={e => onUpdateDetail(opt.key, "timeline", e.target.value)} placeholder="e.g. Within 2 weeks, by March 15..." />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Description / Notes</Label>
+                <Textarea rows={2} value={detail.notes || ""} onChange={e => onUpdateDetail(opt.key, "notes", e.target.value)} placeholder="Any additional details..." />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Save, ChevronRight, AlertCircle } from "lucide-react";
 
 export default function BarrierActionPlan({ client, onSave, onComplete }) {
@@ -35,22 +34,15 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
   };
 
   const [plans, setPlans] = useState(getInitialPlans());
-  const [serviceNav, setServiceNav] = useState(client?.service_navigation_supports || false);
-  const [serviceNavDate, setServiceNavDate] = useState(client?.service_navigation_date || "");
   const [saving, setSaving] = useState(false);
 
   const updatePlan = (i, field, val) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
-
   const addStep = (i) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, action_steps: [...p.action_steps, ""] } : p));
   const removeStep = (i, si) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, action_steps: p.action_steps.filter((_, sidx) => sidx !== si) } : p));
   const updateStep = (i, si, val) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, action_steps: p.action_steps.map((s, sidx) => sidx === si ? val : s) } : p));
 
   const buildSaveData = () => {
-    const data = {
-      barrier_action_plan_completed: true,
-      service_navigation_supports: serviceNav,
-      service_navigation_date: serviceNavDate,
-    };
+    const data = { barrier_action_plan_completed: true };
     for (let n = 1; n <= 3; n++) {
       const p = plans[n - 1];
       if (p) {
@@ -75,7 +67,7 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Action Plan</h2>
+          <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Resolution Plan</h2>
           <p className="text-sm text-slate-500 mt-1">Action plans for each identified barrier.</p>
         </div>
         <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -94,7 +86,7 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Action Plan</h2>
+          <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Resolution Plan</h2>
           <p className="text-sm text-slate-500 mt-1">Please complete the BIT first to identify barriers.</p>
         </div>
         <Button className="gap-2" onClick={onComplete}>
@@ -107,8 +99,8 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Action Plan</h2>
-        <p className="text-sm text-slate-500 mt-1">For each identified barrier, create a concrete action plan with timelines.</p>
+        <h2 className="text-lg font-bold text-slate-800">Step 2 — Barrier Resolution Plan</h2>
+        <p className="text-sm text-slate-500 mt-1">For each identified barrier, create a concrete resolution plan with timelines.</p>
       </div>
 
       {plans.map((plan, i) => (
@@ -169,23 +161,6 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
           </CardContent>
         </Card>
       ))}
-
-      {/* Service Navigation Supports */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">Service Navigation Supports</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Switch checked={serviceNav} onCheckedChange={setServiceNav} />
-            <Label>Client received service navigation supports</Label>
-          </div>
-          {serviceNav && (
-            <div className="space-y-1">
-              <Label>Service Navigation Date</Label>
-              <Input type="date" value={serviceNavDate} onChange={e => setServiceNavDate(e.target.value)} />
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
