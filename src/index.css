@@ -10,7 +10,7 @@
     --candora-gold: 42 100% 54%;        /* #FBB800 sunflower gold */
     --candora-gold-light: 44 100% 88%;  /* pale gold tint */
 
-    --background: 0 0% 100%;
+    --background: 231 40% 96%;
     --foreground: 231 64% 16%;
     --card: 0 0% 100%;
     --card-foreground: 231 64% 16%;
@@ -22,7 +22,7 @@
     --primary-foreground: 0 0% 100%;
     --secondary: var(--candora-gold-light);
     --secondary-foreground: 231 64% 16%;
-    --muted: 220 14% 96%;
+    --muted: 231 30% 93%;
     --muted-foreground: 220 10% 46%;
     --accent: var(--candora-gold);
     --accent-foreground: 231 64% 12%;
