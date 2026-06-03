@@ -230,8 +230,7 @@
     },
     "post_completion_employment_date": {
       "type": "string",
-      "format": "date",
-      "description": "Employment start date at post-program completion"
+      "format": "date"
     },
     "followup_90day_date": {
       "type": "string",
@@ -258,16 +257,27 @@
     },
     "service_navigation_date": {
       "type": "string",
-      "format": "date",
-      "description": "Service navigation date"
+      "format": "date"
     },
     "barriers_addressed": {
       "type": "boolean",
-      "description": "Barriers addressed in service plan"
+      "description": "Barriers identified via BIT"
+    },
+    "bit_completed": {
+      "type": "boolean",
+      "description": "BIT step has been completed"
+    },
+    "barrier_action_plan_completed": {
+      "type": "boolean",
+      "description": "Barrier Action Plan completed"
+    },
+    "action_plan_submitted": {
+      "type": "boolean",
+      "description": "Employment Action Plan submitted"
     },
     "barrier_1": {
       "type": "string",
-      "description": "Primary barrier"
+      "description": "Primary barrier type"
     },
     "barrier_1_status": {
       "type": "string",
@@ -277,9 +287,33 @@
         "resolved"
       ]
     },
+    "barrier_1_other": {
+      "type": "string",
+      "description": "Custom description if barrier_1 is Other"
+    },
+    "barrier_1_notes": {
+      "type": "string"
+    },
+    "barrier_1_action_steps": {
+      "type": "string"
+    },
+    "barrier_1_timeline_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "barrier_1_timeline_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "barrier_1_responsible": {
+      "type": "string"
+    },
+    "barrier_1_resources": {
+      "type": "string"
+    },
     "barrier_2": {
       "type": "string",
-      "description": "Secondary barrier"
+      "description": "Secondary barrier type"
     },
     "barrier_2_status": {
       "type": "string",
@@ -289,9 +323,32 @@
         "resolved"
       ]
     },
+    "barrier_2_other": {
+      "type": "string"
+    },
+    "barrier_2_notes": {
+      "type": "string"
+    },
+    "barrier_2_action_steps": {
+      "type": "string"
+    },
+    "barrier_2_timeline_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "barrier_2_timeline_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "barrier_2_responsible": {
+      "type": "string"
+    },
+    "barrier_2_resources": {
+      "type": "string"
+    },
     "barrier_3": {
       "type": "string",
-      "description": "Tertiary barrier"
+      "description": "Tertiary barrier type"
     },
     "barrier_3_status": {
       "type": "string",
@@ -300,6 +357,29 @@
         "in_progress",
         "resolved"
       ]
+    },
+    "barrier_3_other": {
+      "type": "string"
+    },
+    "barrier_3_notes": {
+      "type": "string"
+    },
+    "barrier_3_action_steps": {
+      "type": "string"
+    },
+    "barrier_3_timeline_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "barrier_3_timeline_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "barrier_3_responsible": {
+      "type": "string"
+    },
+    "barrier_3_resources": {
+      "type": "string"
     },
     "exposure_course": {
       "type": "boolean"
@@ -323,6 +403,24 @@
     },
     "internal_placement_details": {
       "type": "string"
+    },
+    "placement_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "placement_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "placement_supervisor": {
+      "type": "string"
+    },
+    "placement_schedule": {
+      "type": "string"
+    },
+    "placement_request_sent": {
+      "type": "boolean",
+      "description": "Whether placement request email has been sent"
     },
     "external_employer": {
       "type": "string"
@@ -351,6 +449,14 @@
       "items": {
         "type": "string"
       }
+    },
+    "sdp_item_details": {
+      "type": "object",
+      "description": "Per-item goals, timelines, notes for action plan"
+    },
+    "sdp_other_desc": {
+      "type": "string",
+      "description": "Description for 'other' action plan item"
     },
     "sdp_notes": {
       "type": "string"

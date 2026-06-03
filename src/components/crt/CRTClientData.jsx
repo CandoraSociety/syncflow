@@ -1,5 +1,6 @@
 // CRT Tab 1: Client Data — formatted for GOA spreadsheet copy/paste
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const RESIDENCY_LABELS = {
   canadian_citizen: "Canadian Citizen", permanent_resident: "Permanent Resident",
@@ -52,9 +53,12 @@ const COLUMNS = [
   { label: "Email", get: c => c.email },
   { label: "City", get: c => c.city },
   { label: "Postal Code", get: c => c.zip },
+  { label: "Barriers Identified?", get: c => c.barriers_addressed ? "Yes" : "No", isBarrier: true },
 ];
 
 export default function CRTClientData({ clients }) {
+  const navigate = useNavigate();
+
   if (clients.length === 0) {
     return <div className="text-center py-16 text-slate-400 text-sm">No clients in selected period.</div>;
   }
@@ -78,9 +82,26 @@ export default function CRTClientData({ clients }) {
             {clients.map((c, i) => (
               <tr key={c.id} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                 <td className="px-2 py-1.5 text-xs text-slate-400 sticky left-0 bg-inherit">{i + 1}</td>
-                {COLUMNS.map(col => (
-                  <CopyCell key={col.label} value={col.get(c)} />
-                ))}
+                {COLUMNS.map(col => {
+                  if (col.isBarrier) {
+                    const hasBarriers = c.barriers_addressed;
+                    return (
+                      <td key={col.label} className="px-2 py-1.5 text-xs border-r border-slate-100 whitespace-nowrap">
+                        {hasBarriers ? (
+                          <button
+                            onClick={() => navigate(`/client/${c.id}?tab=program_flow&step=barrier_action_plan`)}
+                            className="text-blue-700 underline font-semibold hover:text-blue-900"
+                          >
+                            Yes →
+                          </button>
+                        ) : (
+                          <span className="text-slate-400">No</span>
+                        )}
+                      </td>
+                    );
+                  }
+                  return <CopyCell key={col.label} value={col.get(c)} />;
+                })}
               </tr>
             ))}
           </tbody>

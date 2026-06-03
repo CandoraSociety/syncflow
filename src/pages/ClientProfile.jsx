@@ -6,17 +6,15 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, XCircle, RotateCcw, History } from "lucide-react";
 import CloseFileDialog from "@/components/client/CloseFileDialog";
 import ClientProfileOverview from "@/components/client/ClientProfileOverview";
-import ClientServicePlan from "@/components/client/ClientServicePlan";
-import ClientPlacements from "@/components/client/ClientPlacements";
 import ClientReferrals from "@/components/client/ClientReferrals";
 import ClientEmployment from "@/components/client/ClientEmployment";
 import ClientFinancials from "@/components/client/ClientFinancials";
 import ClientStreamSwitches from "@/components/client/ClientStreamSwitches";
 import ClientTraining from "@/components/client/ClientTraining";
-import ClientRoadmap from "@/components/client/ClientRoadmap";
 import ClientStatusHistory from "@/components/client/ClientStatusHistory";
 import StatusChangeDialog from "@/components/client/StatusChangeDialog";
 import { createCompassTask, taskFileClosed } from "@/lib/compassTasks";
+import ProgramFlowWizard from "@/components/wizard/ProgramFlowWizard";
 
 export default function ClientProfile() {
   const { id } = useParams();
@@ -136,16 +134,14 @@ export default function ClientProfile() {
       />
 
       <div className="max-w-6xl mx-auto p-6">
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="program_flow">
           <TabsList className="mb-6 flex flex-wrap gap-1 h-auto">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="service_plan">Service Plan</TabsTrigger>
-            <TabsTrigger value="placements">Placements</TabsTrigger>
+            <TabsTrigger value="program_flow">Program Flow</TabsTrigger>
+            <TabsTrigger value="overview">Client Overview</TabsTrigger>
             <TabsTrigger value="referrals">Referrals</TabsTrigger>
             <TabsTrigger value="employment">Employment</TabsTrigger>
             <TabsTrigger value="financials">Financials</TabsTrigger>
-            <TabsTrigger value="training">Training</TabsTrigger>
-            <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
+            <TabsTrigger value="training">Training Log</TabsTrigger>
             <TabsTrigger value="status_history">Status History</TabsTrigger>
             <TabsTrigger value="stream_switches" className="relative">
               Stream Switches
@@ -157,14 +153,11 @@ export default function ClientProfile() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="program_flow">
+            <ProgramFlowWizard client={client} onSave={handleSave} />
+          </TabsContent>
           <TabsContent value="overview">
             <ClientProfileOverview client={client} onSave={handleSave} />
-          </TabsContent>
-          <TabsContent value="service_plan">
-            <ClientServicePlan client={client} onSave={handleSave} />
-          </TabsContent>
-          <TabsContent value="placements">
-            <ClientPlacements client={client} onSave={handleSave} />
           </TabsContent>
           <TabsContent value="referrals">
             <ClientReferrals client={client} onSave={handleSave} />
@@ -177,9 +170,6 @@ export default function ClientProfile() {
           </TabsContent>
           <TabsContent value="training">
             <ClientTraining client={client} />
-          </TabsContent>
-          <TabsContent value="roadmap">
-            <ClientRoadmap client={client} />
           </TabsContent>
           <TabsContent value="status_history">
             <ClientStatusHistory key={statusHistoryKey} clientId={id} />
