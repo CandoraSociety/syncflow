@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Save, ChevronRight, ChevronDown, ChevronUp, Pencil, CheckCircle2, FileText, Download } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskBarriersIdentified } from "@/lib/compassTasks";
+import { exportBitPdf } from "@/lib/exportBitPdf";
 
 const BIT_BARRIERS = [
   {
@@ -355,7 +356,7 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
                 variant="outline"
                 size="sm"
                 className="gap-2 text-xs"
-                onClick={() => window.print()}
+                onClick={() => exportBitPdf(client, barrierState, actionPlan, assessorName)}
               >
                 <Download className="w-3.5 h-3.5" /> Save / Print BIT
               </Button>

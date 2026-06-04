@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addWeeks, format, parseISO } from "date-fns";
+import { addWeeks, format, parseISO, differenceInDays } from "date-fns";
 import { CheckCircle2, Circle, Clock, AlertTriangle, Flag, CalendarCheck } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import RoadmapItemPanel from "./RoadmapItemPanel";
@@ -26,9 +26,9 @@ const ACTION_PLAN_OPTIONS = [
 ];
 
 const STATUS_CONFIG = {
-  planned: { icon: Circle, color: "text-slate-400", bg: "bg-slate-50", border: "border-slate-200", badge: "bg-slate-100 text-slate-500", label: "Planned" },
-  started: { icon: Clock, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", badge: "bg-blue-100 text-blue-700", label: "Started" },
-  completed: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50", border: "border-green-200", badge: "bg-green-100 text-green-700", label: "Completed" },
+  planned: { icon: Circle, color: "text-slate-400", bg: "bg-slate-50", border: "border-slate-200", badge: "bg-slate-100 text-slate-500", label: "Planned", barColor: "#94a3b8" },
+  started: { icon: Clock, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", badge: "bg-blue-100 text-blue-700", label: "In Progress", barColor: "#3b82f6" },
+  completed: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50", border: "border-green-200", badge: "bg-green-100 text-green-700", label: "Completed", barColor: "#22c55e" },
 };
 
 export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail, onClientUpdate }) {
@@ -60,7 +60,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       status: status.status || "planned",
       statusData: status,
       isBarrier: false,
-      compassHsid: client?.compass_hsid,
     };
   });
 
@@ -84,7 +83,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       },
       status: status.status || "planned",
       statusData: status,
-      compassHsid: client?.compass_hsid,
     });
   }
 
@@ -99,14 +97,12 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       case_manager_notes: saveData.notes,
     };
     const updated = { ...roadmapStatus, [key]: newStatus };
-
     const extraFields = {};
     if (key.startsWith("barrier_")) {
       const n = key.split("_")[1];
       if (saveData.startDate) extraFields[`barrier_${n}_timeline_start`] = saveData.startDate;
       if (saveData.endDate) extraFields[`barrier_${n}_timeline_end`] = saveData.endDate;
     }
-
     await base44.entities.Client.update(client.id, { roadmap_item_status: updated, ...extraFields });
     onClientUpdate?.({ ...client, roadmap_item_status: updated, ...extraFields });
     setOpenItem(null);
@@ -123,46 +119,189 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     setSaving(false);
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div>
-        <h3 className="text-base font-semibold text-slate-800">Program Progress</h3>
-        <p className="text-xs text-slate-500 mt-0.5">
-          {serviceStart ? `Started: ${format(serviceStart, "MMM d, yyyy")}` : "No start date set"}
-          {projectedEnd && !actualEnd && ` · Projected end: ${format(projectedEnd, "MMM d, yyyy")}`}
-          {actualEnd && ` · Completed: ${format(actualEnd, "MMM d, yyyy")}`}
-        </p>
-      </div>
+  // ─── Timeline (Gantt) helpers ──────────────────────────────────────────────
+  // Collect all relevant dates to determine timeline bounds
+  const allDates = [];
+  if (serviceStart) allDates.push(serviceStart);
+  if (projectedEnd) allDates.push(projectedEnd);
+  if (actualEnd) allDates.push(actualEnd);
+  if (followup90) allDates.push(followup90);
+  items.forEach(item => {
+    const sd = item.detail?.timeline_start || item.statusData?.started_date;
+    const ed = item.detail?.timeline_end || item.statusData?.completed_date;
+    if (sd) allDates.push(parseISO(sd));
+    if (ed) allDates.push(parseISO(ed));
+  });
+  bitReviewDates.forEach(d => { if (d) allDates.push(parseISO(d)); });
 
-      {/* Program date markers */}
-      {(serviceStart || projectedEnd || followup90) && (
-        <div className="flex flex-wrap gap-2 text-xs">
-          {serviceStart && (
-            <span className="flex items-center gap-1 bg-green-50 border border-green-200 text-green-700 px-2.5 py-1 rounded-full">
-              <Flag className="w-3 h-3" /> Program Start: {format(serviceStart, "MMM d, yyyy")}
-            </span>
-          )}
-          {!actualEnd && projectedEnd && (
-            <span className="flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-full">
-              <Flag className="w-3 h-3" /> Projected End: {format(projectedEnd, "MMM d, yyyy")}
-            </span>
-          )}
-          {actualEnd && (
-            <span className="flex items-center gap-1 bg-green-50 border border-green-200 text-green-700 px-2.5 py-1 rounded-full">
-              <CheckCircle2 className="w-3 h-3" /> Completed: {format(actualEnd, "MMM d, yyyy")}
-            </span>
-          )}
-          {followup90 && (
-            <span className="flex items-center gap-1 bg-purple-50 border border-purple-200 text-purple-700 px-2.5 py-1 rounded-full">
-              <CalendarCheck className="w-3 h-3" /> 90-Day Follow-Up: {format(followup90, "MMM d, yyyy")}
-            </span>
-          )}
+  const hasTimelineData = allDates.length > 0;
+
+  let minDate, maxDate, totalDays;
+  if (hasTimelineData) {
+    minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+    maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+    // Pad by 1 week on each side
+    minDate = new Date(minDate); minDate.setDate(minDate.getDate() - 7);
+    maxDate = new Date(maxDate); maxDate.setDate(maxDate.getDate() + 14);
+    totalDays = differenceInDays(maxDate, minDate) || 1;
+  }
+
+  function pct(dateStr) {
+    if (!dateStr || !hasTimelineData) return null;
+    const d = typeof dateStr === "string" ? parseISO(dateStr) : dateStr;
+    const val = (differenceInDays(d, minDate) / totalDays) * 100;
+    return Math.max(0, Math.min(100, val));
+  }
+
+  // Build month labels for axis
+  const monthLabels = [];
+  if (hasTimelineData) {
+    const cursor = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+    while (cursor <= maxDate) {
+      monthLabels.push({ label: format(cursor, "MMM yy"), pct: pct(cursor) });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ── Visual Timeline ──────────────────────────────────────────────── */}
+      {hasTimelineData ? (
+        <div className="bg-white border border-slate-200 rounded-xl p-4 overflow-x-auto">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4">Program Timeline</h3>
+          <div className="min-w-[560px]">
+            {/* Month axis */}
+            <div className="relative h-5 mb-1 ml-36">
+              {monthLabels.map((m, i) => (
+                <span
+                  key={i}
+                  className="absolute text-[10px] text-slate-400 font-medium"
+                  style={{ left: `${m.pct}%`, transform: "translateX(-50%)" }}
+                >
+                  {m.label}
+                </span>
+              ))}
+            </div>
+
+            {/* Grid + rows */}
+            <div className="relative ml-36">
+              {/* Vertical grid lines for months */}
+              {monthLabels.map((m, i) => (
+                <div
+                  key={i}
+                  className="absolute top-0 bottom-0 w-px bg-slate-100"
+                  style={{ left: `${m.pct}%` }}
+                />
+              ))}
+
+              {/* Program milestones */}
+              {serviceStart && (
+                <div className="absolute top-0 bottom-0 w-0.5 bg-green-400 z-10" style={{ left: `${pct(serviceStart)}%` }}>
+                  <span className="absolute -top-5 left-1 text-[9px] text-green-600 font-bold whitespace-nowrap">▼ Start</span>
+                </div>
+              )}
+              {(actualEnd || projectedEnd) && (
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 z-10"
+                  style={{ left: `${pct(actualEnd || projectedEnd)}%`, backgroundColor: actualEnd ? "#16a34a" : "#3b82f6", borderStyle: actualEnd ? "solid" : "dashed" }}
+                >
+                  <span className="absolute -top-5 left-1 text-[9px] font-bold whitespace-nowrap" style={{ color: actualEnd ? "#16a34a" : "#3b82f6" }}>
+                    ▼ {actualEnd ? "End" : "Proj.End"}
+                  </span>
+                </div>
+              )}
+              {followup90 && (
+                <div className="absolute top-0 bottom-0 w-0.5 bg-purple-400 z-10" style={{ left: `${pct(followup90)}%` }}>
+                  <span className="absolute -top-5 left-1 text-[9px] text-purple-600 font-bold whitespace-nowrap">▼ 90d</span>
+                </div>
+              )}
+
+              {/* Item rows */}
+              <div className="space-y-1.5 pt-7">
+                {items.map(item => {
+                  const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
+                  const startStr = item.detail?.timeline_start || item.statusData?.started_date;
+                  const endStr = item.detail?.timeline_end || item.statusData?.completed_date;
+                  const startP = pct(startStr);
+                  const endP = pct(endStr);
+                  const hasBar = startP != null && endP != null && endP > startP;
+                  const hasDot = startP != null && !hasBar;
+
+                  return (
+                    <div key={item.key} className="flex items-center h-7">
+                      <div className="absolute -ml-36 w-36 pr-2 text-[11px] text-slate-600 font-medium truncate text-right">
+                        {item.label}
+                      </div>
+                      <div className="w-full relative h-5 bg-slate-50 border border-slate-100 rounded-full overflow-visible">
+                        {hasBar && (
+                          <div
+                            className="absolute h-full rounded-full opacity-85"
+                            style={{
+                              left: `${startP}%`,
+                              width: `${Math.max(1.5, endP - startP)}%`,
+                              backgroundColor: cfg.barColor,
+                            }}
+                          />
+                        )}
+                        {hasDot && (
+                          <div
+                            className="absolute top-0.5 w-4 h-4 rounded-full border-2 border-white"
+                            style={{ left: `calc(${startP}% - 8px)`, backgroundColor: cfg.barColor }}
+                          />
+                        )}
+                        {!hasBar && !hasDot && (
+                          <div className="h-full flex items-center px-3">
+                            <span className="text-[10px] text-slate-300 italic">no dates</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* BIT Review markers */}
+                {bitReviewDates.map((date, i) => {
+                  const checkin = bitCheckins[i] || {};
+                  const isDone = checkin.completed;
+                  const dp = pct(date);
+                  return (
+                    <div key={`bit_${i}`} className="flex items-center h-7">
+                      <div className="absolute -ml-36 w-36 pr-2 text-[11px] text-rose-600 font-medium truncate text-right">
+                        BIT Review {i + 1}
+                      </div>
+                      <div className="w-full relative h-5 bg-slate-50 border border-slate-100 rounded-full">
+                        {dp != null && (
+                          <div
+                            className={`absolute top-0.5 w-4 h-4 rounded-full border-2 ${isDone ? "bg-green-400 border-green-600" : "bg-rose-300 border-rose-500"}`}
+                            style={{ left: `calc(${dp}% - 8px)` }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-slate-100 ml-36 text-[11px] text-slate-500">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-slate-400 inline-block" />Planned</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />In Progress</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block" />Completed</span>
+              <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-green-400 inline-block" />Program Milestone</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-rose-300 border border-rose-500 inline-block" />BIT Review</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center text-sm text-slate-400">
+          No dates set yet — add start/end dates to items to see the visual timeline.
         </div>
       )}
 
-      {/* Item list */}
+      {/* ── Item List ────────────────────────────────────────────────────── */}
       <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">Action Items</h3>
         {items.map(item => {
           const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
           const Icon = cfg.icon;
@@ -184,7 +323,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                 )}
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}>{cfg.label}</span>
               </button>
-
               {isOpen && (
                 <RoadmapItemPanel
                   item={item}
@@ -201,7 +339,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
         {/* BIT Review Date rows */}
         {bitReviewDates.length > 0 && (
           <div className="mt-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">Scheduled BIT Review Dates</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">BIT Review Dates</p>
             {bitReviewDates.map((date, i) => {
               const checkin = bitCheckins[i] || {};
               const isOpen = openBITReview === i;
