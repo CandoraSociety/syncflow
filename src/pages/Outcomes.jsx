@@ -3,7 +3,9 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, CheckCircle2, TrendingUp, Calendar, Briefcase, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users, CheckCircle2, TrendingUp, Calendar, Briefcase, Target, Filter, X } from "lucide-react";
 
 const SERVICE_STREAMS = {
   direct_to_employment: "DEA",
@@ -123,7 +125,33 @@ export default function Outcomes() {
     queryFn: () => base44.entities.Client.list(),
   });
 
-  const outcomes = calculateOutcomes(clients);
+  const [filters, setFilters] = useState({
+    assignedWorker: "all",
+    serviceType: "all",
+    status: "all",
+  });
+
+  // Get unique assigned workers from clients
+  const assignedWorkers = [...new Set(clients
+    .filter(c => c.assigned_worker_name)
+    .map(c => c.assigned_worker_name)
+  )].sort();
+
+  // Filter clients based on selected filters
+  const filteredClients = clients.filter(client => {
+    if (filters.assignedWorker !== "all" && client.assigned_worker_name !== filters.assignedWorker) {
+      return false;
+    }
+    if (filters.serviceType !== "all" && client.service_type !== filters.serviceType) {
+      return false;
+    }
+    if (filters.status !== "all" && client.status !== filters.status) {
+      return false;
+    }
+    return true;
+  });
+
+  const outcomes = calculateOutcomes(filteredClients);
 
   if (isLoading) {
     return (
@@ -145,11 +173,80 @@ export default function Outcomes() {
               Fiscal Year {outcomes.fiscalYear} (April 1 - March 31)
             </p>
           </div>
-          <Badge variant="outline" className="text-sm">
-            <Users className="w-4 h-4 mr-1" />
-            {outcomes.totalClients} Total Clients
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-sm">
+              <Users className="w-4 h-4 mr-1" />
+              {filteredClients.length} / {clients.length} Clients
+            </Badge>
+            {(filters.assignedWorker !== "all" || filters.serviceType !== "all" || filters.status !== "all") && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setFilters({ assignedWorker: "all", serviceType: "all", status: "all" })}
+                className="h-7 text-xs"
+              >
+                <X className="w-3 h-3 mr-1" /> Clear Filters
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filters</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Assigned Worker</label>
+                <Select value={filters.assignedWorker} onValueChange={(v) => setFilters(prev => ({ ...prev, assignedWorker: v }))}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All workers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Workers</SelectItem>
+                    {assignedWorkers.map(worker => (
+                      <SelectItem key={worker} value={worker}>{worker}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Service Type</label>
+                <Select value={filters.serviceType} onValueChange={(v) => setFilters(prev => ({ ...prev, serviceType: v }))}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All streams" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Streams</SelectItem>
+                    <SelectItem value="pathways">Pathways</SelectItem>
+                    <SelectItem value="direct_to_employment">DEA</SelectItem>
+                    <SelectItem value="casual">Casual</SelectItem>
+                    <SelectItem value="external_referral">External Referral</SelectItem>
+                    <SelectItem value="internal_referral">Internal Referral</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Client Status</label>
+                <Select value={filters.status} onValueChange={(v) => setFilters(prev => ({ ...prev, status: v }))}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Starter Metrics */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
