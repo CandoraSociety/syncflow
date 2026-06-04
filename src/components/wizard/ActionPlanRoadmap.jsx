@@ -324,7 +324,11 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
                   {/* Today line */}
                   {todayPct !== null && (
-                    <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 opacity-70 z-0" style={{ left: `${todayPct}%` }} />
+                    <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 opacity-70 z-0" style={{ left: `${todayPct}%` }}>
+                      <span className="absolute top-0 left-1 text-[9px] text-amber-600 font-bold whitespace-nowrap bg-white/80 px-0.5 rounded">
+                        {format(new Date(), "MMM d")}
+                      </span>
+                    </div>
                   )}
 
                   {/* Milestone vertical lines — z-0 so item panels render above */}
