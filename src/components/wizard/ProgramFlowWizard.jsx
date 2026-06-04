@@ -13,6 +13,7 @@ const STEPS = [
   { key: "bit", label: "Barrier Identification", short: "BIT" },
   { key: "barrier_action_plan", label: "Barrier Resolution Plan", short: "Barrier Resolution" },
   { key: "employment_action_plan", label: "Employment Action Plan", short: "Emp. Action Plan" },
+  { key: "dea_activities", label: "DEA Activities", short: "DEA Activities", deaOnly: true },
   { key: "internal_placement", label: "Placement", short: "Placement", pathwaysOnly: true },
   { key: "exposures", label: "Exposure Courses & Supports", short: "Supports" },
   { key: "roadmap", label: "Program Progress", short: "Roadmap" },
@@ -31,12 +32,11 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
     return <CasualNotesPanel client={client} onSave={onSave} />;
   }
 
-  // DEA: show DEA-specific activities panel, no barrier/placement wizard
-  if (isDEA) {
-    return <DEAFlowPanel client={client} onSave={onSave} />;
-  }
-
-  const steps = STEPS.filter(s => !s.pathwaysOnly || isPathways);
+  const steps = STEPS.filter(s => {
+    if (s.pathwaysOnly && !isPathways) return false;
+    if (s.deaOnly && !isDEA) return false;
+    return true;
+  });
 
   const getStepStatus = (stepKey) => {
     switch (stepKey) {
@@ -47,6 +47,11 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
         return client?.barrier_action_plan_completed ? "done" : client?.bit_completed ? "active" : "pending";
       case "employment_action_plan":
         return client?.action_plan_submitted ? "done" : client?.bit_completed ? "active" : "pending";
+      case "dea_activities": {
+        const acts = client?.dea_activities || [];
+        const completed = acts.filter(a => a.completed).length;
+        return completed >= 3 ? "done" : acts.length > 0 ? "active" : "pending";
+      }
       case "internal_placement":
         if (!isPathways) return "skipped";
         if (!client?.internal_placement || client.internal_placement === "none") return "pending";
@@ -166,7 +171,10 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
           <BarrierActionPlan client={client} onSave={onSave} onComplete={() => setActiveStep("employment_action_plan")} />
         )}
         {activeStep === "employment_action_plan" && (
-          <EmploymentActionPlan client={client} onSave={onSave} onComplete={() => setActiveStep(isPathways ? "internal_placement" : "exposures")} />
+          <EmploymentActionPlan client={client} onSave={onSave} onComplete={() => setActiveStep(isDEA ? "dea_activities" : isPathways ? "internal_placement" : "exposures")} />
+        )}
+        {activeStep === "dea_activities" && isDEA && (
+          <DEAFlowPanel client={client} onSave={onSave} onComplete={() => setActiveStep("exposures")} />
         )}
         {activeStep === "internal_placement" && isPathways && (
           <InternalPlacementStep client={client} onSave={onSave} onComplete={() => setActiveStep("exposures")} />

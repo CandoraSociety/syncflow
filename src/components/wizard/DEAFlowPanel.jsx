@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { addDays, format, differenceInDays } from "date-fns";
-import { Plus, CheckCircle2, Clock, AlertCircle, Briefcase } from "lucide-react";
+import { Plus, CheckCircle2, Clock, AlertCircle, Briefcase, ChevronRight } from "lucide-react";
 
 const EDA_TYPES = [
   "Workshop",
@@ -31,7 +31,7 @@ function deaProgramEndDate(client) {
   return addDays(new Date(client.service_start_date), 14);
 }
 
-export default function DEAFlowPanel({ client, onSave }) {
+export default function DEAFlowPanel({ client, onSave, onComplete }) {
   const activities = client?.dea_activities || [];
   const endDate = deaProgramEndDate(client);
   const daysLeft = endDate ? differenceInDays(endDate, new Date()) : null;
@@ -205,6 +205,15 @@ export default function DEAFlowPanel({ client, onSave }) {
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
           </div>
+        </div>
+      )}
+
+      {/* Continue button */}
+      {onComplete && (
+        <div className="flex justify-end pt-2">
+          <Button onClick={onComplete} className="gap-2">
+            Continue to Next Step <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
       )}
 
