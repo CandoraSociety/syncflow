@@ -5,7 +5,7 @@ import BarrierActionPlan from "./BarrierActionPlan";
 import EmploymentActionPlan from "./EmploymentActionPlan";
 import InternalPlacementStep from "./InternalPlacementStep";
 import ExposuresSupportsStep from "./ExposuresSupportsStep";
-import ActionPlanRoadmap from "./ActionPlanRoadmap";
+import ActionPlanRoadmap from "./ActionPlanRoadmap.jsx";
 
 const STEPS = [
   { key: "bit", label: "Barrier Identification", short: "BIT" },
@@ -13,7 +13,7 @@ const STEPS = [
   { key: "employment_action_plan", label: "Employment Action Plan", short: "Emp. Action Plan" },
   { key: "internal_placement", label: "Placement", short: "Placement", pathwaysOnly: true },
   { key: "exposures", label: "Exposure Courses & Supports", short: "Supports" },
-  { key: "roadmap", label: "Action Plan Roadmap", short: "Roadmap" },
+  { key: "roadmap", label: "Program Progress", short: "Roadmap" },
 ];
 
 export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
@@ -115,8 +115,8 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
         {activeStep === "roadmap" && (
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Action Plan Roadmap</h2>
-              <p className="text-sm text-slate-500 mt-1">Full timeline and overview of the client's employment action plan.</p>
+              <h2 className="text-lg font-bold text-slate-800">Program Progress</h2>
+              <p className="text-sm text-slate-500 mt-1">Full timeline and overview of the client's program progress.</p>
             </div>
             {client?.action_plan_submitted && client?.sdp_items?.length > 0
               ? <ActionPlanRoadmap client={client} selectedItems={client.sdp_items} itemDetails={client.sdp_item_details || {}} onClientUpdate={onClientUpdate} />

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Save, ChevronRight, ChevronDown, ChevronUp, Pencil, CheckCircle2 } from "lucide-react";
+import { Save, ChevronRight, ChevronDown, ChevronUp, Pencil, CheckCircle2, FileText, Download } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskBarriersIdentified } from "@/lib/compassTasks";
 
@@ -346,9 +346,19 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
       {submitted && !editing && (
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <CardTitle className="text-base">BIT Completed</CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <CardTitle className="text-base">BIT Completed</CardTitle>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-xs"
+                onClick={() => window.print()}
+              >
+                <Download className="w-3.5 h-3.5" /> Save / Print BIT
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -546,11 +556,14 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
               </div>
 
               <div className="space-y-2">
-                <Label>Review Dates</Label>
+                <div>
+                  <Label>Scheduled Review Dates</Label>
+                  <p className="text-xs text-slate-400 mt-0.5">Set the dates when barrier progress reviews are planned to occur. These will appear as markers on the Program Progress timeline.</p>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {["1st", "2nd", "3rd", "4th"].map((ord, i) => (
                     <div key={i} className="space-y-1">
-                      <label className="text-xs text-slate-500">{ord} Review Date</label>
+                      <label className="text-xs text-slate-500">{ord} Scheduled Review</label>
                       <Input type="date" value={actionPlan.review_dates[i]} onChange={e => { const d = [...actionPlan.review_dates]; d[i] = e.target.value; setActionPlan(p => ({ ...p, review_dates: d })); }} />
                     </div>
                   ))}

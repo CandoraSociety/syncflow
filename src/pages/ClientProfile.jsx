@@ -1,5 +1,23 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
+const STREAM_LABELS = {
+  direct_to_employment: "Direct to Employment (DEA)",
+  pathways: "Pathways",
+  casual: "Casual",
+  external_referral: "External Referral",
+  internal_referral: "Internal Referral",
+  not_eligible: "Not Eligible",
+};
+
+const STREAM_BADGE_COLORS = {
+  direct_to_employment: "bg-blue-100 text-blue-800 border-blue-300",
+  pathways: "bg-purple-100 text-purple-800 border-purple-300",
+  casual: "bg-slate-100 text-slate-700 border-slate-300",
+  external_referral: "bg-teal-100 text-teal-800 border-teal-300",
+  internal_referral: "bg-green-100 text-green-800 border-green-300",
+  not_eligible: "bg-red-100 text-red-700 border-red-300",
+};
 import { base44 } from "@/api/base44Client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -97,19 +115,22 @@ export default function ClientProfile() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold" style={{ color: "hsl(231,64%,20%)" }}>
                 {client.first_name} {client.last_name}
               </h1>
+              {client.service_type && (
+                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${STREAM_BADGE_COLORS[client.service_type] || "bg-slate-100 text-slate-700 border-slate-300"}`}>
+                  {STREAM_LABELS[client.service_type] || client.service_type.replace(/_/g, " ")}
+                </span>
+              )}
               {client.file_closed && (
-                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Closed</span>
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold border border-red-200">Closed</span>
               )}
             </div>
             <p className="text-sm" style={{ color: "hsl(231,55%,40%)" }}>
               {client.compass_hsid ? `HSID: ${client.compass_hsid}` : ""}
-              {client.compass_hsid && client.service_type ? " · " : ""}
-              {client.service_type ? client.service_type.replace(/_/g, " ") : ""}
-              {client.file_closed && client.closed_reason ? ` · Closed: ${client.closed_reason.replace(/_/g, " ")}` : ""}
+              {client.file_closed && client.closed_reason ? `${client.compass_hsid ? " · " : ""}Closed: ${client.closed_reason.replace(/_/g, " ")}` : ""}
             </p>
           </div>
         </div>

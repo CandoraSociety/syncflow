@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Save, ChevronRight, Pencil, Copy, Check, Map, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskActionPlan } from "@/lib/compassTasks";
-import ActionPlanRoadmap from "./ActionPlanRoadmap";
+import ActionPlanRoadmap from "./ActionPlanRoadmap.jsx";
 
 const EMPLOYMENT_SUPPORT_TYPES = [
   "PPE (Personal Protective Equipment)",

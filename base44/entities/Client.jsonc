@@ -272,7 +272,40 @@
       "items": {
         "type": "string"
       },
-      "description": "BIT Action Plan review dates (up to 4)"
+      "description": "BIT scheduled review dates (up to 4)"
+    },
+    "bit_review_checkins": {
+      "type": "array",
+      "description": "Logged check-in records for each BIT review date",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "number"
+          },
+          "scheduled_date": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "actual_date": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "logged_by": {
+            "type": "string"
+          },
+          "logged_by_name": {
+            "type": "string"
+          },
+          "logged_at": {
+            "type": "string"
+          }
+        }
+      }
     },
     "bit_checkin_frequency": {
       "type": "string",
