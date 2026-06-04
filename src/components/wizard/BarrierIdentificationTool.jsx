@@ -76,11 +76,10 @@ const emptyBarrierState = () =>
   Object.fromEntries(BIT_BARRIERS.map(b => [b.key, {
     confirmed: null,
     selectedChallenges: [],
-    challengeOther: "",
+    challengeOthers: [""],
     selectedActions: [],
-    actionOther: "",
+    actionOthers: [""],
     notes: "",
-    expanded: false,
   }]));
 
 const emptyActionPlan = () => ({
@@ -93,10 +92,11 @@ const emptyActionPlan = () => ({
   additional_notes: "",
 });
 
-// A reusable "check-all-that-apply" dropdown cell
-function ChecklistCell({ options, selected, onToggle, otherValue, onOtherChange, open, onToggleOpen }) {
-  const displayText = selected.length > 0
-    ? selected.slice(0, 2).join(", ") + (selected.length > 2 ? ` +${selected.length - 2}` : "")
+// A reusable "check-all-that-apply" dropdown cell with multiple "Other" entries
+function ChecklistCell({ options, selected, onToggle, otherValues, onOtherChange, onAddOther, onRemoveOther, open, onToggleOpen }) {
+  const allSelected = [...selected.filter(s => s !== "Other"), ...(otherValues || []).filter(Boolean)];
+  const displayText = allSelected.length > 0
+    ? allSelected.slice(0, 2).join(", ") + (allSelected.length > 2 ? ` +${allSelected.length - 2}` : "")
     : "Select…";
 
   return (
@@ -106,13 +106,13 @@ function ChecklistCell({ options, selected, onToggle, otherValue, onOtherChange,
         onClick={onToggleOpen}
         className="w-full flex items-center justify-between gap-1 text-xs border border-slate-200 rounded px-2 py-1.5 bg-white hover:border-slate-400 transition-colors text-left"
       >
-        <span className={selected.length > 0 ? "text-slate-800" : "text-slate-400"}>
+        <span className={allSelected.length > 0 ? "text-slate-800" : "text-slate-400"}>
           {displayText}
         </span>
         {open ? <ChevronUp className="w-3 h-3 shrink-0 text-slate-400" /> : <ChevronDown className="w-3 h-3 shrink-0 text-slate-400" />}
       </button>
       {open && (
-        <div className="absolute z-20 top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-2 space-y-1.5 min-w-[200px] max-w-[260px]">
+        <div className="absolute z-20 top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-2 space-y-1.5 min-w-[200px] max-w-[280px]">
           {options.map(opt => (
             <label key={opt} className="flex items-start gap-2 cursor-pointer text-xs leading-snug">
               <input
@@ -124,25 +124,30 @@ function ChecklistCell({ options, selected, onToggle, otherValue, onOtherChange,
               <span className={selected.includes(opt) ? "text-slate-800 font-medium" : "text-slate-600"}>{opt}</span>
             </label>
           ))}
-          {/* Other */}
-          <label className="flex items-start gap-2 cursor-pointer text-xs leading-snug">
-            <input
-              type="checkbox"
-              checked={selected.includes("Other")}
-              onChange={() => onToggle("Other")}
-              className="accent-amber-500 w-3.5 h-3.5 mt-0.5 shrink-0"
-            />
-            <span className={selected.includes("Other") ? "text-slate-800 font-medium" : "text-slate-600"}>Other</span>
-          </label>
-          {selected.includes("Other") && (
-            <Input
-              className="h-6 text-xs mt-1"
-              placeholder="Describe..."
-              value={otherValue}
-              onChange={e => onOtherChange(e.target.value)}
-              onClick={e => e.stopPropagation()}
-            />
-          )}
+          {/* Multiple "Other" entries */}
+          <div className="pt-1 border-t border-slate-100 space-y-1.5">
+            {(otherValues || []).map((val, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <Input
+                  className="h-6 text-xs flex-1"
+                  placeholder={`Other${(otherValues.length > 1) ? ` ${i + 1}` : ""}...`}
+                  value={val}
+                  onChange={e => onOtherChange(i, e.target.value)}
+                  onClick={e => e.stopPropagation()}
+                />
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); onRemoveOther(i); }}
+                  className="text-slate-300 hover:text-red-400 text-xs px-1 leading-none"
+                >✕</button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onAddOther(); }}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+            >+ Add other</button>
+          </div>
         </div>
       )}
     </div>
@@ -374,8 +379,10 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
                               options={b.examples}
                               selected={state.selectedChallenges}
                               onToggle={(item) => toggleItem(b.key, "selectedChallenges", item)}
-                              otherValue={state.challengeOther}
-                              onOtherChange={(val) => setField(b.key, "challengeOther", val)}
+                              otherValues={state.challengeOthers}
+                              onOtherChange={(i, val) => setBarrierState(prev => { const a = [...prev[b.key].challengeOthers]; a[i] = val; return { ...prev, [b.key]: { ...prev[b.key], challengeOthers: a } }; })}
+                              onAddOther={() => setBarrierState(prev => ({ ...prev, [b.key]: { ...prev[b.key], challengeOthers: [...prev[b.key].challengeOthers, ""] } }))}
+                              onRemoveOther={(i) => setBarrierState(prev => { const a = prev[b.key].challengeOthers.filter((_, idx) => idx !== i); return { ...prev, [b.key]: { ...prev[b.key], challengeOthers: a.length ? a : [""] } }; })}
                               open={openDropdown === challengesId}
                               onToggleOpen={(e) => { e?.stopPropagation(); toggleDropdown(challengesId); }}
                             />
@@ -385,8 +392,10 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
                               options={b.actions}
                               selected={state.selectedActions}
                               onToggle={(item) => toggleItem(b.key, "selectedActions", item)}
-                              otherValue={state.actionOther}
-                              onOtherChange={(val) => setField(b.key, "actionOther", val)}
+                              otherValues={state.actionOthers}
+                              onOtherChange={(i, val) => setBarrierState(prev => { const a = [...prev[b.key].actionOthers]; a[i] = val; return { ...prev, [b.key]: { ...prev[b.key], actionOthers: a } }; })}
+                              onAddOther={() => setBarrierState(prev => ({ ...prev, [b.key]: { ...prev[b.key], actionOthers: [...prev[b.key].actionOthers, ""] } }))}
+                              onRemoveOther={(i) => setBarrierState(prev => { const a = prev[b.key].actionOthers.filter((_, idx) => idx !== i); return { ...prev, [b.key]: { ...prev[b.key], actionOthers: a.length ? a : [""] } }; })}
                               open={openDropdown === actionsId}
                               onToggleOpen={(e) => { e?.stopPropagation(); toggleDropdown(actionsId); }}
                             />
