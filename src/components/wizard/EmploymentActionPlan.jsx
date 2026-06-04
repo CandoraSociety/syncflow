@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, ChevronRight, Pencil, Copy, Check, Map, CheckCircle2 } from "lucide-react";
+import { Save, ChevronRight, Pencil, Copy, Check, Map, CheckCircle2, Briefcase } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskActionPlan } from "@/lib/compassTasks";
 import ActionPlanRoadmap from "./ActionPlanRoadmap.jsx";
@@ -49,6 +49,36 @@ const CATEGORIES = [
   { key: "supports", label: "Supports" },
   { key: "other", label: "Other" },
 ];
+
+// DEA-specific options (no placements)
+const DEA_EDA_OPTIONS = ACTION_PLAN_OPTIONS.filter(o => o.category !== "placement");
+
+function buildDEACompassText(itemDetails, client, notes) {
+  const slots = [1, 2, 3].map(n => {
+    const d = itemDetails[`eda_${n}`] || {};
+    if (!d.activity) return null;
+    const opt = DEA_EDA_OPTIONS.find(o => o.key === d.activity);
+    const label = d.activity === "other" ? (d.other_desc || "Other") : (opt?.label || d.activity);
+    const parts = [`  EDA ${n}: ${label}`];
+    if (d.timeline) parts.push(`    Timeline: ${d.timeline}`);
+    if (d.notes) parts.push(`    Notes: ${d.notes}`);
+    return parts.join("\n");
+  }).filter(Boolean);
+
+  if (slots.length === 0) return "";
+  let text = `DEA Employment Action Plan — Employment Development Activities:\n${slots.join("\n")}`;
+
+  const barriers = [];
+  for (let n = 1; n <= 3; n++) {
+    const b = client?.[`barrier_${n}`];
+    if (!b) continue;
+    const label = b === "Other" ? (client[`barrier_${n}_other`] || "Other") : b;
+    barriers.push(`  • ${label}`);
+  }
+  if (barriers.length > 0) text += `\n\nBarriers to Address:\n${barriers.join("\n")}`;
+  if (notes?.trim()) text += `\n\nAdditional Notes: ${notes.trim()}`;
+  return text;
+}
 
 function buildCompassText(items, otherDesc, itemDetails, client, notes) {
   if (items.length === 0) return "";
@@ -125,7 +155,11 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
   const [compassEntered, setCompassEntered] = useState(client?.action_plan_compass_entered || false);
   const [markingCompass, setMarkingCompass] = useState(false);
 
-  const compassText = buildCompassText(selectedItems, otherDesc, itemDetails, client, notes);
+  const isDEA = client?.service_type === "direct_to_employment";
+
+  const compassText = isDEA
+    ? buildDEACompassText(itemDetails, client, notes)
+    : buildCompassText(selectedItems, otherDesc, itemDetails, client, notes);
 
   const toggleItem = (key) => {
     setSelectedItems(prev =>
@@ -180,7 +214,6 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
   };
 
   const isPathways = client?.service_type === "pathways";
-
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -218,21 +251,42 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
           <Card>
             <CardHeader><CardTitle className="text-base">Current Action Plan</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {selectedItems.length === 0 && <p className="text-slate-400 text-sm italic">No items selected.</p>}
-                {selectedItems.map(key => {
-                  const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
-                  const detail = itemDetails[key] || {};
-                  return (
-                    <div key={key} className="flex flex-col gap-1 border border-slate-100 rounded-lg p-3 bg-slate-50">
-                      <span className="font-medium text-slate-800 text-sm">✓ {key === "other" ? (otherDesc || "Other") : opt?.label}</span>
-                      {detail.support_type && <span className="text-xs text-slate-500">Support Type: {detail.support_type}</span>}
-                      {detail.timeline && <span className="text-xs text-slate-500">Timeline: {detail.timeline}</span>}
-                      {detail.notes && <span className="text-xs text-slate-500">Notes: {detail.notes}</span>}
-                    </div>
-                  );
-                })}
-              </div>
+              {isDEA ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(n => {
+                    const d = itemDetails[`eda_${n}`] || {};
+                    const opt = DEA_EDA_OPTIONS.find(o => o.key === d.activity);
+                    return (
+                      <div key={n} className="border border-slate-100 rounded-lg p-3 bg-slate-50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">EDA {n}</span>
+                          <span className="font-medium text-slate-800 text-sm">
+                            {d.activity ? (d.activity === "other" ? (d.other_desc || "Other") : opt?.label) : <span className="text-slate-400 italic">Not set</span>}
+                          </span>
+                        </div>
+                        {d.timeline && <p className="text-xs text-slate-500">Timeline: {d.timeline}</p>}
+                        {d.notes && <p className="text-xs text-slate-500">Notes: {d.notes}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {selectedItems.length === 0 && <p className="text-slate-400 text-sm italic">No items selected.</p>}
+                  {selectedItems.map(key => {
+                    const opt = ACTION_PLAN_OPTIONS.find(o => o.key === key);
+                    const detail = itemDetails[key] || {};
+                    return (
+                      <div key={key} className="flex flex-col gap-1 border border-slate-100 rounded-lg p-3 bg-slate-50">
+                        <span className="font-medium text-slate-800 text-sm">✓ {key === "other" ? (otherDesc || "Other") : opt?.label}</span>
+                        {detail.support_type && <span className="text-xs text-slate-500">Support Type: {detail.support_type}</span>}
+                        {detail.timeline && <span className="text-xs text-slate-500">Timeline: {detail.timeline}</span>}
+                        {detail.notes && <span className="text-xs text-slate-500">Notes: {detail.notes}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {notes && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <p className="text-xs text-slate-500 font-medium">Additional Notes:</p>
@@ -286,61 +340,107 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
           <IntakeSummary client={client} notes={notes} setNotes={setNotes} />
 
           {/* Action Plan Items */}
-          {CATEGORIES.map(cat => {
-            const catItems = ACTION_PLAN_OPTIONS.filter(o => o.category === cat.key);
-            let filteredItems = catItems;
-            if (cat.key === "placement" && !isPathways) {
-              filteredItems = catItems.filter(o => o.key !== "internal_placement");
-              if (filteredItems.length === 0) return null;
-            }
-            // "barrier_support" auto-populated — show as read-only if barriers present
-            if (cat.key === "supports" && hasBarriers) {
-              const others = filteredItems.filter(o => o.key !== "barrier_support");
+          {isDEA ? (
+            // DEA: 3 fixed EDA slots
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-blue-600" /> Employment Development Activities (EDA)
+                </CardTitle>
+                <p className="text-xs text-slate-500">Select one activity for each of the 3 required EDA slots.</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[1, 2, 3].map(n => {
+                  const slotKey = `eda_${n}`;
+                  const d = itemDetails[slotKey] || {};
+                  const updateSlot = (field, val) => updateDetail(slotKey, field, val);
+                  return (
+                    <div key={n} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50/50">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">EDA {n}</span>
+                        <span className="text-xs text-slate-400">Required activity #{n}</span>
+                      </div>
+                      <div>
+                        <Label className="text-xs mb-1 block">Activity Type *</Label>
+                        <Select value={d.activity || ""} onValueChange={v => updateSlot("activity", v)}>
+                          <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select activity..." /></SelectTrigger>
+                          <SelectContent>
+                            {DEA_EDA_OPTIONS.map(opt => (
+                              <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {d.activity === "other" && (
+                        <div>
+                          <Label className="text-xs mb-1 block">Describe this activity</Label>
+                          <Input value={d.other_desc || ""} onChange={e => updateSlot("other_desc", e.target.value)} placeholder="Describe the activity..." />
+                        </div>
+                      )}
+                      {d.activity === "employment_supports" && (
+                        <div>
+                          <Label className="text-xs mb-1 block">Support Type</Label>
+                          <Select value={d.support_type || ""} onValueChange={v => updateSlot("support_type", v)}>
+                            <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select support type..." /></SelectTrigger>
+                            <SelectContent>
+                              {EMPLOYMENT_SUPPORT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs mb-1 block">Target Timeline</Label>
+                          <Input value={d.timeline || ""} onChange={e => updateSlot("timeline", e.target.value)} placeholder="e.g. Within 2 weeks..." />
+                        </div>
+                        <div>
+                          <Label className="text-xs mb-1 block">Notes</Label>
+                          <Textarea rows={2} value={d.notes || ""} onChange={e => updateSlot("notes", e.target.value)} placeholder="Any details..." />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          ) : (
+            // Pathways / other: standard category checkboxes
+            CATEGORIES.map(cat => {
+              const catItems = ACTION_PLAN_OPTIONS.filter(o => o.category === cat.key);
+              let filteredItems = catItems;
+              if (cat.key === "placement" && !isPathways) {
+                filteredItems = catItems.filter(o => o.key !== "internal_placement");
+                if (filteredItems.length === 0) return null;
+              }
+              if (cat.key === "supports" && hasBarriers) {
+                const others = filteredItems.filter(o => o.key !== "barrier_support");
+                return (
+                  <Card key={cat.key}>
+                    <CardHeader><CardTitle className="text-sm text-slate-600 font-semibold">{cat.label}</CardTitle></CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center gap-3 p-3 border border-primary/20 rounded-lg bg-primary/5">
+                        <Checkbox checked disabled />
+                        <span className="text-sm font-medium text-slate-700">Address Barriers (per BIT) — auto-included</span>
+                      </div>
+                      {others.map(opt => (
+                        <ActionPlanItem key={opt.key} opt={opt} isSelected={selectedItems.includes(opt.key)} detail={itemDetails[opt.key] || {}} otherDesc={otherDesc} onToggle={toggleItem} onUpdateDetail={updateDetail} onOtherDesc={setOtherDesc} />
+                      ))}
+                    </CardContent>
+                  </Card>
+                );
+              }
               return (
                 <Card key={cat.key}>
                   <CardHeader><CardTitle className="text-sm text-slate-600 font-semibold">{cat.label}</CardTitle></CardHeader>
                   <CardContent className="space-y-2">
-                    {/* barrier_support auto-populated */}
-                    <div className="flex items-center gap-3 p-3 border border-primary/20 rounded-lg bg-primary/5">
-                      <Checkbox checked disabled />
-                      <span className="text-sm font-medium text-slate-700">Address Barriers (per BIT) — auto-included</span>
-                    </div>
-                    {others.map(opt => (
-                      <ActionPlanItem
-                        key={opt.key}
-                        opt={opt}
-                        isSelected={selectedItems.includes(opt.key)}
-                        detail={itemDetails[opt.key] || {}}
-                        otherDesc={otherDesc}
-                        onToggle={toggleItem}
-                        onUpdateDetail={updateDetail}
-                        onOtherDesc={setOtherDesc}
-                      />
+                    {filteredItems.map(opt => (
+                      <ActionPlanItem key={opt.key} opt={opt} isSelected={selectedItems.includes(opt.key)} detail={itemDetails[opt.key] || {}} otherDesc={otherDesc} onToggle={toggleItem} onUpdateDetail={updateDetail} onOtherDesc={setOtherDesc} />
                     ))}
                   </CardContent>
                 </Card>
               );
-            }
-            return (
-              <Card key={cat.key}>
-                <CardHeader><CardTitle className="text-sm text-slate-600 font-semibold">{cat.label}</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  {filteredItems.map(opt => (
-                    <ActionPlanItem
-                      key={opt.key}
-                      opt={opt}
-                      isSelected={selectedItems.includes(opt.key)}
-                      detail={itemDetails[opt.key] || {}}
-                      otherDesc={otherDesc}
-                      onToggle={toggleItem}
-                      onUpdateDetail={updateDetail}
-                      onOtherDesc={setOtherDesc}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            );
-          })}
+            })
+          )}
 
           {/* Additional Notes */}
           <Card>
