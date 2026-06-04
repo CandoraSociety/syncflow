@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Users, CheckCircle2, TrendingUp, Calendar, Briefcase, Target, Filter, X } from "lucide-react";
 
 const SERVICE_STREAMS = {
@@ -26,54 +28,50 @@ const EMPLOYMENT_STATUS_LABELS = {
   "no_contact": "No Contact",
 };
 
-function calculateOutcomes(clients) {
-  const now = new Date();
-  
-  // Starters - clients with service_start_date in current fiscal year (April 1 - March 31)
-  const fiscalYearStart = new Date(now.getFullYear() - (now.getMonth() < 3 ? 1 : 0), 3, 1);
-  const fiscalYearEnd = new Date(now.getFullYear() + (now.getMonth() >= 3 ? 1 : 0), 3, 1);
+function calculateOutcomes(clients, dateRange) {
+  const { startDate, endDate, label } = dateRange;
   
   const pathwaysStarters = clients.filter(c => 
     c.service_type === "pathways" && 
     c.service_start_date && 
-    new Date(c.service_start_date) >= fiscalYearStart && 
-    new Date(c.service_start_date) < fiscalYearEnd
+    new Date(c.service_start_date) >= startDate && 
+    new Date(c.service_start_date) < endDate
   );
   
   const deaStarters = clients.filter(c => 
     c.service_type === "direct_to_employment" && 
     c.service_start_date && 
-    new Date(c.service_start_date) >= fiscalYearStart && 
-    new Date(c.service_start_date) < fiscalYearEnd
+    new Date(c.service_start_date) >= startDate && 
+    new Date(c.service_start_date) < endDate
   );
   
-  // Completers - clients with completion_date in current fiscal year
+  // Completers - clients with completion_date in date range
   const pathwaysCompleters = clients.filter(c => 
     c.service_type === "pathways" && 
     c.completion_date && 
-    new Date(c.completion_date) >= fiscalYearStart && 
-    new Date(c.completion_date) < fiscalYearEnd
+    new Date(c.completion_date) >= startDate && 
+    new Date(c.completion_date) < endDate
   );
   
   const deaCompleters = clients.filter(c => 
     c.service_type === "direct_to_employment" && 
     c.completion_date && 
-    new Date(c.completion_date) >= fiscalYearStart && 
-    new Date(c.completion_date) < fiscalYearEnd
+    new Date(c.completion_date) >= startDate && 
+    new Date(c.completion_date) < endDate
   );
   
   // Employment outcomes - clients who gained employment
   const employmentOutcomes = clients.filter(c => 
     c.employment_start_date && 
-    new Date(c.employment_start_date) >= fiscalYearStart && 
-    new Date(c.employment_start_date) < fiscalYearEnd
+    new Date(c.employment_start_date) >= startDate && 
+    new Date(c.employment_start_date) < endDate
   );
   
   // 90-day follow-ups due/completed
   const followups90Day = clients.filter(c => 
     c.followup_90day_date && 
-    new Date(c.followup_90day_date) >= fiscalYearStart && 
-    new Date(c.followup_90day_date) < fiscalYearEnd
+    new Date(c.followup_90day_date) >= startDate && 
+    new Date(c.followup_90day_date) < endDate
   );
   
   const followupsCompleted = followups90Day.filter(c => c.followup_90day_status);
@@ -100,7 +98,7 @@ function calculateOutcomes(clients) {
   const closedCount = clients.filter(c => c.status === "closed").length;
   
   return {
-    fiscalYear: `${fiscalYearStart.getFullYear()}-${fiscalYearEnd.getFullYear()}`,
+    dateRangeLabel: label,
     pathwaysStarters: pathwaysStarters.length,
     deaStarters: deaStarters.length,
     pathwaysCompleters: pathwaysCompleters.length,
@@ -129,6 +127,11 @@ export default function Outcomes() {
     assignedWorker: "all",
     serviceType: "all",
     status: "all",
+    dateRangeType: "fiscal", // fiscal, calendar, month, custom
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+    startDate: "",
+    endDate: "",
   });
 
   // Get unique assigned workers from clients
@@ -136,6 +139,46 @@ export default function Outcomes() {
     .filter(c => c.assigned_worker_name)
     .map(c => c.assigned_worker_name)
   )].sort();
+
+  // Calculate date range based on filter selection
+  const getDateRange = () => {
+    const now = new Date();
+    let startDate, endDate, label;
+
+    if (filters.dateRangeType === "calendar") {
+      startDate = new Date(filters.year, 0, 1);
+      endDate = new Date(filters.year + 1, 0, 1);
+      label = `Calendar Year ${filters.year}`;
+    } else if (filters.dateRangeType === "fiscal") {
+      const fiscalStart = filters.year <= now.getFullYear() ? new Date(filters.year, 3, 1) : new Date(filters.year - 1, 3, 1);
+      const fiscalEnd = new Date(filters.year + 1, 3, 1);
+      startDate = fiscalStart;
+      endDate = fiscalEnd;
+      label = `Fiscal Year ${filters.year}-${String(fiscalEnd.getFullYear()).slice(2)}`;
+    } else if (filters.dateRangeType === "month") {
+      const year = filters.year;
+      const month = filters.month - 1;
+      startDate = new Date(year, month, 1);
+      endDate = new Date(year, month + 1, 1);
+      label = `${startDate.toLocaleString('default', { month: 'long' })} ${year}`;
+    } else if (filters.dateRangeType === "custom" && filters.startDate && filters.endDate) {
+      startDate = new Date(filters.startDate);
+      endDate = new Date(filters.endDate);
+      endDate.setDate(endDate.getDate() + 1); // Include end date
+      label = `${filters.startDate} to ${filters.endDate}`;
+    } else {
+      // Default to current fiscal year
+      const fiscalStart = new Date(now.getFullYear() - (now.getMonth() < 3 ? 1 : 0), 3, 1);
+      const fiscalEnd = new Date(now.getFullYear() + (now.getMonth() >= 3 ? 1 : 0), 3, 1);
+      startDate = fiscalStart;
+      endDate = fiscalEnd;
+      label = `Fiscal Year ${fiscalStart.getFullYear()}-${String(fiscalEnd.getFullYear()).slice(2)}`;
+    }
+
+    return { startDate, endDate, label };
+  };
+
+  const dateRange = getDateRange();
 
   // Filter clients based on selected filters
   const filteredClients = clients.filter(client => {
@@ -151,7 +194,7 @@ export default function Outcomes() {
     return true;
   });
 
-  const outcomes = calculateOutcomes(filteredClients);
+  const outcomes = calculateOutcomes(filteredClients, dateRange);
 
   if (isLoading) {
     return (
@@ -167,22 +210,31 @@ export default function Outcomes() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Program Outcomes</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Fiscal Year {outcomes.fiscalYear} (April 1 - March 31)
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Program Outcomes</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {outcomes.dateRangeLabel}
+          </p>
+        </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-sm">
               <Users className="w-4 h-4 mr-1" />
               {filteredClients.length} / {clients.length} Clients
             </Badge>
-            {(filters.assignedWorker !== "all" || filters.serviceType !== "all" || filters.status !== "all") && (
+            {(filters.assignedWorker !== "all" || filters.serviceType !== "all" || filters.status !== "all" || filters.dateRangeType !== "fiscal") && (
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => setFilters({ assignedWorker: "all", serviceType: "all", status: "all" })}
+                onClick={() => setFilters({ 
+                  assignedWorker: "all", 
+                  serviceType: "all", 
+                  status: "all",
+                  dateRangeType: "fiscal",
+                  year: new Date().getFullYear(),
+                  month: new Date().getMonth() + 1,
+                  startDate: "",
+                  endDate: "",
+                })}
                 className="h-7 text-xs"
               >
                 <X className="w-3 h-3 mr-1" /> Clear Filters
@@ -244,6 +296,78 @@ export default function Outcomes() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Date Range</label>
+                <Select value={filters.dateRangeType} onValueChange={(v) => setFilters(prev => ({ ...prev, dateRangeType: v }))}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fiscal">Fiscal Year (Apr-Mar)</SelectItem>
+                    <SelectItem value="calendar">Calendar Year</SelectItem>
+                    <SelectItem value="month">Month</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Date range specific controls */}
+            <div className="grid gap-3 md:grid-cols-3 mt-3 pt-3 border-t">
+              {(filters.dateRangeType === "calendar" || filters.dateRangeType === "fiscal" || filters.dateRangeType === "month") && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Year</Label>
+                  <Select value={String(filters.year)} onValueChange={(v) => setFilters(prev => ({ ...prev, year: parseInt(v) }))}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 4 + i).map(year => (
+                        <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              {filters.dateRangeType === "month" && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Month</Label>
+                  <Select value={String(filters.month)} onValueChange={(v) => setFilters(prev => ({ ...prev, month: parseInt(v) }))}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((month, i) => (
+                        <SelectItem key={i + 1} value={String(i + 1)}>{month}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              {filters.dateRangeType === "custom" && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Start Date</Label>
+                    <Input 
+                      type="date" 
+                      value={filters.startDate} 
+                      onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">End Date</Label>
+                    <Input 
+                      type="date" 
+                      value={filters.endDate} 
+                      onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                      className="h-9"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
