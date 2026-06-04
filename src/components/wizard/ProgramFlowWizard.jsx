@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, Circle, Map } from "lucide-react";
+import { CheckCircle2, Circle, Map, Menu, X } from "lucide-react";
 import BarrierIdentificationTool from "./BarrierIdentificationTool";
 import BarrierActionPlan from "./BarrierActionPlan";
 import EmploymentActionPlan from "./EmploymentActionPlan";
@@ -18,6 +18,7 @@ const STEPS = [
 
 export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
   const [activeStep, setActiveStep] = useState("bit");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const isPathways = client?.service_type === "pathways";
   const steps = STEPS.filter(s => !s.pathwaysOnly || isPathways);
@@ -55,10 +56,34 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
 
   return (
     <div className="flex gap-6 min-h-[600px]">
+      {/* Mobile toggle button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50"
+      >
+        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/20 z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Step sidebar */}
-      <div className="w-56 shrink-0">
+      <div className={`w-56 shrink-0 fixed lg:static top-0 left-0 h-full bg-white z-40 transform transition-transform duration-300 lg:transform-none ${
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      }`}>
         <div className="sticky top-6 space-y-1">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-3 mb-3">Program Steps</p>
+          <div className="flex items-center justify-between px-3 mb-3 lg:hidden">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Program Steps</p>
+            <button onClick={() => setSidebarOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="hidden lg:block text-xs font-semibold text-slate-400 uppercase tracking-wide px-3 mb-3">Program Steps</p>
           {steps.map((step, i) => {
             const status = getStepStatus(step.key);
             const cfg = statusConfig[status];
@@ -96,7 +121,7 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
       </div>
 
       {/* Step content */}
-      <div className="flex-1 min-w-0">
+      <div className={`flex-1 min-w-0 ${sidebarOpen ? "lg:ml-0" : ""}`}>
         {activeStep === "bit" && (
           <BarrierIdentificationTool client={client} onSave={onSave} onComplete={() => setActiveStep("barrier_action_plan")} />
         )}
