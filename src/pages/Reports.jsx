@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3, Receipt, Users } from "lucide-react";
+import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3 } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 import {
   Select,
@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaffMonthlyReports from "../components/reports/StaffMonthlyReports";
-import BillingReport from "../components/reports/BillingReport";
 
-// All available client fields
+// All available fields — client + financial (financial keys prefixed with _fin_)
 const ALL_FIELDS = [
+  // Demographics
   { key: "first_name", label: "First Name", category: "demographic" },
   { key: "last_name", label: "Last Name", category: "demographic" },
   { key: "date_of_birth", label: "Date of Birth", category: "demographic" },
@@ -39,12 +39,17 @@ const ALL_FIELDS = [
   { key: "assigned_worker_name", label: "Career Counsellor", category: "demographic" },
   { key: "status", label: "Case Status", category: "demographic" },
   { key: "program_status", label: "Program Status", category: "demographic" },
+  // Dates
+  { key: "intake_date", label: "Intake Date", category: "date" },
   { key: "service_start_date", label: "Service Start Date", category: "date" },
   { key: "completion_date", label: "Completion Date", category: "date" },
   { key: "employment_start_date", label: "Employment Start Date", category: "date" },
-  { key: "intake_date", label: "Intake Date", category: "date" },
   { key: "followup_90day_date", label: "90-Day Follow-Up Date", category: "date" },
+  { key: "post_completion_employment_date", label: "Post-Completion Employment Date", category: "date" },
+  { key: "closed_date", label: "Close Date", category: "date" },
+  // Metrics & outcomes
   { key: "followup_90day_status", label: "90-Day Employment Status", category: "metric" },
+  { key: "post_completion_employment_status", label: "Post-Completion Employment Status", category: "metric" },
   { key: "service_navigation_supports", label: "Service Navigation Supports", category: "metric" },
   { key: "barriers_addressed", label: "Barriers Addressed", category: "metric" },
   { key: "barrier_1", label: "Barrier 1", category: "metric" },
@@ -54,25 +59,24 @@ const ALL_FIELDS = [
   { key: "barrier_3", label: "Barrier 3", category: "metric" },
   { key: "barrier_3_status", label: "Barrier 3 Status", category: "metric" },
   { key: "internal_placement", label: "Internal Placement", category: "metric" },
-  { key: "external_employer", label: "External Employer", category: "metric" },
   { key: "employer_name", label: "Employer Name", category: "metric" },
   { key: "job_title", label: "Job Title", category: "metric" },
   { key: "job_wage", label: "Job Wage", category: "metric" },
   { key: "job_hours", label: "Job Hours/Week", category: "metric" },
-  { key: "exposure_course", label: "Exposure Course", category: "metric" },
-  { key: "paid_external_placement", label: "Paid External Placement", category: "metric" },
-  { key: "employment_supports", label: "Employment Supports", category: "metric" },
   { key: "compass_verified", label: "Compass Verified", category: "metric" },
   { key: "compass_verified_date", label: "Compass Verified Date", category: "metric" },
-  { key: "post_completion_employment_status", label: "Post-Completion Employment Status", category: "metric" },
-  { key: "post_completion_employment_date", label: "Post-Completion Employment Date", category: "date" },
   { key: "closed_reason", label: "Close Reason", category: "metric" },
-  { key: "closed_date", label: "Close Date", category: "date" },
   { key: "closed_notes", label: "Close Notes", category: "metric" },
-  { key: "compass_verified", label: "Compass Verified", category: "metric" },
-  { key: "compass_verified_date", label: "Compass Verified Date", category: "date" },
-  { key: "_duration_months", label: "Months in Program (calculated)", category: "metric" },
-  { key: "_stream_switch_count", label: "# Stream Switches (calculated)", category: "metric" },
+  { key: "_duration_months", label: "Months in Program (calc.)", category: "metric" },
+  { key: "_stream_switch_count", label: "# Stream Switches (calc.)", category: "metric" },
+  // Financial (aggregated from FinancialRecord)
+  { key: "_fin_exposure_course_total", label: "Exposure Course Total ($)", category: "financial" },
+  { key: "_fin_exposure_course_count", label: "Exposure Course # Records", category: "financial" },
+  { key: "_fin_paid_placement_total", label: "Paid Placement Total ($)", category: "financial" },
+  { key: "_fin_paid_placement_count", label: "Paid Placement # Records", category: "financial" },
+  { key: "_fin_employment_supports_total", label: "Employment Supports Total ($)", category: "financial" },
+  { key: "_fin_employment_supports_count", label: "Employment Supports # Records", category: "financial" },
+  { key: "_fin_total_all", label: "Total Financial Spend ($)", category: "financial" },
 ];
 
 const SERVICE_LABELS = {
@@ -96,15 +100,22 @@ const DEMOGRAPHIC_FILTERS = [
   { key: "compass_verified", label: "Compass Verified", type: "boolean-select" },
 ];
 
-function getDisplayValue(client, key) {
+function getDisplayValue(row, key) {
   if (key === "_duration_months") {
-    if (!client.service_start_date) return "";
-    return differenceInMonths(new Date(), new Date(client.service_start_date)) + " mo";
+    if (!row.service_start_date) return "";
+    return differenceInMonths(new Date(), new Date(row.service_start_date)) + " mo";
   }
   if (key === "_stream_switch_count") {
-    return (client.program_stream_switches?.length || 0).toString();
+    return (row.program_stream_switches?.length || 0).toString();
   }
-  const v = client[key];
+  // Financial keys are pre-computed onto the row
+  if (key.startsWith("_fin_")) {
+    const v = row[key];
+    if (v === undefined || v === null) return "—";
+    if (key.endsWith("_total") || key === "_fin_total_all") return `$${Number(v).toFixed(2)}`;
+    return String(v);
+  }
+  const v = row[key];
   if (v === undefined || v === null || v === "") return "";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (key === "service_type") return SERVICE_LABELS[v] || v;
@@ -127,6 +138,7 @@ function saveTemplates(templates) {
 
 export default function Reports() {
   const [clients, setClients] = useState([]);
+  const [financialRecords, setFinancialRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFields, setSelectedFields] = useState(["first_name", "last_name", "service_type", "program_status", "assigned_worker_name", "intake_date"]);
   const [dateFrom, setDateFrom] = useState("");
@@ -136,17 +148,48 @@ export default function Reports() {
   const [templates, setTemplates] = useState(loadTemplates());
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
-  
-  // Demographic filters
   const [filters, setFilters] = useState({});
-  const [reportType, setReportType] = useState("client");
 
   useEffect(() => {
-    base44.entities.Client.list("-intake_date", 1000).then(data => {
-      setClients(data);
+    Promise.all([
+      base44.entities.Client.list("-intake_date", 1000),
+      base44.entities.FinancialRecord.list("-date", 2000),
+    ]).then(([clientData, finData]) => {
+      setClients(clientData);
+      setFinancialRecords(finData);
       setLoading(false);
     });
   }, []);
+
+  // Build a map of client_id -> aggregated financial totals
+  const buildFinancialMap = () => {
+    const map = {};
+    financialRecords.forEach(rec => {
+      if (!rec.client_id) return;
+      if (!map[rec.client_id]) {
+        map[rec.client_id] = {
+          _fin_exposure_course_total: 0, _fin_exposure_course_count: 0,
+          _fin_paid_placement_total: 0, _fin_paid_placement_count: 0,
+          _fin_employment_supports_total: 0, _fin_employment_supports_count: 0,
+          _fin_total_all: 0,
+        };
+      }
+      const m = map[rec.client_id];
+      const amt = rec.amount || 0;
+      m._fin_total_all += amt;
+      if (rec.record_type === "exposure_course") {
+        m._fin_exposure_course_total += amt;
+        m._fin_exposure_course_count += 1;
+      } else if (rec.record_type === "paid_external_placement") {
+        m._fin_paid_placement_total += amt;
+        m._fin_paid_placement_count += 1;
+      } else if (rec.record_type === "employment_supports") {
+        m._fin_employment_supports_total += amt;
+        m._fin_employment_supports_count += 1;
+      }
+    });
+    return map;
+  };
 
   const toggleField = (key) => {
     setSelectedFields(prev =>
@@ -169,19 +212,18 @@ export default function Reports() {
   };
 
   const runReport = () => {
-    let data = [...clients];
-    
+    const finMap = buildFinancialMap();
+    let data = clients.map(c => ({ ...c, ...(finMap[c.id] || {}) }));
+
     // Apply demographic filters
     Object.entries(filters).forEach(([key, filterValue]) => {
       if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return;
-      
       data = data.filter(c => {
         const clientValue = c[key];
         if (Array.isArray(filterValue)) {
           return filterValue.includes(clientValue);
         } else {
-          // Text search
-          return clientValue?.toLowerCase().includes(filterValue.toLowerCase());
+          return String(clientValue ?? "").toLowerCase().includes(String(filterValue).toLowerCase());
         }
       });
     });
@@ -196,7 +238,7 @@ export default function Reports() {
         return true;
       });
     }
-    
+
     setResults(data);
   };
 
@@ -240,10 +282,10 @@ export default function Reports() {
   };
 
   const orderedFields = selectedFields.map(k => ALL_FIELDS.find(f => f.key === k)).filter(Boolean);
-  
   const demographicFields = ALL_FIELDS.filter(f => f.category === "demographic");
   const metricFields = ALL_FIELDS.filter(f => f.category === "metric");
   const dateFields = ALL_FIELDS.filter(f => f.category === "date");
+  const financialFields = ALL_FIELDS.filter(f => f.category === "financial");
 
   if (loading) return (
     <div className="fixed inset-0 flex items-center justify-center">
@@ -267,29 +309,6 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="data">
-        {/* Report type selector */}
-        <div className="flex gap-2 mb-5">
-          <Button
-            variant={reportType === "client" ? "default" : "outline"}
-            size="sm"
-            className="gap-2"
-            onClick={() => setReportType("client")}
-          >
-            <Users className="w-3.5 h-3.5" /> Client Data
-          </Button>
-          <Button
-            variant={reportType === "billing" ? "default" : "outline"}
-            size="sm"
-            className="gap-2"
-            onClick={() => setReportType("billing")}
-          >
-            <Receipt className="w-3.5 h-3.5" /> Billing Summary
-          </Button>
-        </div>
-
-        {reportType === "billing" ? (
-          <BillingReport />
-        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left: config */}
         <div className="lg:col-span-1 space-y-4">
@@ -475,6 +494,27 @@ export default function Reports() {
                   ))}
                 </CardContent>
               </Card>
+
+              {/* Financial selection */}
+              <Card className="border-amber-200">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    💰 Financial Data
+                  </CardTitle>
+                  <p className="text-xs text-slate-400">Totals from financial records per client · {selectedFields.filter(k => financialFields.find(f => f.key === k)).length} selected</p>
+                </CardHeader>
+                <CardContent className="space-y-1.5">
+                  {financialFields.map(f => (
+                    <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                      <Checkbox
+                        checked={selectedFields.includes(f.key)}
+                        onCheckedChange={() => toggleField(f.key)}
+                      />
+                      <span className="text-xs text-slate-700">{f.label}</span>
+                    </label>
+                  ))}
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 
@@ -563,6 +603,14 @@ export default function Reports() {
                               const count = results.filter(c => c[f.key] === true).length;
                               return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{count} yes</td>;
                             }
+                            if (f.category === "financial" && (f.key.endsWith("_total") || f.key === "_fin_total_all")) {
+                              const sum = results.reduce((s, c) => s + (c[f.key] || 0), 0);
+                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">${sum.toFixed(2)}</td>;
+                            }
+                            if (f.category === "financial" && f.key.endsWith("_count")) {
+                              const sum = results.reduce((s, c) => s + (c[f.key] || 0), 0);
+                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{sum}</td>;
+                            }
                             return <td key={f.key} className="px-3 py-2"></td>;
                           })}
                         </tr>
@@ -575,7 +623,6 @@ export default function Reports() {
           )}
         </div>
         </div>
-        )}
         </TabsContent>
 
         <TabsContent value="staff">
