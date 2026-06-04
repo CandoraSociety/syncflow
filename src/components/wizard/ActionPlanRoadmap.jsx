@@ -283,6 +283,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     intakeDate && {
       key: "intake", date: intakeDate, label: "Intake", editLabel: "Intake Date",
       field: "intake_date", color: "#8b5cf6", textColor: "text-violet-700",
+      forcePct: 0,
     },
     serviceStart && {
       key: "service_start", date: serviceStart, label: "Start", editLabel: "Service Start Date",
@@ -345,7 +346,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                 {/* Milestone label row */}
                 <div className="relative h-5 ml-40 mb-1">
                   {milestones.map((ms, idx) => {
-                    const p = pct(ms.date);
+                    const p = ms.forcePct ?? pct(ms.date);
                     // Avoid labels overflowing left edge: first milestone anchors left, others center
                     const transform = p < 5 ? "translateX(0)" : p > 95 ? "translateX(-100%)" : "translateX(-50%)";
                     return (
@@ -380,14 +381,14 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   {/* Milestone lines */}
                   {milestones.map(ms => (
                     <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-0"
-                      style={{ left: `${pct(ms.date)}%`, backgroundColor: ms.color, opacity: 0.7,
+                      style={{ left: `${ms.forcePct ?? pct(ms.date)}%`, backgroundColor: ms.color, opacity: 0.7,
                         borderStyle: ms.dashed ? "dashed" : "solid" }} />
                   ))}
 
                   {/* Milestone date editors */}
                   {milestones.map(ms => (
                     editingMilestone === ms.key && ms.editLabel && (
-                      <div key={`edit_${ms.key}`} className="absolute z-50" style={{ left: `${pct(ms.date)}%` }}>
+                      <div key={`edit_${ms.key}`} className="absolute z-50" style={{ left: `${ms.forcePct ?? pct(ms.date)}%` }}>
                         <MilestoneDateEditor
                           label={ms.editLabel}
                           currentDate={ms.key === "intake" ? client?.intake_date : ms.key === "service_start" ? client?.service_start_date : client?.completion_date}
