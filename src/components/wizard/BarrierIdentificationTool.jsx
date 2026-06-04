@@ -255,10 +255,20 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
     const data = { barriers_addressed: confirmedBarriers.length > 0, bit_completed: true };
     for (let n = 1; n <= 3; n++) {
       const b = confirmedBarriers[n - 1];
+      // Always clear previous barrier slot first, then populate if there's a barrier
       data[`barrier_${n}`] = b ? (KEY_TO_LEGACY[b.key] || b.key) : "";
       data[`barrier_${n}_status`] = b ? "unresolved" : "";
       data[`barrier_${n}_other`] = "";
       data[`barrier_${n}_notes`] = b ? (barrierState[b.key]?.notes || "") : "";
+      data[`barrier_${n}_action_steps`] = "";
+      data[`barrier_${n}_challenges`] = "";
+      // Only carry over timeline/responsible/resources if the barrier is the SAME as before
+      const prevLegacyKey = client?.[`barrier_${n}`];
+      const isSameBarrier = b && prevLegacyKey && (KEY_TO_LEGACY[b.key] || b.key) === prevLegacyKey;
+      data[`barrier_${n}_timeline_start`] = isSameBarrier ? (client?.[`barrier_${n}_timeline_start`] || "") : "";
+      data[`barrier_${n}_timeline_end`] = isSameBarrier ? (client?.[`barrier_${n}_timeline_end`] || "") : "";
+      data[`barrier_${n}_responsible`] = isSameBarrier ? (client?.[`barrier_${n}_responsible`] || "") : "";
+      data[`barrier_${n}_resources`] = isSameBarrier ? (client?.[`barrier_${n}_resources`] || "") : "";
       if (b) {
         const state = barrierState[b.key];
         const actions = [
@@ -271,9 +281,6 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
         ];
         data[`barrier_${n}_action_steps`] = actions.join("\n");
         data[`barrier_${n}_challenges`] = challenges.join("\n");
-      } else {
-        data[`barrier_${n}_action_steps`] = "";
-        data[`barrier_${n}_challenges`] = "";
       }
     }
     return data;
