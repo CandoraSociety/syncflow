@@ -248,6 +248,23 @@ export default function Reports() {
     );
   };
 
+  const selectAllFields = (fields) => {
+    setSelectedFields(prev => {
+      const keys = fields.map(f => f.key);
+      const allSelected = keys.every(k => prev.includes(k));
+      if (allSelected) return prev.filter(k => !keys.includes(k));
+      return [...prev.filter(k => !keys.includes(k)), ...keys];
+    });
+  };
+
+  const selectAllFilterOptions = (filterKey, options) => {
+    setFilters(prev => {
+      const current = prev[filterKey] || [];
+      const allSelected = options.every(o => current.includes(o));
+      return { ...prev, [filterKey]: allSelected ? [] : [...options] };
+    });
+  };
+
   const toggleFilter = (filterKey, value) => {
     setFilters(prev => {
       const current = prev[filterKey] || [];
@@ -570,9 +587,17 @@ export default function Reports() {
                       );
                     } else {
                       const options = [...new Set(clients.map(c => c[f.key]).filter(Boolean))].sort();
+                      const allSelected = options.length > 0 && options.every(o => (filters[f.key] || []).includes(o));
                       return (
                         <div key={f.key}>
-                          <Label className="text-xs mb-1 block">{f.label}</Label>
+                          <div className="flex items-center justify-between mb-1">
+                            <Label className="text-xs">{f.label}</Label>
+                            {options.length > 1 && (
+                              <button className="text-xs text-primary hover:underline" onClick={() => selectAllFilterOptions(f.key, options)}>
+                                {allSelected ? "Clear" : "All"}
+                              </button>
+                            )}
+                          </div>
                           <div className="space-y-1 max-h-24 overflow-y-auto border border-slate-100 rounded p-2">
                             {options.map(opt => (
                               <label key={opt} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
@@ -596,10 +621,15 @@ export default function Reports() {
               {/* Demographics */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <BarChart3 className="w-3 h-3" /> Demographics
-                  </CardTitle>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => demographicFields.find(f => f.key === k)).length} selected</p>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="w-3 h-3" /> Demographics
+                    </CardTitle>
+                    <button className="text-xs text-primary hover:underline" onClick={() => selectAllFields(demographicFields)}>
+                      {demographicFields.every(f => selectedFields.includes(f.key)) ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400">{selectedFields.filter(k => demographicFields.find(f => f.key === k)).length} / {demographicFields.length} selected</p>
                 </CardHeader>
                 <CardContent className="space-y-1.5 max-h-48 overflow-y-auto">
                   {demographicFields.map(f => (
@@ -614,10 +644,15 @@ export default function Reports() {
               {/* Metrics */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <BarChart3 className="w-3 h-3" /> Metrics & Outcomes
-                  </CardTitle>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => metricFields.find(f => f.key === k)).length} selected</p>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="w-3 h-3" /> Metrics & Outcomes
+                    </CardTitle>
+                    <button className="text-xs text-primary hover:underline" onClick={() => selectAllFields(metricFields)}>
+                      {metricFields.every(f => selectedFields.includes(f.key)) ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400">{selectedFields.filter(k => metricFields.find(f => f.key === k)).length} / {metricFields.length} selected</p>
                 </CardHeader>
                 <CardContent className="space-y-1.5 max-h-48 overflow-y-auto">
                   {metricFields.map(f => (
@@ -632,10 +667,15 @@ export default function Reports() {
               {/* Financial (direct costs per client) */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <BarChart3 className="w-3 h-3" /> Financial — Direct Costs
-                  </CardTitle>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => financialFields.find(f => f.key === k)).length} selected · per-client amounts</p>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="w-3 h-3" /> Financial — Direct Costs
+                    </CardTitle>
+                    <button className="text-xs text-primary hover:underline" onClick={() => selectAllFields(financialFields)}>
+                      {financialFields.every(f => selectedFields.includes(f.key)) ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400">{selectedFields.filter(k => financialFields.find(f => f.key === k)).length} / {financialFields.length} selected · per-client amounts</p>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {financialFields.map(f => (
@@ -665,10 +705,15 @@ export default function Reports() {
               {/* Invoice columns */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <BarChart3 className="w-3 h-3" /> Invoice Amounts
-                  </CardTitle>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => invoiceFields.find(f => f.key === k)).length} selected · shown in report footer</p>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="w-3 h-3" /> Invoice Amounts
+                    </CardTitle>
+                    <button className="text-xs text-primary hover:underline" onClick={() => selectAllFields(invoiceFields)}>
+                      {invoiceFields.every(f => selectedFields.includes(f.key)) ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400">{selectedFields.filter(k => invoiceFields.find(f => f.key === k)).length} / {invoiceFields.length} selected · shown in report footer</p>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-2">
