@@ -327,25 +327,33 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
                 {/* Month axis */}
                 <div className="relative h-5 ml-40 mb-0">
-                  {monthLabels.map((ml, i) => (
-                    <span key={i} className="absolute text-[10px] text-slate-400 font-medium"
-                      style={{ left: `${ml.p}%`, transform: "translateX(-50%)" }}>
-                      {ml.label}
-                    </span>
-                  ))}
+                  {monthLabels.map((ml, i) => {
+                    const transform = ml.p < 5 ? "translateX(0)" : ml.p > 95 ? "translateX(-100%)" : "translateX(-50%)";
+                    return (
+                      <span key={i} className="absolute text-[10px] text-slate-400 font-medium"
+                        style={{ left: `${ml.p}%`, transform }}>
+                        {ml.label}
+                      </span>
+                    );
+                  })}
                 </div>
 
                 {/* Milestone label row */}
                 <div className="relative h-5 ml-40 mb-1">
-                  {milestones.map(ms => (
-                    <button key={ms.key}
-                      onClick={() => ms.editLabel && setEditingMilestone(editingMilestone === ms.key ? null : ms.key)}
-                      className={`absolute text-[9px] font-bold whitespace-nowrap flex items-center gap-0.5 ${ms.textColor} ${ms.editLabel ? "hover:underline cursor-pointer" : "cursor-default"}`}
-                      style={{ left: `${pct(ms.date)}%`, transform: "translateX(-50%)" }}
-                      title={ms.editLabel ? `Click to edit ${ms.editLabel}` : format(parseDate(ms.date), "MMM d, yyyy")}>
-                      ▼ {ms.label}
-                    </button>
-                  ))}
+                  {milestones.map((ms, idx) => {
+                    const p = pct(ms.date);
+                    // Avoid labels overflowing left edge: first milestone anchors left, others center
+                    const transform = p < 5 ? "translateX(0)" : p > 95 ? "translateX(-100%)" : "translateX(-50%)";
+                    return (
+                      <button key={ms.key}
+                        onClick={() => ms.editLabel && setEditingMilestone(editingMilestone === ms.key ? null : ms.key)}
+                        className={`absolute text-[9px] font-bold whitespace-nowrap flex items-center gap-0.5 ${ms.textColor} ${ms.editLabel ? "hover:underline cursor-pointer" : "cursor-default"}`}
+                        style={{ left: `${p}%`, transform }}
+                        title={ms.editLabel ? `Click to edit ${ms.editLabel}` : format(parseDate(ms.date), "MMM d, yyyy")}>
+                        ▼ {ms.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Chart area */}
