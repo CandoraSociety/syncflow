@@ -201,9 +201,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     totalDays = differenceInDays(maxDate, minDate) || 1;
   }
 
-  function pct(dateStr) {
-    if (!dateStr || !hasTimelineData) return null;
-    const d = typeof dateStr === "string" ? parseISO(dateStr) : dateStr;
+  function pct(dateVal) {
+    if (!dateVal || !hasTimelineData) return null;
+    const d = (dateVal instanceof Date) ? dateVal : parseISO(dateVal);
     return Math.max(0, Math.min(100, (differenceInDays(d, minDate) / totalDays) * 100));
   }
 
@@ -211,7 +211,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   if (hasTimelineData) {
     const cursor = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
     while (cursor <= maxDate) {
-      monthLabels.push({ label: format(cursor, "MMM yy"), pct: pct(cursor) });
+      const label = format(new Date(cursor), "MMM yy");
+      const p = pct(new Date(cursor));
+      monthLabels.push({ label, pct: p });
       cursor.setMonth(cursor.getMonth() + 1);
     }
   }
