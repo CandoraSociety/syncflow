@@ -402,10 +402,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             {/* Label */}
                             <div
                               className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right transition-colors group-hover:text-primary"
-                              style={{ color: approaching ? "#d97706" : "#334155" }}
+                              style={{ color: item.isBarrier ? "#f59e0b" : approaching ? "#d97706" : "#334155" }}
                             >
-                              {approaching && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-pulse align-middle" />}
-                              {item.isBarrier && <span style={{ color: "#f59e0b" }} className="mr-0.5">⚠</span>}
+                              {approaching && !item.isBarrier && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-pulse align-middle" />}
+                              {item.isBarrier && <span className="mr-0.5">⚠</span>}
                               {item.label}
                             </div>
 
@@ -433,7 +433,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 <Tooltip
                                   content={tooltipLines}
                                   style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
-                                  className={`rounded-full border-2 border-white shadow ${approaching ? "animate-pulse" : ""}`}
+                                  className={`rounded-full border-2 border-white shadow ${approaching && !item.isBarrier ? "animate-pulse" : ""}`}
                                 >
                                   <div className="w-full h-full rounded-full" style={{ backgroundColor: cfg.barColor }} />
                                 </Tooltip>
