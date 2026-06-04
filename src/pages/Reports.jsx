@@ -69,13 +69,10 @@ const ALL_FIELDS = [
   { key: "closed_notes", label: "Close Notes", category: "metric" },
   { key: "_duration_months", label: "Months in Program (calc.)", category: "metric" },
   { key: "_stream_switch_count", label: "# Stream Switches (calc.)", category: "metric" },
-  // Financial (aggregated from FinancialRecord)
+  // Financial (aggregated from FinancialRecord per client)
   { key: "_fin_exposure_course_total", label: "Exposure Course Total ($)", category: "financial" },
-  { key: "_fin_exposure_course_count", label: "Exposure Course # Records", category: "financial" },
   { key: "_fin_paid_placement_total", label: "Paid Placement Total ($)", category: "financial" },
-  { key: "_fin_paid_placement_count", label: "Paid Placement # Records", category: "financial" },
   { key: "_fin_employment_supports_total", label: "Employment Supports Total ($)", category: "financial" },
-  { key: "_fin_employment_supports_count", label: "Employment Supports # Records", category: "financial" },
   { key: "_fin_total_all", label: "Total Financial Spend ($)", category: "financial" },
 ];
 
@@ -100,22 +97,26 @@ const DEMOGRAPHIC_FILTERS = [
   { key: "compass_verified", label: "Compass Verified", type: "boolean-select" },
 ];
 
-function getDisplayValue(row, key) {
+function fmt$(n) {
+  if (!n && n !== 0) return "";
+  return "$" + Number(n).toFixed(2);
+}
+
+function getDisplayValue(client, key) {
   if (key === "_duration_months") {
-    if (!row.service_start_date) return "";
-    return differenceInMonths(new Date(), new Date(row.service_start_date)) + " mo";
+    if (!client.service_start_date) return "";
+    return differenceInMonths(new Date(), new Date(client.service_start_date)) + " mo";
   }
   if (key === "_stream_switch_count") {
-    return (row.program_stream_switches?.length || 0).toString();
+    return (client.program_stream_switches?.length || 0).toString();
   }
-  // Financial keys are pre-computed onto the row
-  if (key.startsWith("_fin_")) {
-    const v = row[key];
-    if (v === undefined || v === null) return "—";
-    if (key.endsWith("_total") || key === "_fin_total_all") return `$${Number(v).toFixed(2)}`;
-    return String(v);
-  }
-  const v = row[key];
+  // Financial keys — already merged onto the client row
+  if (key === "_fin_exposure_course_total") return fmt$(client._fin_exposure || 0);
+  if (key === "_fin_paid_placement_total") return fmt$(client._fin_placement || 0);
+  if (key === "_fin_employment_supports_total") return fmt$(client._fin_supports || 0);
+  if (key === "_fin_total_all") return fmt$((client._fin_exposure || 0) + (client._fin_placement || 0) + (client._fin_supports || 0));
+
+  const v = client[key];
   if (v === undefined || v === null || v === "") return "";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (key === "service_type") return SERVICE_LABELS[v] || v;
@@ -138,7 +139,7 @@ function saveTemplates(templates) {
 
 export default function Reports() {
   const [clients, setClients] = useState([]);
-  const [financialRecords, setFinancialRecords] = useState([]);
+  const [financialMap, setFinancialMap] = useState({}); // clientId -> { exposure_course_total, ... }
   const [loading, setLoading] = useState(true);
   const [selectedFields, setSelectedFields] = useState(["first_name", "last_name", "service_type", "program_status", "assigned_worker_name", "intake_date"]);
   const [dateFrom, setDateFrom] = useState("");
@@ -155,41 +156,21 @@ export default function Reports() {
       base44.entities.Client.list("-intake_date", 1000),
       base44.entities.FinancialRecord.list("-date", 2000),
     ]).then(([clientData, finData]) => {
+      // Build per-client financial totals map
+      const map = {};
+      finData.forEach(rec => {
+        if (!rec.client_id) return;
+        if (!map[rec.client_id]) map[rec.client_id] = { exposure: 0, placement: 0, supports: 0 };
+        const amt = rec.amount || 0;
+        if (rec.record_type === "exposure_course") map[rec.client_id].exposure += amt;
+        else if (rec.record_type === "paid_external_placement") map[rec.client_id].placement += amt;
+        else if (rec.record_type === "employment_supports") map[rec.client_id].supports += amt;
+      });
+      setFinancialMap(map);
       setClients(clientData);
-      setFinancialRecords(finData);
       setLoading(false);
     });
   }, []);
-
-  // Build a map of client_id -> aggregated financial totals
-  const buildFinancialMap = () => {
-    const map = {};
-    financialRecords.forEach(rec => {
-      if (!rec.client_id) return;
-      if (!map[rec.client_id]) {
-        map[rec.client_id] = {
-          _fin_exposure_course_total: 0, _fin_exposure_course_count: 0,
-          _fin_paid_placement_total: 0, _fin_paid_placement_count: 0,
-          _fin_employment_supports_total: 0, _fin_employment_supports_count: 0,
-          _fin_total_all: 0,
-        };
-      }
-      const m = map[rec.client_id];
-      const amt = rec.amount || 0;
-      m._fin_total_all += amt;
-      if (rec.record_type === "exposure_course") {
-        m._fin_exposure_course_total += amt;
-        m._fin_exposure_course_count += 1;
-      } else if (rec.record_type === "paid_external_placement") {
-        m._fin_paid_placement_total += amt;
-        m._fin_paid_placement_count += 1;
-      } else if (rec.record_type === "employment_supports") {
-        m._fin_employment_supports_total += amt;
-        m._fin_employment_supports_count += 1;
-      }
-    });
-    return map;
-  };
 
   const toggleField = (key) => {
     setSelectedFields(prev =>
@@ -212,19 +193,25 @@ export default function Reports() {
   };
 
   const runReport = () => {
-    const finMap = buildFinancialMap();
-    let data = clients.map(c => ({ ...c, ...(finMap[c.id] || {}) }));
-
+    let data = clients.map(c => ({
+      ...c,
+      _fin_exposure: financialMap[c.id]?.exposure || 0,
+      _fin_placement: financialMap[c.id]?.placement || 0,
+      _fin_supports: financialMap[c.id]?.supports || 0,
+    }));
+    
     // Apply demographic filters
     Object.entries(filters).forEach(([key, filterValue]) => {
-      if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return;
+      if (!filterValue || filterValue === "" || (Array.isArray(filterValue) && filterValue.length === 0)) return;
       data = data.filter(c => {
         const clientValue = c[key];
         if (Array.isArray(filterValue)) {
           return filterValue.includes(clientValue);
-        } else {
-          return String(clientValue ?? "").toLowerCase().includes(String(filterValue).toLowerCase());
         }
+        if (typeof filterValue === "boolean") {
+          return clientValue === filterValue;
+        }
+        return clientValue?.toString().toLowerCase().includes(filterValue.toLowerCase());
       });
     });
 
@@ -238,7 +225,7 @@ export default function Reports() {
         return true;
       });
     }
-
+    
     setResults(data);
   };
 
@@ -282,6 +269,7 @@ export default function Reports() {
   };
 
   const orderedFields = selectedFields.map(k => ALL_FIELDS.find(f => f.key === k)).filter(Boolean);
+  
   const demographicFields = ALL_FIELDS.filter(f => f.category === "demographic");
   const metricFields = ALL_FIELDS.filter(f => f.category === "metric");
   const dateFields = ALL_FIELDS.filter(f => f.category === "date");
@@ -496,12 +484,12 @@ export default function Reports() {
               </Card>
 
               {/* Financial selection */}
-              <Card className="border-amber-200">
+              <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    💰 Financial Data
+                    <BarChart3 className="w-3 h-3" /> Financial (GoA Billings)
                   </CardTitle>
-                  <p className="text-xs text-slate-400">Totals from financial records per client · {selectedFields.filter(k => financialFields.find(f => f.key === k)).length} selected</p>
+                  <p className="text-xs text-slate-400">{selectedFields.filter(k => financialFields.find(f => f.key === k)).length} selected</p>
                 </CardHeader>
                 <CardContent className="space-y-1.5">
                   {financialFields.map(f => (
@@ -603,14 +591,10 @@ export default function Reports() {
                               const count = results.filter(c => c[f.key] === true).length;
                               return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{count} yes</td>;
                             }
-                            if (f.category === "financial" && (f.key.endsWith("_total") || f.key === "_fin_total_all")) {
-                              const sum = results.reduce((s, c) => s + (c[f.key] || 0), 0);
-                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">${sum.toFixed(2)}</td>;
-                            }
-                            if (f.category === "financial" && f.key.endsWith("_count")) {
-                              const sum = results.reduce((s, c) => s + (c[f.key] || 0), 0);
-                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{sum}</td>;
-                            }
+                            if (f.key === "_fin_exposure_course_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_exposure || 0), 0))}</td>;
+                            if (f.key === "_fin_paid_placement_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_placement || 0), 0))}</td>;
+                            if (f.key === "_fin_employment_supports_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_supports || 0), 0))}</td>;
+                            if (f.key === "_fin_total_all") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_exposure || 0) + (c._fin_placement || 0) + (c._fin_supports || 0), 0))}</td>;
                             return <td key={f.key} className="px-3 py-2"></td>;
                           })}
                         </tr>
