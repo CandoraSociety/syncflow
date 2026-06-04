@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -205,6 +205,23 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
     setBarrierState(prev => ({ ...prev, [barrierKey]: { ...prev[barrierKey], [field]: val } }));
 
   const toggleDropdown = (id) => setOpenDropdown(prev => prev === id ? null : id);
+
+  // Auto-populate recommendations from confirmed barriers' selected actions
+  useEffect(() => {
+    const lines = [];
+    confirmedBarriers.forEach(b => {
+      const state = barrierState[b.key];
+      const actions = [
+        ...(state.selectedActions || []),
+        ...(state.actionOthers || []).filter(v => v.trim()),
+      ];
+      if (actions.length > 0) {
+        lines.push(`${b.key}:`);
+        actions.forEach(a => lines.push(`  • ${a}`));
+      }
+    });
+    setActionPlan(p => ({ ...p, recommendations: lines.join("\n") }));
+  }, [barrierState]);
 
   const toggleFollowupMethod = (method) => {
     setActionPlan(prev => ({
