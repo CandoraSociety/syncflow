@@ -253,7 +253,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     minDate = leftAnchor
       ? new Date(leftAnchor.getFullYear(), leftAnchor.getMonth(), leftAnchor.getDate(), 12, 0, 0)
       : new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate(), 12, 0, 0);
-    maxDate = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate() + 14, 12, 0, 0);
+    maxDate = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate() + 28, 12, 0, 0);
     minMs   = minDate.getTime();
     rangeMs = maxDate.getTime() - minMs;
   }
@@ -423,7 +423,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                       const endStr   = item.detail?.timeline_end   || item.statusData?.completed_date;
                       const startP   = pct(startStr);
                       const endP     = pct(endStr);
-                      const hasBar   = startP != null && endP != null && endP > startP;
+                      const hasBar   = startP != null && endP != null && (endP - startP) > 1.5;
                       const hasDot   = startP != null && !hasBar;
                       const isCancelled = item.status === "cancelled";
                       const isCompleted = item.status === "completed";
@@ -538,7 +538,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                           const endStr   = item.detail?.timeline_end   || item.statusData?.completed_date;
                           const startP   = pct(startStr);
                           const endP     = pct(endStr);
-                          const hasBar   = startP != null && endP != null && endP > startP;
+                          const hasBar   = startP != null && endP != null && (endP - startP) > 1.5;
                           const hasDot   = startP != null && !hasBar;
                           const isCancelled = item.status === "cancelled";
                           const isCompleted = item.status === "completed";
