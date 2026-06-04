@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3, Receipt } from "lucide-react";
+import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3, Receipt, Users } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 import {
   Select,
@@ -139,6 +139,7 @@ export default function Reports() {
   
   // Demographic filters
   const [filters, setFilters] = useState({});
+  const [reportType, setReportType] = useState("client");
 
   useEffect(() => {
     base44.entities.Client.list("-intake_date", 1000).then(data => {
@@ -262,11 +263,34 @@ export default function Reports() {
       <Tabs defaultValue="data" className="max-w-7xl mx-auto px-6 py-6">
         <TabsList className="mb-4">
           <TabsTrigger value="data">Data Reports</TabsTrigger>
-          <TabsTrigger value="billing" className="flex items-center gap-1"><Receipt className="w-3 h-3" />Billing Reports</TabsTrigger>
           <TabsTrigger value="staff">Staff Monthly Reports</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="data" className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <TabsContent value="data">
+        {/* Report type selector */}
+        <div className="flex gap-2 mb-5">
+          <Button
+            variant={reportType === "client" ? "default" : "outline"}
+            size="sm"
+            className="gap-2"
+            onClick={() => setReportType("client")}
+          >
+            <Users className="w-3.5 h-3.5" /> Client Data
+          </Button>
+          <Button
+            variant={reportType === "billing" ? "default" : "outline"}
+            size="sm"
+            className="gap-2"
+            onClick={() => setReportType("billing")}
+          >
+            <Receipt className="w-3.5 h-3.5" /> Billing Summary
+          </Button>
+        </div>
+
+        {reportType === "billing" ? (
+          <BillingReport />
+        ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left: config */}
         <div className="lg:col-span-1 space-y-4">
 
@@ -550,10 +574,8 @@ export default function Reports() {
             </Card>
           )}
         </div>
-        </TabsContent>
-
-        <TabsContent value="billing">
-          <BillingReport />
+        </div>
+        )}
         </TabsContent>
 
         <TabsContent value="staff">
