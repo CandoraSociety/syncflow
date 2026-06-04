@@ -729,7 +729,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
               </div>
             </div>
           </div>
-        </div>
         ) : (
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center text-sm text-slate-400">
             No dates set yet — click any item below to add start/end dates.
@@ -738,7 +737,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
         {/* Items needing dates - shown regardless of timeline data */}
         {itemsNeedingDates.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-4">
             <div className="flex items-center gap-2 mb-3">
               <AlertCircle className="w-4 h-4 text-amber-600" />
               <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide">
