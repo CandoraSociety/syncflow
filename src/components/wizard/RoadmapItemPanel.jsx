@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Save, X, CheckCircle2, Play, Calendar, AlertCircle } from "lucide-react";
+import { AlertTriangle, Save, X, CheckCircle2, Play, Calendar, AlertCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 const BARRIER_STATUS_COLORS = {
@@ -86,21 +86,23 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
       {/* Status selector */}
       <div className="space-y-2">
         <Label className="text-xs font-semibold">Item Status</Label>
-        <div className="flex gap-2">
-          {["planned", "started", "completed"].map(s => (
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "planned",   label: "Not Started", activeClass: "bg-slate-700 text-white border-slate-700" },
+            { key: "started",   label: "In Progress",  activeClass: "bg-blue-600 text-white border-blue-600" },
+            { key: "completed", label: "Completed",    activeClass: "bg-green-600 text-white border-green-600" },
+            { key: "cancelled", label: "Cancelled",    activeClass: "bg-red-600 text-white border-red-600" },
+          ].map(({ key: s, label, activeClass }) => (
             <button
               key={s}
               onClick={() => setStatus(s)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all capitalize
-                ${status === s
-                  ? s === "completed" ? "bg-green-600 text-white border-green-600"
-                  : s === "started" ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-slate-700 text-white border-slate-700"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all
+                ${status === s ? activeClass : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
             >
               {s === "completed" && <CheckCircle2 className="w-3 h-3" />}
               {s === "started" && <Play className="w-3 h-3" />}
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+              {s === "cancelled" && <X className="w-3 h-3" />}
+              {label}
             </button>
           ))}
         </div>

@@ -20,7 +20,7 @@ function msPct(date, minMs, rangeMs) {
   return Math.max(0, Math.min(100, ((d.getTime() - minMs) / rangeMs) * 100));
 }
 
-import { CheckCircle2, Circle, Clock, AlertTriangle, CalendarCheck, LayoutList, BarChart2, AlertCircle, X, Save } from "lucide-react";
+import { CheckCircle2, Circle, Clock, AlertTriangle, CalendarCheck, LayoutList, BarChart2, AlertCircle, X, Save, CheckCheck } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,11 +47,21 @@ const ACTION_PLAN_OPTIONS = [
   { key: "other", label: "Other" },
 ];
 
+// Status visual config — ring colour and bar overlay; bar/dot colour comes from TYPE
 const STATUS_CONFIG = {
-  planned:   { icon: Circle,       color: "text-slate-400",  bg: "bg-slate-50",  border: "border-slate-200", badge: "bg-slate-100 text-slate-500",  label: "Planned",     barColor: "#94a3b8" },
-  started:   { icon: Clock,        color: "text-blue-600",   bg: "bg-blue-50",   border: "border-blue-200",  badge: "bg-blue-100 text-blue-700",    label: "In Progress", barColor: "#3b82f6" },
-  completed: { icon: CheckCircle2, color: "text-green-600",  bg: "bg-green-50",  border: "border-green-200", badge: "bg-green-100 text-green-700",  label: "Completed",   barColor: "#22c55e" },
+  planned:   { label: "Not Started", ring: "#94a3b8", badge: "bg-slate-100 text-slate-500" },
+  started:   { label: "In Progress", ring: "#3b82f6", badge: "bg-blue-100 text-blue-700" },
+  completed: { label: "Completed",   ring: "#22c55e", badge: "bg-green-100 text-green-700" },
+  cancelled: { label: "Cancelled",   ring: "#ef4444", badge: "bg-red-100 text-red-700" },
 };
+
+// Type colour — drives bar colour AND label text colour
+function getItemColor(key) {
+  if (key.startsWith("barrier_")) return "#f59e0b";          // gold
+  if (key === "internal_placement" || key === "paid_external_placement") return "#22c55e"; // green
+  if (key.includes("workshop") || key === "empoweru" || key === "ell_classes" || key === "skills_assessment") return "#a855f7"; // purple
+  return "#64748b"; // default slate for other items
+}
 
 function buildItems(selectedItems, itemDetails, otherDesc, roadmapStatus, client) {
   const items = selectedItems.map(key => {
@@ -376,13 +386,16 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   <div className="space-y-1.5 pt-2">
                     {itemsWithDates.map(item => {
                       const cfg      = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
+                      const typeColor = getItemColor(item.key);
                       const startStr = item.detail?.timeline_start || item.statusData?.started_date;
                       const endStr   = item.detail?.timeline_end   || item.statusData?.completed_date;
                       const startP   = pct(startStr);
                       const endP     = pct(endStr);
                       const hasBar   = startP != null && endP != null && endP > startP;
                       const hasDot   = startP != null && !hasBar;
-                      const approaching = isApproaching(item);
+                      const isCancelled = item.status === "cancelled";
+                      const isCompleted = item.status === "completed";
+                      const isStarted   = item.status === "started";
                       const isOpen   = openItem === item.key;
 
                       const tooltipLines = [
@@ -393,38 +406,57 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                         item.statusData?.case_manager_notes && `Notes: ${item.statusData.case_manager_notes}`,
                       ].filter(Boolean).join("\n");
 
+                      // Bar colour: grey if cancelled, type colour otherwise
+                      const barColor = isCancelled ? "#94a3b8" : typeColor;
+
                       return (
                         <div key={item.key} className="relative">
                           <button
                             onClick={() => { setEditingMilestone(null); setOpenItem(isOpen ? null : item.key); }}
                             className="w-full flex items-center h-8 group"
                           >
-                            {/* Label */}
+                            {/* Label — coloured by type */}
                             <div
-                              className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right transition-colors group-hover:text-primary"
-                              style={{ color: item.isBarrier ? "#f59e0b" : approaching ? "#d97706" : "#334155" }}
+                              className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right"
+                              style={{ color: isCancelled ? "#94a3b8" : typeColor }}
                             >
-                              {approaching && !item.isBarrier && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-pulse align-middle" />}
                               {item.isBarrier && <span className="mr-0.5">⚠</span>}
                               {item.label}
                             </div>
 
-                            {/* Bar track */}
-                            <div className={`w-full relative h-6 rounded-md border transition-all group-hover:border-primary/40 ${isOpen ? "border-primary/50 bg-primary/5" : "bg-slate-50 border-slate-100"}`}>
+                            {/* Bar track — ring colour from status */}
+                            <div
+                              className="w-full relative h-6 rounded-md transition-all"
+                              style={{
+                                backgroundColor: "#f8fafc",
+                                outline: `2px solid ${cfg.ring}`,
+                                outlineOffset: "-1px",
+                              }}
+                            >
                               {hasBar && (
                                 <Tooltip
                                   content={tooltipLines}
                                   style={{ left: `${startP}%`, width: `${Math.max(2, endP - startP)}%`, top: 0, height: "100%" }}
-                                  className={`rounded-md ${item.status === "started" ? "opacity-90" : "opacity-75"}`}
+                                  className="rounded-md overflow-hidden"
                                 >
-                                  <div className="w-full h-full rounded-md" style={{ backgroundColor: cfg.barColor }}>
-                                    {item.status === "started" && (
+                                  <div className="w-full h-full rounded-md relative overflow-hidden" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                    {/* In-progress shimmer */}
+                                    {isStarted && (
                                       <div className="absolute inset-0 rounded-md overflow-hidden">
-                                        <div className="h-full" style={{ animation: "shimmer 2s infinite linear", backgroundImage: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)", backgroundSize: "200% 100%" }} />
+                                        <div className="h-full" style={{ animation: "typeShimmer 2s infinite linear", backgroundImage: `linear-gradient(90deg, transparent, ${barColor}cc, rgba(255,255,255,0.5), ${barColor}cc, transparent)`, backgroundSize: "200% 100%" }} />
                                       </div>
                                     )}
-                                    {(endP - startP) > 15 && (
-                                      <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-semibold">{cfg.label}</span>
+                                    {/* Completed checkmark */}
+                                    {isCompleted && (endP - startP) > 8 && (
+                                      <span className="absolute inset-0 flex items-center justify-center">
+                                        <CheckCheck className="w-3 h-3 text-white drop-shadow" />
+                                      </span>
+                                    )}
+                                    {/* Cancelled X */}
+                                    {isCancelled && (endP - startP) > 8 && (
+                                      <span className="absolute inset-0 flex items-center justify-center">
+                                        <X className="w-3 h-3 text-white drop-shadow" />
+                                      </span>
                                     )}
                                   </div>
                                 </Tooltip>
@@ -433,13 +465,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 <Tooltip
                                   content={tooltipLines}
                                   style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
-                                  className={`rounded-full border-2 border-white shadow ${approaching && !item.isBarrier ? "animate-pulse" : ""}`}
+                                  className="rounded-full border-2 border-white shadow"
                                 >
-                                  <div className="w-full h-full rounded-full" style={{ backgroundColor: cfg.barColor }} />
+                                  <div className="w-full h-full rounded-full relative flex items-center justify-center" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                    {isCompleted && <CheckCheck className="w-2 h-2 text-white" />}
+                                    {isCancelled && <X className="w-2 h-2 text-white" />}
+                                  </div>
                                 </Tooltip>
-                              )}
-                              {approaching && hasBar && (
-                                <div className="absolute top-1 right-0 w-2 h-4 rounded-r-md animate-pulse opacity-60" style={{ backgroundColor: "#f59e0b" }} />
                               )}
                             </div>
                           </button>
@@ -517,14 +549,19 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                 </div>
 
                 {/* Legend */}
-                <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-slate-100 ml-40 text-[11px] text-slate-500">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-400 inline-block" />Planned</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500 inline-block" />In Progress</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-500 inline-block" />Completed</span>
-                  <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-emerald-500 inline-block" />Milestones (click to edit)</span>
+                <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 pt-3 border-t border-slate-100 ml-40 text-[11px] text-slate-500">
+                  <span className="font-semibold text-slate-400 uppercase tracking-wide">Type:</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#f59e0b" }} />Barrier</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#a855f7" }} />Workshop</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#22c55e" }} />Placement</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#64748b" }} />Other</span>
+                  <span className="font-semibold text-slate-400 uppercase tracking-wide ml-2">Status ring:</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block border-2" style={{ borderColor: "#94a3b8" }} />Not Started</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block border-2" style={{ borderColor: "#3b82f6" }} />In Progress</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block border-2" style={{ borderColor: "#22c55e" }} />Completed</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block border-2" style={{ borderColor: "#ef4444" }} />Cancelled</span>
+                  <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-emerald-500 inline-block" />Milestones</span>
                   <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-amber-400 inline-block" />Today</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse inline-block" />Approaching</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-400 inline-block flex items-center justify-center text-white text-[7px] font-bold">1</span>BIT Review</span>
                 </div>
               </div>
             </div>
@@ -545,18 +582,18 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
               </div>
               <div className="space-y-1">
                 {itemsNeedingDates.map(item => {
-                  const cfg    = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
-                  const Icon   = cfg.icon;
+                  const cfg       = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
+                  const typeColor = getItemColor(item.key);
                   const isOpen = openItem === item.key;
                   return (
                     <div key={item.key}>
                       <button
                         onClick={() => setOpenItem(isOpen ? null : item.key)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-all hover:shadow-sm ${isOpen ? "border-primary/40 bg-primary/5" : "border-amber-200 bg-white"}`}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg border-2 text-left transition-all hover:shadow-sm bg-white"
+                        style={{ borderColor: cfg.ring }}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${cfg.color}`} />
-                        {item.isBarrier && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-                        <span className="flex-1 text-sm font-medium text-slate-700">{item.label}</span>
+                        {item.isBarrier && <AlertTriangle className="w-3.5 h-3.5 shrink-0" style={{ color: typeColor }} />}
+                        <span className="flex-1 text-sm font-medium" style={{ color: typeColor }}>{item.label}</span>
                         <span className="text-xs text-amber-600 font-medium">+ Add dates</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}>{cfg.label}</span>
                       </button>
@@ -618,26 +655,29 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       {view === "list" && (
         <div className="space-y-1">
           {items.map(item => {
-            const cfg    = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
-            const Icon   = cfg.icon;
+            const cfg       = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
+            const typeColor = getItemColor(item.key);
+            const isCancelled = item.status === "cancelled";
+            const isCompleted = item.status === "completed";
+            const isStarted   = item.status === "started";
             const isOpen = openItem === item.key;
-            const approaching = isApproaching(item);
             return (
               <div key={item.key}>
                 <button
                   onClick={() => setOpenItem(isOpen ? null : item.key)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all hover:shadow-sm
-                    ${isOpen ? "border-primary/40 bg-primary/5" : cfg.border + " " + cfg.bg}
-                    ${approaching ? "ring-1 ring-amber-400" : ""}`}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all hover:shadow-sm bg-white"
+                  style={{ borderColor: cfg.ring, borderWidth: "2px", opacity: isCancelled ? 0.6 : 1 }}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${cfg.color} ${item.status === "started" ? "animate-pulse" : ""}`} />
-                  {item.isBarrier && <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-                  <span className="flex-1 text-sm font-medium text-slate-800">{item.label}</span>
-                  {approaching && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold animate-pulse">Approaching</span>}
-                  {item.statusData?.started_date && item.status === "started" && (
+                  {isCompleted ? <CheckCheck className="w-4 h-4 shrink-0" style={{ color: typeColor }} /> :
+                   isCancelled ? <X className="w-4 h-4 shrink-0 text-red-400" /> :
+                   isStarted   ? <Clock className="w-4 h-4 shrink-0" style={{ color: typeColor }} /> :
+                                 <Circle className="w-4 h-4 shrink-0 text-slate-300" />}
+                  {item.isBarrier && <AlertTriangle className="w-3.5 h-3.5 shrink-0" style={{ color: typeColor }} />}
+                  <span className="flex-1 text-sm font-medium" style={{ color: isCancelled ? "#94a3b8" : typeColor }}>{item.label}</span>
+                  {item.statusData?.started_date && isStarted && (
                     <span className="text-xs text-slate-400">Started {item.statusData.started_date}</span>
                   )}
-                  {item.statusData?.completed_date && item.status === "completed" && (
+                  {item.statusData?.completed_date && isCompleted && (
                     <span className="text-xs text-slate-400">{item.statusData.completed_date}</span>
                   )}
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}>{cfg.label}</span>
@@ -699,7 +739,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       )}
 
       <style>{`
-        @keyframes shimmer {
+        @keyframes typeShimmer {
           0%   { background-position: -200% 0; }
           100% { background-position: 200% 0; }
         }
