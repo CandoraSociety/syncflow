@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, ChevronRight, Pencil, Copy, Check, Map, CheckCircle2, Briefcase } from "lucide-react";
+import { Save, ChevronRight, Pencil, Copy, Check, Map, CheckCircle2, Briefcase, Plus, Trash2 } from "lucide-react";
 import { EXPOSURE_COURSE_TYPES } from "./ExposuresSupportsStep";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskActionPlan } from "@/lib/compassTasks";
@@ -55,7 +55,8 @@ const CATEGORIES = [
 const DEA_EDA_OPTIONS = ACTION_PLAN_OPTIONS.filter(o => o.category !== "placement");
 
 function buildDEACompassText(itemDetails, client, notes, deaTimeline) {
-  const slots = [1, 2, 3].map(n => {
+  const maxSlot = Math.max(3, Object.keys(itemDetails).filter(k => k.startsWith("eda_")).length);
+  const slots = Array.from({ length: maxSlot }, (_, i) => i + 1).map(n => {
     const d = itemDetails[`eda_${n}`] || {};
     if (!d.activity) return null;
     const opt = DEA_EDA_OPTIONS.find(o => o.key === d.activity);
@@ -150,6 +151,13 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
   const [itemDetails, setItemDetails] = useState(client?.sdp_item_details || {});
   const [otherDesc, setOtherDesc] = useState(client?.sdp_other_desc || "");
   const [notes, setNotes] = useState(client?.sdp_notes || "");
+  // DEA: dynamic slot count — start with however many eda_N keys exist (min 3)
+  const initSlotCount = (() => {
+    const keys = Object.keys(client?.sdp_item_details || {}).filter(k => k.startsWith("eda_"));
+    return Math.max(3, keys.length);
+  })();
+  const [edaSlotCount, setEdaSlotCount] = useState(initSlotCount);
+
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
@@ -262,7 +270,7 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
             <CardContent>
               {isDEA ? (
                 <div className="space-y-3">
-                  {[1, 2, 3].map(n => {
+                  {Array.from({ length: edaSlotCount }, (_, i) => i + 1).map(n => {
                     const d = itemDetails[`eda_${n}`] || {};
                     const opt = DEA_EDA_OPTIONS.find(o => o.key === d.activity);
                     return (
@@ -350,24 +358,48 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
 
           {/* Action Plan Items */}
           {isDEA ? (
-            // DEA: 3 fixed EDA slots
+            // DEA: dynamic EDA slots (min 3, add more as needed)
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Briefcase className="w-4 h-4 text-blue-600" /> Employment Development Activities (EDA)
                 </CardTitle>
-                <p className="text-xs text-slate-500">Select one activity for each of the 3 required EDA slots.</p>
+                <p className="text-xs text-slate-500">Select one activity per EDA slot. At least 3 are required.</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[1, 2, 3].map(n => {
+                {Array.from({ length: edaSlotCount }, (_, i) => i + 1).map(n => {
                   const slotKey = `eda_${n}`;
                   const d = itemDetails[slotKey] || {};
                   const updateSlot = (field, val) => updateDetail(slotKey, field, val);
+                  const isExtra = n > 3;
                   return (
                     <div key={n} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50/50">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">EDA {n}</span>
-                        <span className="text-xs text-slate-400">Required activity #{n}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">EDA {n}</span>
+                          <span className="text-xs text-slate-400">{isExtra ? "Additional activity" : `Required activity #${n}`}</span>
+                        </div>
+                        {isExtra && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Remove this slot and compact remaining
+                              const newDetails = { ...itemDetails };
+                              delete newDetails[slotKey];
+                              // Shift down any slots above this one
+                              for (let i = n + 1; i <= edaSlotCount; i++) {
+                                newDetails[`eda_${i - 1}`] = newDetails[`eda_${i}`];
+                                delete newDetails[`eda_${i}`];
+                              }
+                              setItemDetails(newDetails);
+                              setEdaSlotCount(c => c - 1);
+                            }}
+                            className="text-slate-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
+                            title="Remove this EDA"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                       <div>
                         <Label className="text-xs mb-1 block">Activity Type *</Label>
@@ -412,6 +444,15 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
                     </div>
                   );
                 })}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 border-dashed"
+                  onClick={() => setEdaSlotCount(c => c + 1)}
+                >
+                  <Plus className="w-4 h-4" /> Add Another EDA
+                </Button>
               </CardContent>
             </Card>
           ) : (
