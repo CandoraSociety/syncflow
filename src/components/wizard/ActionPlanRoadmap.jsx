@@ -476,16 +476,17 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                               ].filter(Boolean).join("\n");
 
                               return dp != null ? (
-                                <Tooltip key={i} content={tooltipContent}>
+                                <Tooltip
+                                  key={i}
+                                  content={tooltipContent}
+                                  style={{ left: `calc(${dp}% - 9px)`, top: "2px", width: "20px", height: "20px" }}
+                                  className={`rounded-full cursor-pointer ${!isDone ? "animate-pulse" : ""}`}
+                                >
                                   <div
                                     onClick={() => { setEditingMilestone(null); setOpenBITReview(openBITReview === i ? null : i); }}
-                                    className="absolute top-0.5 cursor-pointer group/bit"
-                                    style={{ left: `calc(${dp}% - 9px)` }}
+                                    className={`w-5 h-5 rounded-full border-2 border-white shadow flex items-center justify-center text-[8px] font-bold text-white ${isDone ? "bg-green-400" : "bg-rose-400"}`}
                                   >
-                                    <div className={`w-5 h-5 rounded-full border-2 border-white shadow flex items-center justify-center text-[8px] font-bold text-white
-                                      ${isDone ? "bg-green-400" : "bg-rose-400"} ${!isDone ? "animate-pulse" : ""}`}>
-                                      {i + 1}
-                                    </div>
+                                    {i + 1}
                                   </div>
                                 </Tooltip>
                               ) : null;
