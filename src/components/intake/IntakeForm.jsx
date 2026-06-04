@@ -71,6 +71,22 @@ const CAREER_PRESETS = [
   "Social Services / Nonprofit", "Skilled Trades / Apprenticeship", "Teaching / Tutoring",
 ];
 
+const EMPLOYMENT_HISTORY_PRESETS = [
+  "Retail Sales Associate", "Customer Service Representative", "Warehouse Worker",
+  "Food Service Worker", "Administrative Assistant", "General Labourer",
+  "Cashier", "Server / Waiter", "Kitchen Helper", "Housekeeper",
+  "Caregiver / Personal Support Worker", "Security Guard", "Janitor / Cleaner",
+  "Delivery Driver", "Construction Labourer", "Farm Worker",
+  "Childcare Worker", "Landscaping Worker", "Production Line Worker",
+];
+
+const EDUCATION_PRESETS = [
+  "High School Diploma", "GED / Adult Learning Certificate",
+  "College Diploma / Certificate", "Bachelor's Degree", "Master's Degree",
+  "Trade Certificate / Apprenticeship", "Professional Certification",
+  "ESL / LINC Training", "Workshop / Short Course", "On-the-Job Training",
+];
+
 const VEHICLE_OPTIONS = [
   { value: "yes", label: "Yes" },
   { value: "no_has_license", label: "No (has driver's license)" },
@@ -108,6 +124,7 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
     has_vehicle: client?.has_vehicle || "",
     career_objectives: client?.career_objectives || "",
     employment_history: client?.employment_history || "",
+    education: client?.education || "",
     resume_urls: client?.resume_urls || [],
   });
 
@@ -344,13 +361,52 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
             </div>
           </div>
           <div className="space-y-1 md:col-span-2">
-            <Label>Employment History / Education</Label>
+            <Label>Employment History</Label>
             <Textarea
               value={form.employment_history}
               onChange={e => set("employment_history", e.target.value)}
               rows={4}
-              placeholder="Summarize relevant work history, education, certifications..."
+              placeholder="Describe relevant work experience, job roles, responsibilities..."
             />
+            <div className="mt-2">
+              <p className="text-xs text-slate-500 mb-1.5">Quick add job roles:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EMPLOYMENT_HISTORY_PRESETS.map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, employment_history: prev.employment_history ? `${prev.employment_history}\n${preset}` : preset }))}
+                    className="text-xs px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400 transition-colors"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <Label>Education & Training</Label>
+            <Textarea
+              value={form.education}
+              onChange={e => set("education", e.target.value)}
+              rows={4}
+              placeholder="List education, certifications, training programs completed..."
+            />
+            <div className="mt-2">
+              <p className="text-xs text-slate-500 mb-1.5">Quick add education/certifications:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EDUCATION_PRESETS.map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, education: prev.education ? `${prev.education}\n${preset}` : preset }))}
+                    className="text-xs px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400 transition-colors"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="space-y-1 md:col-span-2">
             <Label>Resumes & Documents</Label>
