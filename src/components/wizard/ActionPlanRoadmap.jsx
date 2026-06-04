@@ -400,10 +400,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             className="w-full flex items-center h-8 group"
                           >
                             {/* Label */}
-                            <div className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right transition-colors group-hover:text-primary">
+                            <div
+                              className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right transition-colors group-hover:text-primary"
+                              style={{ color: approaching ? "#d97706" : "#334155" }}
+                            >
                               {approaching && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-pulse align-middle" />}
                               {item.isBarrier && <span style={{ color: "#f59e0b" }} className="mr-0.5">⚠</span>}
-                              <span style={{ color: approaching ? "#d97706" : "#475569" }}>{item.label}</span>
+                              {item.label}
                             </div>
 
                             {/* Bar track */}
