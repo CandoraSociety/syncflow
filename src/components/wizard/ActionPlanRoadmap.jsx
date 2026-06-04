@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { addWeeks, format, parseISO, differenceInDays, isWithinInterval, addDays } from "date-fns";
-import { CheckCircle2, Circle, Clock, AlertTriangle, CalendarCheck, LayoutList, BarChart2, AlertCircle } from "lucide-react";
+import { CheckCircle2, Circle, Clock, AlertTriangle, CalendarCheck, LayoutList, BarChart2, AlertCircle, X, Save } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import RoadmapItemPanel from "./RoadmapItemPanel";
 import BITReviewCheckinPanel from "./BITReviewCheckinPanel";
 
@@ -45,7 +48,6 @@ function buildItems(selectedItems, itemDetails, otherDesc, roadmapStatus, client
       isBarrier: false,
     };
   });
-
   for (let n = 1; n <= 3; n++) {
     const b = client?.[`barrier_${n}`];
     if (!b) continue;
@@ -70,7 +72,6 @@ function buildItems(selectedItems, itemDetails, otherDesc, roadmapStatus, client
   return items;
 }
 
-// Is an item approaching deadline (end date within 7 days, not yet completed)?
 function isApproaching(item) {
   if (item.status === "completed") return false;
   const endStr = item.detail?.timeline_end || item.statusData?.completed_date;
@@ -80,36 +81,49 @@ function isApproaching(item) {
   return isWithinInterval(end, { start: today, end: addDays(today, 7) });
 }
 
+// Small inline date editor for milestone lines
+function MilestoneDateEditor({ label, currentDate, fieldName, onSave, onCancel, saving }) {
+  const [val, setVal] = useState(currentDate || "");
+  return (
+    <div className="absolute top-6 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl p-3 w-52" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-slate-700">{label}</span>
+        <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X className="w-3.5 h-3.5" /></button>
+      </div>
+      <Input type="date" value={val} onChange={e => setVal(e.target.value)} className="text-xs h-7 mb-2" />
+      <div className="flex gap-1.5">
+        <Button size="sm" className="h-6 text-xs flex-1 gap-1" onClick={() => onSave(val)} disabled={saving || !val}>
+          <Save className="w-3 h-3" />{saving ? "Saving…" : "Save"}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail, onClientUpdate }) {
   const [openItem, setOpenItem] = useState(null);
   const [openBITReview, setOpenBITReview] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [view, setView] = useState("timeline"); // "timeline" | "list"
+  const [view, setView] = useState("timeline");
+  const [editingMilestone, setEditingMilestone] = useState(null); // "intake" | "service_start" | "completion"
 
   const roadmapStatus = client?.roadmap_item_status || {};
-  const bitCheckins = client?.bit_review_checkins || [];
+  const bitCheckins   = client?.bit_review_checkins || [];
   const bitReviewDates = client?.bit_review_dates || [];
 
-  const serviceStart  = client?.service_start_date  ? parseISO(client.service_start_date)  : null;
-  const isPathways    = client?.service_type === "pathways";
-  const programWeeks  = isPathways ? 16 : 2;
-  const projectedEnd  = serviceStart ? addWeeks(serviceStart, programWeeks) : null;
-  const actualEnd     = client?.completion_date ? parseISO(client.completion_date) : null;
-  const followup90    = actualEnd ? addWeeks(actualEnd, 13) : null;
+  const intakeDate   = client?.intake_date        ? parseISO(client.intake_date)        : null;
+  const serviceStart = client?.service_start_date ? parseISO(client.service_start_date) : null;
+  const isPathways   = client?.service_type === "pathways";
+  const programWeeks = isPathways ? 16 : 2;
+  const projectedEnd = serviceStart ? addWeeks(serviceStart, programWeeks) : null;
+  const actualEnd    = client?.completion_date ? parseISO(client.completion_date) : null;
+  const followup90   = actualEnd ? addWeeks(actualEnd, 13) : null;
 
   const items = buildItems(selectedItems, itemDetails, otherDesc, roadmapStatus, client);
 
-  // Split items: those with at least one date vs those without any dates
-  const itemsWithDates = items.filter(item => {
-    const sd = item.detail?.timeline_start || item.statusData?.started_date;
-    const ed = item.detail?.timeline_end   || item.statusData?.completed_date;
-    return sd || ed;
-  });
-  const itemsNeedingDates = items.filter(item => {
-    const sd = item.detail?.timeline_start || item.statusData?.started_date;
-    const ed = item.detail?.timeline_end   || item.statusData?.completed_date;
-    return !sd && !ed;
-  });
+  const itemsWithDates    = items.filter(item => item.detail?.timeline_start || item.statusData?.started_date || item.detail?.timeline_end || item.statusData?.completed_date);
+  const itemsNeedingDates = items.filter(item => !item.detail?.timeline_start && !item.statusData?.started_date && !item.detail?.timeline_end && !item.statusData?.completed_date);
 
   async function handleSaveItem(key, saveData) {
     setSaving(true);
@@ -127,19 +141,16 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       const n = key.split("_")[1];
       if (saveData.startDate) extraFields[`barrier_${n}_timeline_start`] = saveData.startDate;
       if (saveData.endDate)   extraFields[`barrier_${n}_timeline_end`]   = saveData.endDate;
-    } else {
-      // For non-barrier items, persist timeline dates into sdp_item_details
-      if (saveData.startDate || saveData.endDate) {
-        const existingDetails = client?.sdp_item_details || {};
-        extraFields.sdp_item_details = {
-          ...existingDetails,
-          [key]: {
-            ...(existingDetails[key] || {}),
-            ...(saveData.startDate ? { timeline_start: saveData.startDate } : {}),
-            ...(saveData.endDate   ? { timeline_end:   saveData.endDate }   : {}),
-          },
-        };
-      }
+    } else if (saveData.startDate || saveData.endDate) {
+      const existingDetails = client?.sdp_item_details || {};
+      extraFields.sdp_item_details = {
+        ...existingDetails,
+        [key]: {
+          ...(existingDetails[key] || {}),
+          ...(saveData.startDate ? { timeline_start: saveData.startDate } : {}),
+          ...(saveData.endDate   ? { timeline_end:   saveData.endDate }   : {}),
+        },
+      };
     }
     await base44.entities.Client.update(client.id, { roadmap_item_status: updated, ...extraFields });
     onClientUpdate?.({ ...client, roadmap_item_status: updated, ...extraFields });
@@ -157,8 +168,17 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     setSaving(false);
   }
 
+  async function handleSaveMilestone(field, value) {
+    setSaving(true);
+    await base44.entities.Client.update(client.id, { [field]: value });
+    onClientUpdate?.({ ...client, [field]: value });
+    setEditingMilestone(null);
+    setSaving(false);
+  }
+
   // ─── Gantt helpers ────────────────────────────────────────────────────────
   const allDates = [];
+  if (intakeDate)   allDates.push(intakeDate);
   if (serviceStart) allDates.push(serviceStart);
   if (projectedEnd) allDates.push(projectedEnd);
   if (actualEnd)    allDates.push(actualEnd);
@@ -172,7 +192,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   bitReviewDates.forEach(d => { if (d) allDates.push(parseISO(d)); });
 
   const hasTimelineData = allDates.length > 0;
-
   let minDate, maxDate, totalDays;
   if (hasTimelineData) {
     minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
@@ -197,8 +216,48 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     }
   }
 
-  // Today marker
   const todayPct = hasTimelineData ? pct(new Date()) : null;
+  const anyPanelOpen = openItem !== null || openBITReview !== null;
+
+  // Milestone definitions
+  const milestones = [
+    intakeDate && {
+      key: "intake",
+      date: intakeDate,
+      label: "Intake",
+      editLabel: "Intake Date",
+      field: "intake_date",
+      color: "#8b5cf6",
+      textColor: "text-violet-700",
+    },
+    serviceStart && {
+      key: "service_start",
+      date: serviceStart,
+      label: "Start",
+      editLabel: "Service Start Date",
+      field: "service_start_date",
+      color: "#10b981",
+      textColor: "text-emerald-700",
+    },
+    (actualEnd || projectedEnd) && {
+      key: "completion",
+      date: actualEnd || projectedEnd,
+      label: actualEnd ? "End" : "Proj.End",
+      editLabel: "Completion Date",
+      field: "completion_date",
+      color: actualEnd ? "#16a34a" : "#3b82f6",
+      textColor: actualEnd ? "text-green-700" : "text-blue-700",
+      dashed: !actualEnd,
+    },
+    followup90 && {
+      key: "followup90",
+      date: followup90,
+      label: "90d",
+      editLabel: null, // read-only, derived from completion date
+      color: "#a855f7",
+      textColor: "text-purple-600",
+    },
+  ].filter(Boolean);
 
   return (
     <div className="space-y-4">
@@ -231,8 +290,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
             <div className="bg-white border border-slate-200 rounded-xl p-4 overflow-x-auto shadow-sm">
               <div className="min-w-[600px]">
 
-                {/* Month axis */}
-                <div className="relative h-5 mb-1 ml-40">
+                {/* Month axis — sits above the chart, clear of milestone labels */}
+                <div className="relative h-5 ml-40 mb-0">
                   {monthLabels.map((m, i) => (
                     <span key={i} className="absolute text-[10px] text-slate-400 font-medium" style={{ left: `${m.pct}%`, transform: "translateX(-50%)" }}>
                       {m.label}
@@ -240,64 +299,81 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   ))}
                 </div>
 
-                {/* Chart area */}
+                {/* Milestone label row — below axis, above chart rows */}
+                <div className="relative h-5 ml-40 mb-1">
+                  {milestones.map(m => (
+                    <button
+                      key={m.key}
+                      onClick={() => m.editLabel && setEditingMilestone(editingMilestone === m.key ? null : m.key)}
+                      className={`absolute text-[9px] font-bold whitespace-nowrap flex items-center gap-0.5 ${m.textColor} ${m.editLabel ? "hover:underline cursor-pointer" : "cursor-default"}`}
+                      style={{ left: `${pct(m.date)}%`, transform: "translateX(-50%)" }}
+                      title={m.editLabel ? `Click to edit ${m.editLabel}` : undefined}
+                    >
+                      ▼ {m.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Chart area — milestone lines + rows */}
                 <div className="relative ml-40">
 
-                  {/* Vertical grid lines */}
+                  {/* Vertical grid lines (month) — behind everything */}
                   {monthLabels.map((m, i) => (
-                    <div key={i} className="absolute top-0 bottom-0 w-px bg-slate-100" style={{ left: `${m.pct}%` }} />
+                    <div key={i} className="absolute top-0 bottom-0 w-px bg-slate-100 z-0" style={{ left: `${m.pct}%` }} />
                   ))}
 
                   {/* Today line */}
                   {todayPct !== null && (
-                    <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-20 opacity-80" style={{ left: `${todayPct}%` }}>
-                      <span className="absolute -top-5 left-1 text-[9px] text-amber-600 font-bold whitespace-nowrap">Today</span>
-                    </div>
+                    <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 opacity-70 z-0" style={{ left: `${todayPct}%` }} />
                   )}
 
-                  {/* Program milestone lines */}
-                  {serviceStart && (
-                    <div className="absolute top-0 bottom-0 w-0.5 bg-emerald-500 z-10" style={{ left: `${pct(serviceStart)}%` }}>
-                      <span className="absolute -top-5 left-1 text-[9px] text-emerald-700 font-bold whitespace-nowrap">▼ Start</span>
-                    </div>
-                  )}
-                  {(actualEnd || projectedEnd) && (
+                  {/* Milestone vertical lines — z-0 so item panels render above */}
+                  {milestones.map(m => (
                     <div
-                      className="absolute top-0 bottom-0 w-0.5 z-10"
+                      key={m.key}
+                      className="absolute top-0 bottom-0 w-0.5 z-0"
                       style={{
-                        left: `${pct(actualEnd || projectedEnd)}%`,
-                        backgroundColor: actualEnd ? "#16a34a" : "#3b82f6",
-                        borderStyle: actualEnd ? "solid" : "dashed",
+                        left: `${pct(m.date)}%`,
+                        backgroundColor: m.color,
+                        opacity: 0.7,
+                        borderStyle: m.dashed ? "dashed" : "solid",
                       }}
-                    >
-                      <span className="absolute -top-5 left-1 text-[9px] font-bold whitespace-nowrap" style={{ color: actualEnd ? "#16a34a" : "#3b82f6" }}>
-                        ▼ {actualEnd ? "End" : "Proj.End"}
-                      </span>
-                    </div>
-                  )}
-                  {followup90 && (
-                    <div className="absolute top-0 bottom-0 w-0.5 bg-purple-400 z-10" style={{ left: `${pct(followup90)}%` }}>
-                      <span className="absolute -top-5 left-1 text-[9px] text-purple-600 font-bold whitespace-nowrap">▼ 90d</span>
-                    </div>
-                  )}
+                    />
+                  ))}
 
-                  {/* Item rows */}
-                  <div className="space-y-1.5 pt-7">
+                  {/* Milestone date editors (popover) */}
+                  {milestones.map(m => (
+                    editingMilestone === m.key && m.editLabel && (
+                      <div key={`edit_${m.key}`} className="absolute z-50" style={{ left: `${pct(m.date)}%` }}>
+                        <MilestoneDateEditor
+                          label={m.editLabel}
+                          currentDate={m.key === "intake" ? client?.intake_date : m.key === "service_start" ? client?.service_start_date : client?.completion_date}
+                          fieldName={m.field}
+                          onSave={(val) => handleSaveMilestone(m.field, val)}
+                          onCancel={() => setEditingMilestone(null)}
+                          saving={saving}
+                        />
+                      </div>
+                    )
+                  ))}
+
+                  {/* Item rows — rendered ABOVE milestone lines via relative positioning */}
+                  <div className="space-y-1.5 pt-2">
                     {itemsWithDates.map(item => {
-                      const cfg      = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
-                      const startStr = item.detail?.timeline_start || item.statusData?.started_date;
-                      const endStr   = item.detail?.timeline_end   || item.statusData?.completed_date;
-                      const startP   = pct(startStr);
-                      const endP     = pct(endStr);
-                      const hasBar   = startP != null && endP != null && endP > startP;
-                      const hasDot   = startP != null && !hasBar;
+                      const cfg        = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
+                      const startStr   = item.detail?.timeline_start || item.statusData?.started_date;
+                      const endStr     = item.detail?.timeline_end   || item.statusData?.completed_date;
+                      const startP     = pct(startStr);
+                      const endP       = pct(endStr);
+                      const hasBar     = startP != null && endP != null && endP > startP;
+                      const hasDot     = startP != null && !hasBar;
                       const approaching = isApproaching(item);
-                      const isOpen   = openItem === item.key;
+                      const isOpen     = openItem === item.key;
 
                       return (
-                        <div key={item.key}>
+                        <div key={item.key} className="relative">
                           <button
-                            onClick={() => setOpenItem(isOpen ? null : item.key)}
+                            onClick={() => { setEditingMilestone(null); setOpenItem(isOpen ? null : item.key); }}
                             className="w-full flex items-center h-8 group"
                             title={`Click to update: ${item.label}`}
                           >
@@ -312,27 +388,16 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             <div className={`w-full relative h-6 rounded-md border transition-all group-hover:border-primary/40 ${isOpen ? "border-primary/50 bg-primary/5" : "bg-slate-50 border-slate-100"}`}>
                               {hasBar && (
                                 <div
-                                  className={`absolute h-full rounded-md transition-all ${item.status === "started" ? "opacity-90" : "opacity-75"}`}
-                                  style={{
-                                    left:  `${startP}%`,
-                                    width: `${Math.max(2, endP - startP)}%`,
-                                    backgroundColor: cfg.barColor,
-                                  }}
+                                  className={`absolute h-full rounded-md ${item.status === "started" ? "opacity-90" : "opacity-75"}`}
+                                  style={{ left: `${startP}%`, width: `${Math.max(2, endP - startP)}%`, backgroundColor: cfg.barColor }}
                                 >
-                                  {/* Shimmer for in-progress */}
                                   {item.status === "started" && (
                                     <div className="absolute inset-0 rounded-md overflow-hidden">
-                                      <div
-                                        className="h-full w-1/2 bg-white/30"
-                                        style={{ animation: "shimmer 2s infinite linear", backgroundImage: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)", backgroundSize: "200% 100%" }}
-                                      />
+                                      <div className="h-full" style={{ animation: "shimmer 2s infinite linear", backgroundImage: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)", backgroundSize: "200% 100%" }} />
                                     </div>
                                   )}
-                                  {/* Status label inside bar if wide enough */}
                                   {(endP - startP) > 15 && (
-                                    <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-semibold">
-                                      {cfg.label}
-                                    </span>
+                                    <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-semibold">{cfg.label}</span>
                                   )}
                                 </div>
                               )}
@@ -343,17 +408,14 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 />
                               )}
                               {approaching && hasBar && (
-                                <div
-                                  className="absolute top-1 right-0 w-2 h-4 rounded-r-md animate-pulse opacity-60"
-                                  style={{ backgroundColor: "#f59e0b" }}
-                                />
+                                <div className="absolute top-1 right-0 w-2 h-4 rounded-r-md animate-pulse opacity-60" style={{ backgroundColor: "#f59e0b" }} />
                               )}
                             </div>
                           </button>
 
-                          {/* Inline edit panel */}
+                          {/* Inline edit panel — sits in flow, above milestone lines */}
                           {isOpen && (
-                            <div className="ml-0 mb-2">
+                            <div className="relative z-30 mb-1">
                               <RoadmapItemPanel
                                 item={item}
                                 currentStatus={item.statusData}
@@ -374,9 +436,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                       const dp      = pct(date);
                       const isOpen  = openBITReview === i;
                       return (
-                        <div key={`bit_${i}`}>
+                        <div key={`bit_${i}`} className="relative">
                           <button
-                            onClick={() => setOpenBITReview(isOpen ? null : i)}
+                            onClick={() => { setEditingMilestone(null); setOpenBITReview(isOpen ? null : i); }}
                             className="w-full flex items-center h-8 group"
                             title={`BIT Review ${i + 1} — click to log check-in`}
                           >
@@ -393,7 +455,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             </div>
                           </button>
                           {isOpen && (
-                            <div className="mb-2">
+                            <div className="relative z-30 mb-1">
                               <BITReviewCheckinPanel
                                 reviewIndex={i}
                                 scheduledDate={date}
@@ -416,9 +478,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-slate-400 inline-block" />Planned</span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500 inline-block" />In Progress</span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-500 inline-block" />Completed</span>
-                  <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-emerald-500 inline-block" />Start/End Milestone</span>
+                  <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-emerald-500 inline-block" />Milestones (click to edit)</span>
                   <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-amber-400 inline-block" />Today</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse inline-block" />Approaching Deadline</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse inline-block" />Approaching</span>
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-300 border border-rose-500 inline-block" />BIT Review</span>
                 </div>
               </div>
@@ -471,7 +533,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
             </div>
           )}
 
-          {/* BIT Review dates (below timeline, if any) */}
+          {/* BIT Review list (only if no items have dates yet) */}
           {bitReviewDates.length > 0 && itemsWithDates.length === 0 && (
             <div className="mt-2 space-y-1">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">BIT Review Dates</p>
@@ -552,7 +614,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
             );
           })}
 
-          {/* BIT Review Date rows */}
           {bitReviewDates.length > 0 && (
             <div className="mt-4">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">BIT Review Dates</p>
@@ -564,8 +625,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   <div key={i}>
                     <button
                       onClick={() => setOpenBITReview(isOpen ? null : i)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all hover:shadow-sm mb-1
-                        ${isDone ? "border-green-200 bg-green-50" : "border-rose-200 bg-rose-50"}`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all hover:shadow-sm mb-1 ${isDone ? "border-green-200 bg-green-50" : "border-rose-200 bg-rose-50"}`}
                     >
                       <CalendarCheck className={`w-4 h-4 shrink-0 ${isDone ? "text-green-600" : "text-rose-500"}`} />
                       <span className="flex-1 text-sm font-medium text-slate-800">BIT Review {i + 1}</span>
@@ -599,8 +659,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
       <style>{`
         @keyframes shimmer {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(200%); }
+          0%   { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
         }
       `}</style>
     </div>
