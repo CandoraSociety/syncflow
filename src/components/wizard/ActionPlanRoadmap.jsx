@@ -100,11 +100,16 @@ function isApproaching(item) {
   return isWithinInterval(end, { start: today, end: addDays(today, 7) });
 }
 
-// Tooltip that shows on hover
-function Tooltip({ children, content }) {
+// Tooltip wrapper — uses a fragment so it never disrupts absolute positioning of children
+function Tooltip({ children, content, style, className }) {
   const [visible, setVisible] = useState(false);
   return (
-    <div className="relative" onMouseEnter={() => setVisible(true)} onMouseLeave={() => setVisible(false)}>
+    <div
+      className={`absolute ${className || ""}`}
+      style={style}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
       {children}
       {visible && content && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none">
@@ -395,20 +400,21 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             className="w-full flex items-center h-8 group"
                           >
                             {/* Label */}
-                            <div className={`absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right transition-colors group-hover:text-primary ${approaching ? "text-amber-600 font-semibold" : "text-slate-600"}`}>
+                            <div className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right transition-colors group-hover:text-primary">
                               {approaching && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-pulse align-middle" />}
                               {item.isBarrier && <span style={{ color: "#f59e0b" }} className="mr-0.5">⚠</span>}
-                              <span className={approaching ? "text-amber-600" : "text-slate-600"}>{item.label}</span>
+                              <span style={{ color: approaching ? "#d97706" : "#475569" }}>{item.label}</span>
                             </div>
 
                             {/* Bar track */}
                             <div className={`w-full relative h-6 rounded-md border transition-all group-hover:border-primary/40 ${isOpen ? "border-primary/50 bg-primary/5" : "bg-slate-50 border-slate-100"}`}>
                               {hasBar && (
-                                <Tooltip content={tooltipLines}>
-                                  <div
-                                    className={`absolute h-full rounded-md ${item.status === "started" ? "opacity-90" : "opacity-75"}`}
-                                    style={{ left: `${startP}%`, width: `${Math.max(2, endP - startP)}%`, backgroundColor: cfg.barColor }}
-                                  >
+                                <Tooltip
+                                  content={tooltipLines}
+                                  style={{ left: `${startP}%`, width: `${Math.max(2, endP - startP)}%`, top: 0, height: "100%" }}
+                                  className={`rounded-md ${item.status === "started" ? "opacity-90" : "opacity-75"}`}
+                                >
+                                  <div className="w-full h-full rounded-md" style={{ backgroundColor: cfg.barColor }}>
                                     {item.status === "started" && (
                                       <div className="absolute inset-0 rounded-md overflow-hidden">
                                         <div className="h-full" style={{ animation: "shimmer 2s infinite linear", backgroundImage: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)", backgroundSize: "200% 100%" }} />
@@ -421,11 +427,12 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 </Tooltip>
                               )}
                               {hasDot && (
-                                <Tooltip content={tooltipLines}>
-                                  <div
-                                    className={`absolute top-1 w-4 h-4 rounded-full border-2 border-white shadow ${approaching ? "animate-pulse" : ""}`}
-                                    style={{ left: `calc(${startP}% - 8px)`, backgroundColor: cfg.barColor }}
-                                  />
+                                <Tooltip
+                                  content={tooltipLines}
+                                  style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
+                                  className={`rounded-full border-2 border-white shadow ${approaching ? "animate-pulse" : ""}`}
+                                >
+                                  <div className="w-full h-full rounded-full" style={{ backgroundColor: cfg.barColor }} />
                                 </Tooltip>
                               )}
                               {approaching && hasBar && (
