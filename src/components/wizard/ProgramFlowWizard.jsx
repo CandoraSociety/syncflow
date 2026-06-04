@@ -54,36 +54,14 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
     skipped: { icon: CheckCircle2, ring: "border-slate-200 bg-slate-50", text: "text-slate-300", badge: "bg-slate-100 text-slate-400", label: "N/A" },
   };
 
+  const activeStepObj = steps.find(s => s.key === activeStep);
+
   return (
     <div className="flex gap-6 min-h-[600px]">
-      {/* Mobile toggle button */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50"
-      >
-        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
-
-      {/* Overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/20 z-30"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
       {/* Step sidebar */}
-      <div className={`w-56 shrink-0 fixed lg:static top-0 left-0 h-full bg-white z-40 transform transition-transform duration-300 lg:transform-none ${
-        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      }`}>
+      <div className="w-56 shrink-0 hidden md:block">
         <div className="sticky top-6 space-y-1">
-          <div className="flex items-center justify-between px-3 mb-3 lg:hidden">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Program Steps</p>
-            <button onClick={() => setSidebarOpen(false)} className="text-slate-400 hover:text-slate-600">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <p className="hidden lg:block text-xs font-semibold text-slate-400 uppercase tracking-wide px-3 mb-3">Program Steps</p>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide px-3 mb-3">Program Steps</p>
           {steps.map((step, i) => {
             const status = getStepStatus(step.key);
             const cfg = statusConfig[status];
@@ -121,7 +99,51 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
       </div>
 
       {/* Step content */}
-      <div className={`flex-1 min-w-0 ${sidebarOpen ? "lg:ml-0" : ""}`}>
+      <div className="flex-1 min-w-0">
+        {/* Mobile step selector */}
+        <div className="md:hidden mb-4">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg shadow-sm text-sm font-medium text-slate-700"
+          >
+            <span className="flex items-center gap-2">
+              <Menu className="w-4 h-4 text-slate-400" />
+              {activeStepObj?.label || "Select Step"}
+            </span>
+            <span className="text-slate-400">{sidebarOpen ? "▲" : "▼"}</span>
+          </button>
+          {sidebarOpen && (
+            <div className="mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+              {steps.map((step, i) => {
+                const status = getStepStatus(step.key);
+                const cfg = statusConfig[status];
+                const isActive = activeStep === step.key;
+                const isRoadmap = step.key === "roadmap";
+                return (
+                  <button
+                    key={step.key}
+                    onClick={() => { setActiveStep(step.key); setSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm border-b border-slate-100 last:border-0 transition-colors ${
+                      isActive ? "bg-primary text-primary-foreground" : "hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isActive ? "border-white/60 bg-white/20" : cfg.ring}`}>
+                      {isRoadmap
+                        ? <Map className={`w-3 h-3 ${isActive ? "text-white" : cfg.text}`} />
+                        : <span className={`text-xs font-bold ${isActive ? "text-white" : cfg.text}`}>{i + 1}</span>
+                      }
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{step.label}</div>
+                      <div className={`text-xs ${isActive ? "text-white/70" : "text-slate-400"}`}>{cfg.label}</div>
+                    </div>
+                    {status === "done" && !isActive && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         {activeStep === "bit" && (
           <BarrierIdentificationTool client={client} onSave={onSave} onComplete={() => setActiveStep("barrier_action_plan")} />
         )}
