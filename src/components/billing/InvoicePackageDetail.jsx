@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, X, FileText, Edit2 } from "lucide-react";
+import SupportingDocuments from "./SupportingDocuments";
 import { format, parseISO } from "date-fns";
 
 export default function InvoicePackageDetail({ package: pkg, onUpdate, onClose }) {
@@ -221,34 +222,7 @@ export default function InvoicePackageDetail({ package: pkg, onUpdate, onClose }
         </TabsContent>
 
         <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Supporting Documents</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-500 mb-4">Upload receipts, attendance records, and other supporting documentation</p>
-              {pkg.supporting_documents?.length > 0 ? (
-                <div className="space-y-2">
-                  {pkg.supporting_documents.map(doc => (
-                    <div key={doc.id} className="flex items-center justify-between p-3 border border-slate-200 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-slate-400" />
-                        <div>
-                          <p className="text-sm font-medium">{doc.description}</p>
-                          <p className="text-xs text-slate-500 capitalize">{doc.category.replace(/_/g, " ")}</p>
-                        </div>
-                      </div>
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                        View
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-400 text-center py-8">No documents uploaded</p>
-              )}
-            </CardContent>
-          </Card>
+          <SupportingDocuments billingMonth={pkg.billing_month} />
         </TabsContent>
       </Tabs>
     </div>

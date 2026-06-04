@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, ChevronRight, Pencil, Copy, Check, Map, CheckCircle2, Briefcase } from "lucide-react";
+import { EXPOSURE_COURSE_TYPES } from "./ExposuresSupportsStep";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskActionPlan } from "@/lib/compassTasks";
 import ActionPlanRoadmap from "./ActionPlanRoadmap.jsx";
@@ -561,8 +562,8 @@ function IntakeSummary({ client, notes, setNotes }) {
 
 function ActionPlanItem({ opt, isSelected, detail, otherDesc, onToggle, onUpdateDetail, onOtherDesc }) {
   const isEmploymentSupport = opt.key === "employment_supports";
+  const isExposureCourse = opt.key === "exposure_course";
   const isOther = opt.key === "other";
-  // Auto-expand when selected (no manual toggle needed)
   const showDetail = isSelected;
 
   return (
@@ -582,7 +583,47 @@ function ActionPlanItem({ opt, isSelected, detail, otherDesc, onToggle, onUpdate
               <Input value={otherDesc} onChange={e => onOtherDesc(e.target.value)} placeholder="Describe the action plan item..." />
             </div>
           )}
-          {isEmploymentSupport ? (
+          {isExposureCourse && (
+            <>
+              <div className="space-y-1">
+                <Label className="text-xs">Course Types Planned (select all that apply)</Label>
+                <div className="space-y-1.5">
+                  {EXPOSURE_COURSE_TYPES.map(ct => {
+                    const selected = (detail.course_types || []).includes(ct);
+                    return (
+                      <label key={ct} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={selected}
+                          onCheckedChange={() => {
+                            const current = detail.course_types || [];
+                            onUpdateDetail(opt.key, "course_types", selected ? current.filter(c => c !== ct) : [...current, ct]);
+                          }}
+                        />
+                        <span className="text-sm text-slate-700">{ct}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {(detail.course_types || []).includes("Other") && (
+                  <div className="space-y-1 mt-2">
+                    <Label className="text-xs">Specify other course type</Label>
+                    <Input value={detail.course_type_other || ""} onChange={e => onUpdateDetail(opt.key, "course_type_other", e.target.value)} placeholder="Describe the course..." />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Target Timeline</Label>
+                  <Input value={detail.timeline || ""} onChange={e => onUpdateDetail(opt.key, "timeline", e.target.value)} placeholder="e.g. Within 2 weeks, by March 15..." />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Notes</Label>
+                  <Textarea rows={2} value={detail.notes || ""} onChange={e => onUpdateDetail(opt.key, "notes", e.target.value)} placeholder="Any additional details..." />
+                </div>
+              </div>
+            </>
+          )}
+          {isEmploymentSupport && (
             <>
               <div className="space-y-1">
                 <Label className="text-xs">Employment Support Type</Label>
@@ -602,7 +643,8 @@ function ActionPlanItem({ opt, isSelected, detail, otherDesc, onToggle, onUpdate
                 <Textarea rows={2} value={detail.notes || ""} onChange={e => onUpdateDetail(opt.key, "notes", e.target.value)} placeholder="Any additional details..." />
               </div>
             </>
-          ) : (
+          )}
+          {!isOther && !isExposureCourse && !isEmploymentSupport && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Target Timeline</Label>

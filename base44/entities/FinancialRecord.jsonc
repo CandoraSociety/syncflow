@@ -10,6 +10,10 @@
       "type": "string",
       "description": "Client full name (denormalized)"
     },
+    "assigned_worker": {
+      "type": "string",
+      "description": "Email of assigned worker (denormalized)"
+    },
     "record_type": {
       "type": "string",
       "enum": [
@@ -19,13 +23,29 @@
       ],
       "description": "Type of financial record"
     },
+    "course_type": {
+      "type": "string",
+      "description": "For exposure courses: specific type (e.g. WHMIS, First Aid/CPR, etc.)"
+    },
+    "course_type_other": {
+      "type": "string",
+      "description": "If course_type is Other, the custom description"
+    },
     "description": {
       "type": "string",
       "description": "Description of the expense/course/placement"
     },
     "amount": {
       "type": "number",
-      "description": "Dollar amount"
+      "description": "Dollar amount (subtotal before tax)"
+    },
+    "tax": {
+      "type": "number",
+      "description": "Tax amount"
+    },
+    "total": {
+      "type": "number",
+      "description": "Total amount including tax"
     },
     "date": {
       "type": "string",
@@ -36,12 +56,36 @@
       "type": "string",
       "description": "Vendor or provider name"
     },
+    "registration_status": {
+      "type": "string",
+      "enum": [
+        "not_registered",
+        "registered",
+        "waitlisted",
+        "cancelled"
+      ],
+      "description": "Registration status for exposure courses"
+    },
+    "completion_status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "in_progress",
+        "completed",
+        "did_not_complete"
+      ],
+      "description": "Completion status for exposure courses"
+    },
     "receipt_urls": {
       "type": "array",
       "items": {
         "type": "string"
       },
       "description": "Uploaded receipt/document URLs"
+    },
+    "receipt_parsed": {
+      "type": "boolean",
+      "description": "Whether AI parsing has been attempted"
     },
     "completion_record_urls": {
       "type": "array",
@@ -53,6 +97,10 @@
     "notes": {
       "type": "string",
       "description": "Additional notes"
+    },
+    "billing_month": {
+      "type": "string",
+      "description": "YYYY-MM \u2014 which billing month this belongs to (auto-set from date)"
     }
   },
   "required": [

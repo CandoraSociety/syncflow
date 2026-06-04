@@ -71,7 +71,7 @@ export default function CRTFinancials({ clients, financials }) {
   const totals = {};
   visible.forEach(f => {
     if (!totals[f.record_type]) totals[f.record_type] = 0;
-    totals[f.record_type] += f.amount || 0;
+    totals[f.record_type] += f.total || f.amount || 0;
   });
   const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
 
@@ -137,13 +137,15 @@ export default function CRTFinancials({ clients, financials }) {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-800 text-white">
-                  {["Client", "Type", "Description", "Date", "Vendor", "Amount", "Receipts", "Completion Docs", "Notes"].map(h => (
+                  {["Client", "Type", "Course/Support Type", "Description", "Date", "Vendor", "Registration", "Completion", "Tax", "Total", "Receipts", "Completion Docs", "Notes"].map(h => (
                     <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {visible.map((f, i) => (
+                {visible.map((f, i) => {
+                  const courseDisplay = f.course_type === "Other" ? f.course_type_other : f.course_type;
+                  return (
                   <tr key={f.id} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                     <td className="px-3 py-2 text-slate-700 whitespace-nowrap font-medium">
                       {clientMap[f.client_id] || f.client_name || "—"}
@@ -153,11 +155,33 @@ export default function CRTFinancials({ clients, financials }) {
                         {TYPE_LABELS[f.record_type] || f.record_type}
                       </span>
                     </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-slate-600">{courseDisplay || "—"}</td>
                     <td className="px-3 py-2 text-slate-700 max-w-[180px] truncate">{f.description || "—"}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{fmt(f.date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{f.vendor || "—"}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {f.registration_status ? (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          f.registration_status === "registered" ? "bg-green-100 text-green-700" :
+                          f.registration_status === "waitlisted" ? "bg-amber-100 text-amber-700" :
+                          f.registration_status === "cancelled" ? "bg-red-100 text-red-700" :
+                          "bg-slate-100 text-slate-500"
+                        }`}>{f.registration_status.replace(/_/g, " ")}</span>
+                      ) : "—"}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {f.completion_status ? (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          f.completion_status === "completed" ? "bg-green-100 text-green-700" :
+                          f.completion_status === "in_progress" ? "bg-blue-100 text-blue-700" :
+                          f.completion_status === "did_not_complete" ? "bg-red-100 text-red-700" :
+                          "bg-slate-100 text-slate-500"
+                        }`}>{f.completion_status.replace(/_/g, " ")}</span>
+                      ) : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{f.tax != null ? `$${Number(f.tax).toFixed(2)}` : "—"}</td>
                     <td className="px-3 py-2 text-slate-800 font-semibold whitespace-nowrap">
-                      {f.amount != null ? `$${Number(f.amount).toFixed(2)}` : "—"}
+                      {f.total != null ? `$${Number(f.total).toFixed(2)}` : f.amount != null ? `$${Number(f.amount).toFixed(2)}` : "—"}
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex flex-col gap-1">
@@ -181,13 +205,17 @@ export default function CRTFinancials({ clients, financials }) {
                     </td>
                     <td className="px-3 py-2 text-slate-500 max-w-[160px] truncate">{f.notes || "—"}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="bg-slate-100 border-t-2 border-slate-300">
-                  <td colSpan={5} className="px-3 py-2 text-xs font-bold text-slate-700 text-right">TOTAL</td>
-                  <td className="px-3 py-2 text-sm font-bold text-slate-900">${grandTotal.toFixed(2)}</td>
-                  <td colSpan={3} />
+                 <td colSpan={8} className="px-3 py-2 text-xs font-bold text-slate-700 text-right">TOTAL</td>
+                 <td className="px-3 py-2 text-xs font-bold text-slate-700">
+                   ${visible.reduce((s, f) => s + (f.tax || 0), 0).toFixed(2)}
+                 </td>
+                 <td className="px-3 py-2 text-sm font-bold text-slate-900">${grandTotal.toFixed(2)}</td>
+                 <td colSpan={3} />
                 </tr>
               </tfoot>
             </table>
