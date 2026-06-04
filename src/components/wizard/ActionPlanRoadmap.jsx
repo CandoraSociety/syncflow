@@ -156,6 +156,7 @@ function MilestoneDateEditor({ label, currentDate, onSave, onCancel, saving }) {
 export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, otherDesc, onUpdateDetail, onClientUpdate }) {
   const [openItem, setOpenItem] = useState(null);
   const [openBITReview, setOpenBITReview] = useState(null);
+  const [openBarrierDetail, setOpenBarrierDetail] = useState(null);
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState("timeline");
   const [editingMilestone, setEditingMilestone] = useState(null);
@@ -383,8 +384,168 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   ))}
 
                   {/* Item rows */}
-                  <div className="space-y-1.5 pt-2">
-                    {itemsWithDates.map(item => {
+                  <div className="space-y-3 pt-2">
+                    {/* Barriers section */}
+                    {itemsWithDates.filter(item => item.isBarrier).map(item => {
+                      const cfg      = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
+                      const typeColor = getItemColor(item.key);
+                      const startStr = item.detail?.timeline_start || item.statusData?.started_date;
+                      const endStr   = item.detail?.timeline_end   || item.statusData?.completed_date;
+                      const startP   = pct(startStr);
+                      const endP     = pct(endStr);
+                      const hasBar   = startP != null && endP != null && endP > startP;
+                      const hasDot   = startP != null && !hasBar;
+                      const isCancelled = item.status === "cancelled";
+                      const isCompleted = item.status === "completed";
+                      const isStarted   = item.status === "started";
+                      const isOpen   = openItem === item.key;
+                      const isBarrierOpen = openBarrierDetail === item.key;
+
+                      const tooltipLines = [
+                        item.label,
+                        `Status: ${cfg.label}`,
+                        startStr && `Start: ${startStr}`,
+                        endStr && `End: ${endStr}`,
+                        item.statusData?.case_manager_notes && `Notes: ${item.statusData.case_manager_notes}`,
+                      ].filter(Boolean).join("\n");
+
+                      const barColor = isCancelled ? "#94a3b8" : typeColor;
+                      const barrierNum = parseInt(item.key.split("_")[1]);
+                      const fullBarrierNotes = client[`barrier_${barrierNum}_notes`] || "";
+                      const actionSteps = client[`barrier_${barrierNum}_action_steps`] || "";
+                      const challenges = client[`barrier_${barrierNum}_challenges`] || "";
+
+                      return (
+                        <div key={item.key} className="relative">
+                          {/* Barrier section header */}
+                          {!isOpen && !isBarrierOpen && (
+                            <div className="absolute -left-48 w-44 text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-1">
+                              Barriers
+                            </div>
+                          )}
+                          <button
+                            onClick={() => { 
+                              setEditingMilestone(null);
+                              if (item.isBarrier) {
+                                setOpenBarrierDetail(isBarrierOpen ? null : item.key);
+                                setOpenItem(null);
+                              } else {
+                                setOpenItem(isOpen ? null : item.key);
+                                setOpenBarrierDetail(null);
+                              }
+                            }}
+                            className="w-full flex items-center h-8 group"
+                          >
+                            <div
+                              className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right"
+                              style={{ color: isCancelled ? "#94a3b8" : typeColor }}
+                            >
+                              {item.isBarrier && <span className="mr-0.5">⚠</span>}
+                              {item.label}
+                            </div>
+
+                            <div
+                              className="w-full relative h-6 rounded-md transition-all"
+                              style={{
+                                backgroundColor: "#fffbeb",
+                                outline: `2px solid ${cfg.ring}`,
+                                outlineOffset: "-1px",
+                              }}
+                            >
+                              {hasBar && (
+                                <Tooltip
+                                  content={tooltipLines}
+                                  style={{ left: `${startP}%`, width: `${Math.max(2, endP - startP)}%`, top: 0, height: "100%" }}
+                                  className="rounded-md overflow-hidden"
+                                >
+                                  <div className="w-full h-full rounded-md relative overflow-hidden pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                    {isStarted && (
+                                      <div className="absolute inset-0 rounded-md overflow-hidden">
+                                        <div className="h-full" style={{ animation: "typeShimmer 2s infinite linear", backgroundImage: `linear-gradient(90deg, transparent, ${barColor}cc, rgba(255,255,255,0.5), ${barColor}cc, transparent)`, backgroundSize: "200% 100%" }} />
+                                      </div>
+                                    )}
+                                    {isCompleted && (endP - startP) > 8 && (
+                                      <span className="absolute inset-0 flex items-center justify-center">
+                                        <CheckCheck className="w-3 h-3 text-white drop-shadow" />
+                                      </span>
+                                    )}
+                                    {isCancelled && (endP - startP) > 8 && (
+                                      <span className="absolute inset-0 flex items-center justify-center">
+                                        <X className="w-3 h-3 text-white drop-shadow" />
+                                      </span>
+                                    )}
+                                  </div>
+                                </Tooltip>
+                              )}
+                              {hasDot && (
+                                <Tooltip
+                                  content={tooltipLines}
+                                  style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
+                                  className="rounded-full border-2 border-white shadow"
+                                >
+                                  <div className="w-full h-full rounded-full relative flex items-center justify-center pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                    {isCompleted && <CheckCheck className="w-2 h-2 text-white" />}
+                                    {isCancelled && <X className="w-2 h-2 text-white" />}
+                                  </div>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </button>
+
+                          {isOpen && (
+                            <div className="relative z-30 mb-1">
+                              <RoadmapItemPanel
+                                item={item}
+                                currentStatus={item.statusData}
+                                onSave={(data) => handleSaveItem(item.key, data)}
+                                onCancel={() => setOpenItem(null)}
+                                saving={saving}
+                              />
+                            </div>
+                          )}
+
+                          {isBarrierOpen && (
+                            <div className="relative z-30 mt-1 mb-2 ml-40 bg-amber-50 border-2 border-amber-200 rounded-xl p-4 shadow-sm">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                                  <h4 className="text-sm font-bold text-amber-800">{item.label}</h4>
+                                </div>
+                                <button onClick={() => setOpenBarrierDetail(null)} className="text-amber-400 hover:text-amber-600">
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="space-y-3 text-xs">
+                                {fullBarrierNotes && (
+                                  <div>
+                                    <span className="font-semibold text-amber-700 block mb-1">Notes:</span>
+                                    <p className="text-slate-700 whitespace-pre-wrap">{fullBarrierNotes}</p>
+                                  </div>
+                                )}
+                                {actionSteps && (
+                                  <div>
+                                    <span className="font-semibold text-amber-700 block mb-1">Action Steps:</span>
+                                    <p className="text-slate-700 whitespace-pre-wrap">{actionSteps}</p>
+                                  </div>
+                                )}
+                                {challenges && (
+                                  <div>
+                                    <span className="font-semibold text-amber-700 block mb-1">Challenges:</span>
+                                    <p className="text-slate-700 whitespace-pre-wrap">{challenges}</p>
+                                  </div>
+                                )}
+                                {!fullBarrierNotes && !actionSteps && !challenges && (
+                                  <p className="text-slate-500 italic">No detailed notes recorded for this barrier.</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Other items section */}
+                    {itemsWithDates.filter(item => !item.isBarrier).map(item => {
                       const cfg      = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
                       const typeColor = getItemColor(item.key);
                       const startStr = item.detail?.timeline_start || item.statusData?.started_date;
@@ -491,9 +652,12 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                       );
                     })}
 
-                    {/* BIT Reviews — single row, multiple numbered dots */}
+                    {/* BIT Reviews — separated section */}
                     {bitReviewDates.length > 0 && (
-                      <div className="relative">
+                      <div className="relative mt-4 pt-3 border-t-2 border-rose-200">
+                        <div className="absolute -left-48 w-44 text-[10px] font-bold text-rose-700 uppercase tracking-wide mb-1">
+                          BIT Reviews
+                        </div>
                         <div className="w-full flex items-center h-8">
                           <div className="absolute -ml-40 w-40 pr-2 text-[11px] text-rose-600 font-medium truncate text-right">
                             BIT Reviews
