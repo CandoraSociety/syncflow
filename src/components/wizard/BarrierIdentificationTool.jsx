@@ -240,6 +240,16 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
       data[`barrier_${n}_status`] = b ? "unresolved" : "";
       data[`barrier_${n}_other`] = "";
       data[`barrier_${n}_notes`] = b ? (barrierState[b.key]?.notes || "") : "";
+      if (b) {
+        const state = barrierState[b.key];
+        const actions = [
+          ...(state.selectedActions || []),
+          ...(state.actionOthers || []).filter(v => v.trim()),
+        ];
+        data[`barrier_${n}_action_steps`] = actions.join("\n");
+      } else {
+        data[`barrier_${n}_action_steps`] = "";
+      }
     }
     return data;
   };

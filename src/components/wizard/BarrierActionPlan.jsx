@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,14 @@ export default function BarrierActionPlan({ client, onSave, onComplete }) {
   const [editing, setEditing] = useState(!isCompleted);
   const [plans, setPlans] = useState(getInitialPlans());
   const [saving, setSaving] = useState(false);
+
+  // Re-sync plans whenever client data changes (e.g. after BIT saves new action steps)
+  useEffect(() => {
+    setPlans(getInitialPlans());
+  }, [
+    client?.barrier_1, client?.barrier_2, client?.barrier_3,
+    client?.barrier_1_action_steps, client?.barrier_2_action_steps, client?.barrier_3_action_steps,
+  ]);
 
   const updatePlan = (i, field, val) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
   const addStep = (i) => setPlans(prev => prev.map((p, idx) => idx === i ? { ...p, action_steps: [...p.action_steps, ""] } : p));
