@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Users, Bell, Database } from "lucide-react";
+import { LogOut, Users, Bell, Database, CalendarClock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { format, addDays, differenceInDays } from "date-fns";
+import { format, addDays, differenceInDays, isWithinInterval } from "date-fns";
 import ClientListControls, { applyFiltersAndSort } from "@/components/lists/ClientListControls";
 import { clientRowColor } from "@/lib/clientRowColor";
 import CompassTaskList from "@/components/compass/CompassTaskList";
@@ -97,6 +97,43 @@ export default function WorkerDashboard() {
     const dateB = b.followup_90day_date || (b.completion_date ? format(addDays(new Date(b.completion_date), 90), "yyyy-MM-dd") : "");
     return dateA.localeCompare(dateB);
   });
+
+  // Approaching roadmap items (ending within 7 days, not completed)
+  const approachingItems = clients.flatMap(c => {
+    const items = [];
+    const roadmapStatus = c.roadmap_item_status || {};
+    const itemDetails = c.sdp_item_details || {};
+    // Check action plan items
+    Object.entries(roadmapStatus).forEach(([key, status]) => {
+      if (status.status === "completed" || status.status === "cancelled") return;
+      const detail = itemDetails[key] || {};
+      const endStr = detail.timeline_end || status.completed_date;
+      if (!endStr) return;
+      const endDate = new Date(endStr);
+      if (isWithinInterval(endDate, { start: new Date(), end: addDays(new Date(), 7) })) {
+        const label = key === "other" ? (itemDetails.other_desc || "Other") : 
+                      key.startsWith("barrier_") ? `Barrier: ${c[key] || key}` :
+                      key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+        items.push({ clientId: c.id, clientName: `${c.first_name} ${c.last_name}`, itemKey: key, label, endDate, days: differenceInDays(endDate, new Date()) });
+      }
+    });
+    // Check barriers
+    for (let n = 1; n <= 3; n++) {
+      const barrierKey = `barrier_${n}`;
+      const barrier = c[barrierKey];
+      if (!barrier) continue;
+      const status = roadmapStatus[barrierKey] || {};
+      if (status.status === "completed" || status.status === "cancelled") continue;
+      const endStr = c[`${barrierKey}_timeline_end`];
+      if (!endStr) continue;
+      const endDate = new Date(endStr);
+      if (isWithinInterval(endDate, { start: new Date(), end: addDays(new Date(), 7) })) {
+        const label = barrier === "Other" ? (c[`${barrierKey}_other`] || "Other") : barrier;
+        items.push({ clientId: c.id, clientName: `${c.first_name} ${c.last_name}`, itemKey: barrierKey, label: `Barrier: ${label}`, endDate, days: differenceInDays(endDate, new Date()) });
+      }
+    }
+    return items;
+  }).sort((a, b) => a.endDate.getTime() - b.endDate.getTime());
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">

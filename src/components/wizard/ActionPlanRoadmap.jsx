@@ -110,19 +110,19 @@ function isApproaching(item) {
   return isWithinInterval(end, { start: today, end: addDays(today, 7) });
 }
 
-// Tooltip wrapper — uses a fragment so it never disrupts absolute positioning of children
+// Tooltip wrapper — hover detection on children, tooltip rendered absolutely above
 function Tooltip({ children, content, style, className }) {
   const [visible, setVisible] = useState(false);
   return (
     <div
-      className={`absolute ${className || ""}`}
+      className={`absolute pointer-events-auto ${className || ""}`}
       style={style}
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
     >
       {children}
       {visible && content && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
           <div className="bg-slate-800 text-white text-[10px] rounded-lg px-2.5 py-1.5 shadow-lg whitespace-pre-line max-w-[200px] leading-relaxed">
             {content}
             <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-800" />
