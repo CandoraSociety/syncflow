@@ -586,8 +586,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 <div
                                   className="w-full relative h-6 rounded-md transition-all"
                                   style={{
-                                    backgroundColor: hasDot ? "transparent" : "#fffbeb",
-                                    outline: hasDot ? "none" : `2px solid ${cfg.ring}`,
+                                    backgroundColor: "#fffbeb",
+                                    outline: `2px solid ${cfg.ring}`,
                                     outlineOffset: "-1px",
                                   }}
                                 >
