@@ -246,10 +246,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     const timestamps = allDates.map(d => d.getTime());
     const rawMinMs = Math.min(...timestamps);
     const rawMaxMs = Math.max(...timestamps);
-    // Pad by 7 days before and 14 days after — keep at local noon
+    // No left padding — earliest date (intake) anchors at 0%; pad 14 days on right only
     const rawMin = new Date(rawMinMs);
     const rawMax = new Date(rawMaxMs);
-    minDate = new Date(rawMin.getFullYear(), rawMin.getMonth(), rawMin.getDate() - 7, 12, 0, 0);
+    minDate = new Date(rawMin.getFullYear(), rawMin.getMonth(), rawMin.getDate(), 12, 0, 0);
     maxDate = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate() + 14, 12, 0, 0);
     minMs   = minDate.getTime();
     rangeMs = maxDate.getTime() - minMs;
