@@ -70,8 +70,9 @@ export default function AppNav() {
             alt="Candora logo"
             className="h-9 w-9 object-contain rounded-full"
           />
-          <span className="text-sm font-bold tracking-tight hidden md:block" style={{ color: "hsl(42,100%,54%)" }}>
-            Candora Pathways
+          <span className="hidden md:block" style={{ color: "hsl(42,100%,54%)", fontFamily: "'Arial Black', 'Impact', sans-serif", fontSize: "15px", letterSpacing: "0.02em" }}>
+            <span style={{ fontWeight: 900 }}>CANDORA</span>
+            <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.85)", marginLeft: "4px" }}>Pathways</span>
           </span>
         </div>
 
