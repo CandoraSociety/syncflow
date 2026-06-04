@@ -202,27 +202,33 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   const hasTimelineData = allDates.length > 0;
   let minDate, maxDate, totalDays;
   if (hasTimelineData) {
-    minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
-    maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
-    minDate = new Date(minDate); minDate.setDate(minDate.getDate() - 7);
-    maxDate = new Date(maxDate); maxDate.setDate(maxDate.getDate() + 14);
+    const timestamps = allDates.map(d => d.getTime());
+    const rawMin = new Date(Math.min(...timestamps));
+    const rawMax = new Date(Math.max(...timestamps));
+    // Keep everything at local noon to avoid any midnight/UTC boundary issues
+    minDate = new Date(rawMin.getFullYear(), rawMin.getMonth(), rawMin.getDate() - 7, 12, 0, 0);
+    maxDate = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate() + 14, 12, 0, 0);
     totalDays = differenceInDays(maxDate, minDate) || 1;
   }
 
   function pct(dateVal) {
     if (!dateVal || !hasTimelineData) return null;
     const d = parseDate(dateVal);
+    if (!d) return null;
     return Math.max(0, Math.min(100, (differenceInDays(d, minDate) / totalDays) * 100));
   }
 
   const monthLabels = [];
   if (hasTimelineData) {
-    const cursor = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
-    while (cursor <= maxDate) {
-      const label = format(new Date(cursor), "MMM yy");
-      const p = pct(new Date(cursor));
-      monthLabels.push({ label, pct: p });
-      cursor.setMonth(cursor.getMonth() + 1);
+    // Start from the 1st of the month containing minDate, at local noon
+    let y = minDate.getFullYear();
+    let m = minDate.getMonth();
+    while (true) {
+      const tick = new Date(y, m, 1, 12, 0, 0);
+      if (tick > maxDate) break;
+      monthLabels.push({ label: format(tick, "MMM yy"), pct: pct(tick) });
+      m++;
+      if (m > 11) { m = 0; y++; }
     }
   }
 
@@ -394,8 +400,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             {/* Label */}
                             <div className={`absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right transition-colors group-hover:text-primary ${approaching ? "text-amber-600 font-semibold" : "text-slate-600"}`}>
                               {approaching && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1 animate-pulse align-middle" />}
-                              {item.isBarrier && <span className="text-amber-500 mr-0.5">⚠</span>}
-                              {item.label}
+                              {item.isBarrier && <span className="text-amber-500 mr-0.5" style={{color:"#f59e0b"}}>⚠</span>}
+                              <span className={approaching ? "text-amber-600" : "text-slate-600"}>{item.label}</span>
                             </div>
 
                             {/* Bar track */}
