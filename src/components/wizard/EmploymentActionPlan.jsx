@@ -51,8 +51,8 @@ const CATEGORIES = [
   { key: "other", label: "Other" },
 ];
 
-// DEA-specific options (no placements)
-const DEA_EDA_OPTIONS = ACTION_PLAN_OPTIONS.filter(o => o.category !== "placement");
+// DEA-specific options (no internal/paid placements, but exposure course is allowed)
+const DEA_EDA_OPTIONS = ACTION_PLAN_OPTIONS.filter(o => o.key !== "internal_placement" && o.key !== "paid_external_placement");
 
 function buildDEACompassText(itemDetails, client, notes, deaTimeline) {
   const maxSlot = Math.max(3, Object.keys(itemDetails).filter(k => k.startsWith("eda_")).length);
