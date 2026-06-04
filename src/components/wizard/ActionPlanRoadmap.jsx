@@ -251,7 +251,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     while (true) {
       const tick = new Date(y, m, 1, 12, 0, 0);
       if (tick.getTime() > maxDate.getTime()) break;
-      monthLabels.push({ label: format(tick, "MMM yy"), p: pct(tick) });
+      monthLabels.push({ label: format(tick, "MMM yyyy"), p: pct(tick) });
       m++;
       if (m > 11) { m = 0; y++; }
     }
