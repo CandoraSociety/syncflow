@@ -262,11 +262,12 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     return msPct(dateVal, minMs, rangeMs);
   }
 
-  // Month label ticks — first of each month at local noon
+  // Month label ticks — first of NEXT month after minDate, then every month after
   const monthLabels = [];
   if (hasTimelineData) {
     let y = minDate.getFullYear();
-    let m = minDate.getMonth();
+    let m = minDate.getMonth() + 1; // start from the NEXT month so we never collide with intake at 0%
+    if (m > 11) { m = 0; y++; }
     while (true) {
       const tick = new Date(y, m, 1, 12, 0, 0);
       if (tick.getTime() > maxDate.getTime()) break;
