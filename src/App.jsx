@@ -13,12 +13,11 @@ import WorkerDashboard from "./pages/WorkerDashboard";
 import ClientProfile from "./pages/ClientProfile";
 import MasterList from "./pages/MasterList";
 import Reports from "./pages/Reports";
-import CRT from "./pages/CRT";
-import Invoices from "./pages/Invoices";
 import SupervisorPortal from "./pages/SupervisorPortal";
 import Resources from "./pages/Resources";
 import Compass from "./pages/Compass";
 import Outcomes from "./pages/Outcomes";
+import MonthlyBillingSubmissions from "./pages/MonthlyBillingSubmissions";
 import AppNav from "./components/layout/AppNav";
 import { useBranding } from '@/hooks/useBranding';
 
@@ -57,12 +56,11 @@ const AuthenticatedApp = () => {
         <Route path="/client/:id" element={<ClientProfile />} />
         <Route path="/master" element={<MasterList />} />
         <Route path="/reports" element={<Reports />} />
-        <Route path="/crt" element={<CRT />} />
-        <Route path="/invoices" element={<Invoices />} />
         <Route path="/supervisor" element={<SupervisorPortal />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/compass" element={<Compass />} />
         <Route path="/outcomes" element={<Outcomes />} />
+        <Route path="/billing" element={<MonthlyBillingSubmissions />} />
         {/* Add your page Route elements here */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
