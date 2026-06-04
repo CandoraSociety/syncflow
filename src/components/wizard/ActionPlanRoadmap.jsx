@@ -494,8 +494,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
                       {/* Barriers Section - barriers and BIT reviews together */}
                       {(itemsWithDates.filter(item => item.isBarrier).length > 0 || bitReviewDates.length > 0) && (
-                      <div className="relative mt-4 pt-3 border-t-2 border-amber-200">
-                        <div className="absolute -left-48 w-44 text-[10px] font-bold text-amber-700 uppercase tracking-wide">
+                      <div className="relative mt-6 pt-4 border-t-2 border-amber-200">
+                        <div className="absolute -left-56 w-52 text-[10px] font-bold text-amber-700 uppercase tracking-wide">
                           Barriers
                         </div>
 
@@ -711,7 +711,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                     )}
 
                     {/* Legend */}
-                    <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 pt-3 border-t border-slate-100 ml-40 text-[11px] text-slate-500">
+                    <div className="relative z-10 bg-white mt-6 pt-3 border-t border-slate-100 ml-40 text-[11px] text-slate-500">
+                      <div className="flex flex-wrap gap-x-5 gap-y-2">
                   <span className="font-semibold text-slate-400 uppercase tracking-wide">Type:</span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#f59e0b" }} />Barrier</span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#a855f7" }} />Workshop</span>
