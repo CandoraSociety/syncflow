@@ -327,6 +327,21 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
               rows={4}
               placeholder="Describe the client's career goals and employment objectives..."
             />
+            <div className="mt-2">
+              <p className="text-xs text-slate-500 mb-1.5">Quick add career type:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {CAREER_PRESETS.map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, career_objectives: prev.career_objectives ? `${prev.career_objectives}\n${preset}` : preset }))}
+                    className="text-xs px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400 transition-colors"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="space-y-1 md:col-span-2">
             <Label>Employment History / Education</Label>
@@ -336,21 +351,6 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
               rows={4}
               placeholder="Summarize relevant work history, education, certifications..."
             />
-            <div className="mt-2">
-              <p className="text-xs text-slate-500 mb-1.5">Quick add career type:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {CAREER_PRESETS.map(preset => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setForm(prev => ({ ...prev, employment_history: prev.employment_history ? `${prev.employment_history}\n${preset}` : preset }))}
-                    className="text-xs px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400 transition-colors"
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
           <div className="space-y-1 md:col-span-2">
             <Label>Resumes & Documents</Label>
