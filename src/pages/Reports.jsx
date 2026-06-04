@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3 } from "lucide-react";
-import { format, differenceInMonths } from "date-fns";
+import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3, Info } from "lucide-react";
+import { format, differenceInMonths, startOfYear, endOfYear, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -17,7 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaffMonthlyReports from "../components/reports/StaffMonthlyReports";
 
-// All available fields — client + financial (financial keys prefixed with _fin_)
+// All available fields
 const ALL_FIELDS = [
   // Demographics
   { key: "first_name", label: "First Name", category: "demographic" },
@@ -69,11 +69,23 @@ const ALL_FIELDS = [
   { key: "closed_notes", label: "Close Notes", category: "metric" },
   { key: "_duration_months", label: "Months in Program (calc.)", category: "metric" },
   { key: "_stream_switch_count", label: "# Stream Switches (calc.)", category: "metric" },
-  // Financial (aggregated from FinancialRecord per client)
-  { key: "_fin_exposure_course_total", label: "Exposure Course Total ($)", category: "financial" },
-  { key: "_fin_paid_placement_total", label: "Paid Placement Total ($)", category: "financial" },
-  { key: "_fin_employment_supports_total", label: "Employment Supports Total ($)", category: "financial" },
-  { key: "_fin_total_all", label: "Total Financial Spend ($)", category: "financial" },
+  // Financial — per-client direct costs (filterable by client selection)
+  { key: "_fin_exposure_course_total", label: "Exposure Course Total ($)", category: "financial", clientFilterable: true },
+  { key: "_fin_paid_placement_total", label: "Paid Placement Total ($)", category: "financial", clientFilterable: true },
+  { key: "_fin_employment_supports_total", label: "Employment Supports Total ($)", category: "financial", clientFilterable: true },
+  { key: "_fin_total_all", label: "Total Direct Costs ($)", category: "financial", clientFilterable: true },
+  // Invoice — pulled from Invoice line items (report-wide, not per-client-filterable)
+  { key: "_inv_total_amount", label: "Invoice Total ($)", category: "invoice", clientFilterable: false },
+  { key: "_inv_base_amount", label: "Invoice Base Fee ($)", category: "invoice", clientFilterable: false },
+  { key: "_inv_subtotal_deliverables", label: "Invoice Deliverables Subtotal ($)", category: "invoice", clientFilterable: false },
+  { key: "_inv_subtotal_direct_costs", label: "Invoice Direct Costs Subtotal ($)", category: "invoice", clientFilterable: false },
+  { key: "_inv_starters", label: "Invoice Starters Billed ($)", category: "invoice", clientFilterable: true },
+  { key: "_inv_completers", label: "Invoice Completers Billed ($)", category: "invoice", clientFilterable: true },
+  { key: "_inv_employment_outcomes", label: "Invoice Employment Outcomes Billed ($)", category: "invoice", clientFilterable: true },
+  { key: "_inv_90day_outcomes", label: "Invoice 90-Day Outcomes Billed ($)", category: "invoice", clientFilterable: true },
+  { key: "_inv_exposure_courses", label: "Invoice Exposure Courses Billed ($)", category: "invoice", clientFilterable: true },
+  { key: "_inv_paid_placements", label: "Invoice Paid Placements Billed ($)", category: "invoice", clientFilterable: true },
+  { key: "_inv_employment_supports", label: "Invoice Employment Supports Billed ($)", category: "invoice", clientFilterable: true },
 ];
 
 const SERVICE_LABELS = {
@@ -97,6 +109,58 @@ const DEMOGRAPHIC_FILTERS = [
   { key: "compass_verified", label: "Compass Verified", type: "boolean-select" },
 ];
 
+// Date preset helpers
+function getDateRange(preset, customFrom, customTo) {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = today.getMonth(); // 0-based
+
+  if (preset === "this_month") {
+    return {
+      from: format(startOfMonth(today), "yyyy-MM-dd"),
+      to: format(endOfMonth(today), "yyyy-MM-dd"),
+    };
+  }
+  if (preset === "last_month") {
+    const last = subMonths(today, 1);
+    return {
+      from: format(startOfMonth(last), "yyyy-MM-dd"),
+      to: format(endOfMonth(last), "yyyy-MM-dd"),
+    };
+  }
+  if (preset === "ytd") {
+    return {
+      from: format(startOfYear(today), "yyyy-MM-dd"),
+      to: format(today, "yyyy-MM-dd"),
+    };
+  }
+  if (preset === "fiscal_year") {
+    // April 1 – March 31
+    const fiscalStart = mm >= 3 ? new Date(yyyy, 3, 1) : new Date(yyyy - 1, 3, 1);
+    const fiscalEnd = new Date(fiscalStart.getFullYear() + 1, 2, 31);
+    return {
+      from: format(fiscalStart, "yyyy-MM-dd"),
+      to: format(fiscalEnd, "yyyy-MM-dd"),
+    };
+  }
+  if (preset === "last_fiscal_year") {
+    const fiscalStart = mm >= 3 ? new Date(yyyy - 1, 3, 1) : new Date(yyyy - 2, 3, 1);
+    const fiscalEnd = new Date(fiscalStart.getFullYear() + 1, 2, 31);
+    return {
+      from: format(fiscalStart, "yyyy-MM-dd"),
+      to: format(fiscalEnd, "yyyy-MM-dd"),
+    };
+  }
+  if (preset === "this_year") {
+    return {
+      from: `${yyyy}-01-01`,
+      to: `${yyyy}-12-31`,
+    };
+  }
+  // custom
+  return { from: customFrom, to: customTo };
+}
+
 function fmt$(n) {
   if (!n && n !== 0) return "";
   return "$" + Number(n).toFixed(2);
@@ -110,11 +174,13 @@ function getDisplayValue(client, key) {
   if (key === "_stream_switch_count") {
     return (client.program_stream_switches?.length || 0).toString();
   }
-  // Financial keys — already merged onto the client row
+  // Financial per-client keys
   if (key === "_fin_exposure_course_total") return fmt$(client._fin_exposure || 0);
   if (key === "_fin_paid_placement_total") return fmt$(client._fin_placement || 0);
   if (key === "_fin_employment_supports_total") return fmt$(client._fin_supports || 0);
   if (key === "_fin_total_all") return fmt$((client._fin_exposure || 0) + (client._fin_placement || 0) + (client._fin_supports || 0));
+  // Invoice keys — these are report-level aggregates displayed only in the footer
+  if (key.startsWith("_inv_")) return "—";
 
   const v = client[key];
   if (v === undefined || v === null || v === "") return "";
@@ -128,35 +194,38 @@ function getDisplayValue(client, key) {
   return String(v);
 }
 
-const TEMPLATE_KEY = "report_templates_v1";
+const TEMPLATE_KEY = "report_templates_v2";
 
 function loadTemplates() {
   try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY) || "[]"); } catch { return []; }
 }
-function saveTemplates(templates) {
-  localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates));
+function saveTemplates(t) {
+  localStorage.setItem(TEMPLATE_KEY, JSON.stringify(t));
 }
 
 export default function Reports() {
   const [clients, setClients] = useState([]);
-  const [financialMap, setFinancialMap] = useState({}); // clientId -> { exposure_course_total, ... }
+  const [financialMap, setFinancialMap] = useState({});
+  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFields, setSelectedFields] = useState(["first_name", "last_name", "service_type", "program_status", "assigned_worker_name", "intake_date"]);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [datePreset, setDatePreset] = useState("none");
+  const [customDateFrom, setCustomDateFrom] = useState("");
+  const [customDateTo, setCustomDateTo] = useState("");
   const [dateField, setDateField] = useState("intake_date");
   const [results, setResults] = useState(null);
   const [templates, setTemplates] = useState(loadTemplates());
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [filters, setFilters] = useState({});
+  const [finApplyClientFilter, setFinApplyClientFilter] = useState(false);
 
   useEffect(() => {
     Promise.all([
       base44.entities.Client.list("-intake_date", 1000),
       base44.entities.FinancialRecord.list("-date", 2000),
-    ]).then(([clientData, finData]) => {
-      // Build per-client financial totals map
+      base44.entities.Invoice.list("-billing_month", 200),
+    ]).then(([clientData, finData, invData]) => {
       const map = {};
       finData.forEach(rec => {
         if (!rec.client_id) return;
@@ -168,6 +237,7 @@ export default function Reports() {
       });
       setFinancialMap(map);
       setClients(clientData);
+      setInvoices(invData);
       setLoading(false);
     });
   }, []);
@@ -192,6 +262,9 @@ export default function Reports() {
     setFilters(prev => ({ ...prev, [filterKey]: value }));
   };
 
+  // Computed date range
+  const { from: dateFrom, to: dateTo } = getDateRange(datePreset, customDateFrom, customDateTo);
+
   const runReport = () => {
     let data = clients.map(c => ({
       ...c,
@@ -199,18 +272,14 @@ export default function Reports() {
       _fin_placement: financialMap[c.id]?.placement || 0,
       _fin_supports: financialMap[c.id]?.supports || 0,
     }));
-    
+
     // Apply demographic filters
     Object.entries(filters).forEach(([key, filterValue]) => {
       if (!filterValue || filterValue === "" || (Array.isArray(filterValue) && filterValue.length === 0)) return;
       data = data.filter(c => {
         const clientValue = c[key];
-        if (Array.isArray(filterValue)) {
-          return filterValue.includes(clientValue);
-        }
-        if (typeof filterValue === "boolean") {
-          return clientValue === filterValue;
-        }
+        if (Array.isArray(filterValue)) return filterValue.includes(clientValue);
+        if (typeof filterValue === "boolean") return clientValue === filterValue;
         return clientValue?.toString().toLowerCase().includes(filterValue.toLowerCase());
       });
     });
@@ -225,14 +294,59 @@ export default function Reports() {
         return true;
       });
     }
-    
+
     setResults(data);
   };
 
+  // Build invoice aggregates — optionally filtered to the client set
+  function buildInvoiceAggregates(filteredClientIds) {
+    const agg = {
+      _inv_total_amount: 0,
+      _inv_base_amount: 0,
+      _inv_subtotal_deliverables: 0,
+      _inv_subtotal_direct_costs: 0,
+      _inv_starters: 0,
+      _inv_completers: 0,
+      _inv_employment_outcomes: 0,
+      _inv_90day_outcomes: 0,
+      _inv_exposure_courses: 0,
+      _inv_paid_placements: 0,
+      _inv_employment_supports: 0,
+    };
+
+    const clientIdSet = filteredClientIds ? new Set(filteredClientIds) : null;
+
+    invoices.forEach(inv => {
+      // Invoice-level totals: always include (not client-filterable)
+      agg._inv_total_amount += inv.total_amount || 0;
+      agg._inv_base_amount += inv.base_amount || 0;
+      agg._inv_subtotal_deliverables += inv.subtotal_deliverables || 0;
+      agg._inv_subtotal_direct_costs += inv.subtotal_direct_costs || 0;
+
+      (inv.line_items || []).forEach(li => {
+        if (li.excluded) return;
+        const amt = li.amount || 0;
+        const inClientSet = !clientIdSet || (li.client_id && clientIdSet.has(li.client_id));
+        if (!inClientSet) return; // These line items are client-filterable
+
+        if (li.category === "starter") agg._inv_starters += amt;
+        else if (li.category === "completer") agg._inv_completers += amt;
+        else if (li.category === "employment_outcome") agg._inv_employment_outcomes += amt;
+        else if (li.category === "90day_outcome") agg._inv_90day_outcomes += amt;
+        else if (li.category === "exposure_course") agg._inv_exposure_courses += amt;
+        else if (li.category === "paid_placement") agg._inv_paid_placements += amt;
+        else if (li.category === "employment_support") agg._inv_employment_supports += amt;
+      });
+    });
+
+    return agg;
+  }
+
   const exportCSV = () => {
     if (!results) return;
-    const headers = selectedFields.map(k => ALL_FIELDS.find(f => f.key === k)?.label || k);
-    const rows = results.map(c => selectedFields.map(k => {
+    const nonInvoiceFields = selectedFields.filter(k => !k.startsWith("_inv_"));
+    const headers = nonInvoiceFields.map(k => ALL_FIELDS.find(f => f.key === k)?.label || k);
+    const rows = results.map(c => nonInvoiceFields.map(k => {
       const v = getDisplayValue(c, k);
       return `"${v.replace(/"/g, '""')}"`;
     }).join(","));
@@ -248,7 +362,7 @@ export default function Reports() {
 
   const saveTemplate = () => {
     if (!templateName.trim()) return;
-    const t = { id: Date.now(), name: templateName.trim(), selectedFields, dateField, filters };
+    const t = { id: Date.now(), name: templateName.trim(), selectedFields, dateField, datePreset, filters, finApplyClientFilter };
     const updated = [...templates, t];
     setTemplates(updated);
     saveTemplates(updated);
@@ -259,7 +373,9 @@ export default function Reports() {
   const loadTemplate = (t) => {
     setSelectedFields(t.selectedFields);
     setDateField(t.dateField || "intake_date");
+    setDatePreset(t.datePreset || "none");
     setFilters(t.filters || {});
+    setFinApplyClientFilter(t.finApplyClientFilter || false);
   };
 
   const deleteTemplate = (id) => {
@@ -269,11 +385,17 @@ export default function Reports() {
   };
 
   const orderedFields = selectedFields.map(k => ALL_FIELDS.find(f => f.key === k)).filter(Boolean);
-  
   const demographicFields = ALL_FIELDS.filter(f => f.category === "demographic");
   const metricFields = ALL_FIELDS.filter(f => f.category === "metric");
   const dateFields = ALL_FIELDS.filter(f => f.category === "date");
   const financialFields = ALL_FIELDS.filter(f => f.category === "financial");
+  const invoiceFields = ALL_FIELDS.filter(f => f.category === "invoice");
+  const hasInvoiceColumns = selectedFields.some(k => k.startsWith("_inv_"));
+
+  // Invoice aggregates (computed when results exist)
+  const invoiceAgg = results
+    ? buildInvoiceAggregates(finApplyClientFilter ? results.map(c => c.id) : null)
+    : null;
 
   if (loading) return (
     <div className="fixed inset-0 flex items-center justify-center">
@@ -327,11 +449,69 @@ export default function Reports() {
             </TabsList>
 
             <TabsContent value="filters" className="space-y-4 mt-4">
+              {/* Date Range */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Filter className="w-3 h-3" /> Date Range
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label className="text-xs mb-1 block">Filter by date field</Label>
+                    <select
+                      className="w-full h-8 text-xs border border-slate-200 rounded px-2"
+                      value={dateField}
+                      onChange={e => setDateField(e.target.value)}
+                    >
+                      {dateFields.map(f => (
+                        <option key={f.key} value={f.key}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1 block">Period</Label>
+                    <Select value={datePreset} onValueChange={setDatePreset}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="All time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">All time</SelectItem>
+                        <SelectItem value="this_month">This Month</SelectItem>
+                        <SelectItem value="last_month">Last Month</SelectItem>
+                        <SelectItem value="ytd">Year to Date (Jan–Today)</SelectItem>
+                        <SelectItem value="fiscal_year">Current Fiscal Year (Apr–Mar)</SelectItem>
+                        <SelectItem value="last_fiscal_year">Last Fiscal Year</SelectItem>
+                        <SelectItem value="this_year">This Calendar Year</SelectItem>
+                        <SelectItem value="custom">Custom Range</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {datePreset === "custom" && (
+                    <>
+                      <div>
+                        <Label className="text-xs mb-1 block">From</Label>
+                        <Input type="date" className="h-8 text-xs" value={customDateFrom} onChange={e => setCustomDateFrom(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs mb-1 block">To</Label>
+                        <Input type="date" className="h-8 text-xs" value={customDateTo} onChange={e => setCustomDateTo(e.target.value)} />
+                      </div>
+                    </>
+                  )}
+                  {datePreset !== "none" && datePreset !== "custom" && (
+                    <p className="text-xs text-slate-400">
+                      {dateFrom} → {dateTo}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Demographic Filters */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Filter className="w-3 h-3" /> Demographic Filters
+                    <Filter className="w-3 h-3" /> Client Filters
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 max-h-96 overflow-y-auto">
@@ -389,7 +569,6 @@ export default function Reports() {
                         </div>
                       );
                     } else {
-                      // Multi-select
                       const options = [...new Set(clients.map(c => c[f.key]).filter(Boolean))].sort();
                       return (
                         <div key={f.key}>
@@ -411,37 +590,10 @@ export default function Reports() {
                   })}
                 </CardContent>
               </Card>
-
-              {/* Date range filter */}
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Date Range</CardTitle></CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <Label className="text-xs mb-1 block">Filter by date field</Label>
-                    <select
-                      className="w-full h-8 text-xs border border-slate-200 rounded px-2"
-                      value={dateField}
-                      onChange={e => setDateField(e.target.value)}
-                    >
-                      {dateFields.map(f => (
-                        <option key={f.key} value={f.key}>{f.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-xs mb-1 block">From</Label>
-                    <Input type="date" className="h-8 text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label className="text-xs mb-1 block">To</Label>
-                    <Input type="date" className="h-8 text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="columns" className="space-y-4 mt-4">
-              {/* Demographics selection */}
+              {/* Demographics */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -452,17 +604,14 @@ export default function Reports() {
                 <CardContent className="space-y-1.5 max-h-48 overflow-y-auto">
                   {demographicFields.map(f => (
                     <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox
-                        checked={selectedFields.includes(f.key)}
-                        onCheckedChange={() => toggleField(f.key)}
-                      />
+                      <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
                       <span className="text-xs text-slate-700">{f.label}</span>
                     </label>
                   ))}
                 </CardContent>
               </Card>
 
-              {/* Metrics selection */}
+              {/* Metrics */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -473,32 +622,68 @@ export default function Reports() {
                 <CardContent className="space-y-1.5 max-h-48 overflow-y-auto">
                   {metricFields.map(f => (
                     <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox
-                        checked={selectedFields.includes(f.key)}
-                        onCheckedChange={() => toggleField(f.key)}
-                      />
+                      <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
                       <span className="text-xs text-slate-700">{f.label}</span>
                     </label>
                   ))}
                 </CardContent>
               </Card>
 
-              {/* Financial selection */}
+              {/* Financial (direct costs per client) */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <BarChart3 className="w-3 h-3" /> Financial (GoA Billings)
+                    <BarChart3 className="w-3 h-3" /> Financial — Direct Costs
                   </CardTitle>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => financialFields.find(f => f.key === k)).length} selected</p>
+                  <p className="text-xs text-slate-400">{selectedFields.filter(k => financialFields.find(f => f.key === k)).length} selected · per-client amounts</p>
                 </CardHeader>
-                <CardContent className="space-y-1.5">
+                <CardContent className="space-y-2">
                   {financialFields.map(f => (
                     <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox
-                        checked={selectedFields.includes(f.key)}
-                        onCheckedChange={() => toggleField(f.key)}
-                      />
+                      <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
                       <span className="text-xs text-slate-700">{f.label}</span>
+                    </label>
+                  ))}
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    <label className="flex items-start gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-1">
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={finApplyClientFilter}
+                        onCheckedChange={v => setFinApplyClientFilter(!!v)}
+                      />
+                      <span className="text-xs text-slate-700 leading-relaxed">
+                        Limit financial totals to filtered clients only
+                      </span>
+                    </label>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed px-1">
+                      When checked, direct cost columns reflect only the clients matching your current filters. Invoice-level totals (below) always reflect all invoices regardless of this setting.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Invoice columns */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <BarChart3 className="w-3 h-3" /> Invoice Amounts
+                  </CardTitle>
+                  <p className="text-xs text-slate-400">{selectedFields.filter(k => invoiceFields.find(f => f.key === k)).length} selected · shown in report footer</p>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-2">
+                    <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                    <span>Invoice columns show totals across all invoices in the footer row. Items marked "filterable" below only count line items for clients matching your filters (when that option is enabled above). Overall invoice totals (Total, Base Fee, Subtotals) always reflect all invoices.</span>
+                  </div>
+                  {invoiceFields.map(f => (
+                    <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                      <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs text-slate-700">{f.label}</span>
+                        {f.clientFilterable && (
+                          <span className="ml-1 text-xs text-slate-400">(filterable)</span>
+                        )}
+                      </div>
                     </label>
                   ))}
                 </CardContent>
@@ -548,7 +733,16 @@ export default function Reports() {
           ) : (
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm">{results.length} client{results.length !== 1 ? "s" : ""} in results</CardTitle>
+                <div>
+                  <CardTitle className="text-sm">{results.length} client{results.length !== 1 ? "s" : ""} in results</CardTitle>
+                  {hasInvoiceColumns && (
+                    <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                      <Info className="w-3 h-3" />
+                      Invoice totals appear in the footer row only
+                      {finApplyClientFilter ? " (line items limited to filtered clients)" : " (all invoices, all clients)"}
+                    </p>
+                  )}
+                </div>
                 <Button variant="ghost" size="sm" onClick={() => setResults(null)}>Clear Results</Button>
               </CardHeader>
               <CardContent className="p-0">
@@ -557,7 +751,12 @@ export default function Reports() {
                     <thead className="bg-slate-50 border-b border-slate-200">
                       <tr>
                         {orderedFields.map(f => (
-                          <th key={f.key} className="text-left px-3 py-2.5 font-semibold text-slate-600 whitespace-nowrap">{f.label}</th>
+                          <th key={f.key} className="text-left px-3 py-2.5 font-semibold text-slate-600 whitespace-nowrap">
+                            {f.label}
+                            {f.category === "invoice" && (
+                              <span className="block text-slate-400 font-normal text-xs">footer only</span>
+                            )}
+                          </th>
                         ))}
                       </tr>
                     </thead>
@@ -566,7 +765,9 @@ export default function Reports() {
                         results.map(c => (
                           <tr key={c.id} className="hover:bg-slate-50">
                             {orderedFields.map(f => (
-                              <td key={f.key} className="px-3 py-2 text-slate-700 whitespace-nowrap">{getDisplayValue(c, f.key) || "—"}</td>
+                              <td key={f.key} className={`px-3 py-2 text-slate-700 whitespace-nowrap ${f.category === "invoice" ? "text-slate-300" : ""}`}>
+                                {getDisplayValue(c, f.key) || "—"}
+                              </td>
                             ))}
                           </tr>
                         ))
@@ -584,17 +785,26 @@ export default function Reports() {
                           {orderedFields.map((f, i) => {
                             if (i === 0) return <td key={f.key} className="px-3 py-2 whitespace-nowrap">Total: {results.length}</td>;
                             if (f.key === "_duration_months") {
-                              const avg = Math.round(results.filter(c => c.service_start_date).reduce((sum, c) => sum + differenceInMonths(new Date(), new Date(c.service_start_date)), 0) / (results.filter(c => c.service_start_date).length || 1));
+                              const avg = Math.round(
+                                results.filter(c => c.service_start_date)
+                                  .reduce((sum, c) => sum + differenceInMonths(new Date(), new Date(c.service_start_date)), 0)
+                                / (results.filter(c => c.service_start_date).length || 1)
+                              );
                               return <td key={f.key} className="px-3 py-2 whitespace-nowrap">Avg: {avg} mo</td>;
                             }
                             if (f.category === "metric" && typeof results[0]?.[f.key] === "boolean") {
                               const count = results.filter(c => c[f.key] === true).length;
                               return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{count} yes</td>;
                             }
+                            // Financial per-client sums
                             if (f.key === "_fin_exposure_course_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_exposure || 0), 0))}</td>;
                             if (f.key === "_fin_paid_placement_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_placement || 0), 0))}</td>;
                             if (f.key === "_fin_employment_supports_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_supports || 0), 0))}</td>;
                             if (f.key === "_fin_total_all") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_exposure || 0) + (c._fin_placement || 0) + (c._fin_supports || 0), 0))}</td>;
+                            // Invoice aggregates
+                            if (f.key.startsWith("_inv_") && invoiceAgg) {
+                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(invoiceAgg[f.key] || 0)}</td>;
+                            }
                             return <td key={f.key} className="px-3 py-2"></td>;
                           })}
                         </tr>
