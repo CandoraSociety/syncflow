@@ -4,60 +4,58 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Save, ChevronRight, AlertTriangle, Pencil, CheckCircle2 } from "lucide-react";
+import { Save, ChevronRight, ChevronDown, ChevronUp, Pencil, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskBarriersIdentified } from "@/lib/compassTasks";
 
-// The 9 official BIT barriers with their examples and recommended actions
 const BIT_BARRIERS = [
   {
     key: "Housing Stability",
-    examples: "Homelessness, unstable housing, unsafe living conditions.",
-    actions: "Refer to housing support services and shelters.",
+    examples: ["Homelessness", "Unstable housing", "Unsafe living conditions"],
+    actions: ["Refer to housing support services", "Refer to shelters"],
   },
   {
     key: "Childcare",
-    examples: "Lack of affordable childcare, unreliable babysitters.",
-    actions: "Connect with childcare subsidies, local providers.",
+    examples: ["Lack of affordable childcare", "Unreliable babysitters"],
+    actions: ["Connect with childcare subsidies", "Connect with local childcare providers"],
   },
   {
     key: "Transportation",
-    examples: "No access to a vehicle, unreliable public transit.",
-    actions: "Provide transit passes, apply for TAG.",
+    examples: ["No access to a vehicle", "Unreliable public transit"],
+    actions: ["Provide transit passes", "Apply for TAG"],
   },
   {
     key: "Mental Health",
-    examples: "Anxiety, depression, PTSD, and lack of coping skills.",
-    actions: "Refer to counselling, mental health resources.",
+    examples: ["Anxiety", "Depression", "PTSD", "Lack of coping skills"],
+    actions: ["Refer to counselling", "Refer to mental health resources"],
   },
   {
     key: "Physical Health",
-    examples: "Chronic illness, disability, and lack of access to healthcare.",
-    actions: "Connect with healthcare providers, disability supports.",
+    examples: ["Chronic illness", "Disability", "Lack of access to healthcare"],
+    actions: ["Connect with healthcare providers", "Connect with disability supports"],
   },
   {
     key: "Language Proficiency",
-    examples: "Difficulty speaking, reading, or writing in English.",
-    actions: "Enroll in language classes, provide ELL resources.",
+    examples: ["Difficulty speaking English", "Difficulty reading English", "Difficulty writing in English"],
+    actions: ["Enroll in language classes", "Provide ELL resources"],
   },
   {
     key: "Legal / Immigration",
-    examples: "Lack of work permits, criminal records, and unresolved legal issues.",
-    actions: "Referring to legal aid, immigration services.",
+    examples: ["Lack of work permits", "Criminal record", "Unresolved legal issues"],
+    actions: ["Refer to legal aid", "Refer to immigration services"],
   },
   {
     key: "Financial Stability",
-    examples: "Debt, lack of savings, and inability to afford work-related expenses.",
-    actions: "Provide budgeting tools, financial literacy workshops.",
+    examples: ["Debt", "Lack of savings", "Inability to afford work-related expenses"],
+    actions: ["Provide budgeting tools", "Financial literacy workshops"],
   },
   {
     key: "Social Support",
-    examples: "Isolation, lack of family or friends, and limited community connections.",
-    actions: "Connect with community groups, peer support programs.",
+    examples: ["Isolation", "Lack of family or friends", "Limited community connections"],
+    actions: ["Connect with community groups", "Connect with peer support programs"],
   },
 ];
 
-// Map BIT barrier keys → legacy barrier option names used elsewhere in the app
 const KEY_TO_LEGACY = {
   "Housing Stability": "Housing Instability",
   "Childcare": "Childcare",
@@ -75,10 +73,17 @@ const FOLLOWUP_METHODS = ["Phone", "Email", "In-Person", "Other"];
 const PROGRESS_OPTIONS = ["Resolved", "Ongoing", "Needs Further Support"];
 
 const emptyBarrierState = () =>
-  Object.fromEntries(BIT_BARRIERS.map(b => [b.key, { confirmed: null, notes: "" }]));
+  Object.fromEntries(BIT_BARRIERS.map(b => [b.key, {
+    confirmed: null,
+    selectedChallenges: [],
+    challengeOther: "",
+    selectedActions: [],
+    actionOther: "",
+    notes: "",
+    expanded: false,
+  }]));
 
 const emptyActionPlan = () => ({
-  key_barriers: "",
   recommendations: "",
   checkin_frequency: "",
   followup_methods: [],
@@ -88,19 +93,74 @@ const emptyActionPlan = () => ({
   additional_notes: "",
 });
 
+// A reusable "check-all-that-apply" dropdown cell
+function ChecklistCell({ options, selected, onToggle, otherValue, onOtherChange, open, onToggleOpen }) {
+  const displayText = selected.length > 0
+    ? selected.slice(0, 2).join(", ") + (selected.length > 2 ? ` +${selected.length - 2}` : "")
+    : "Select…";
+
+  return (
+    <div className="relative min-w-[160px]">
+      <button
+        type="button"
+        onClick={onToggleOpen}
+        className="w-full flex items-center justify-between gap-1 text-xs border border-slate-200 rounded px-2 py-1.5 bg-white hover:border-slate-400 transition-colors text-left"
+      >
+        <span className={selected.length > 0 ? "text-slate-800" : "text-slate-400"}>
+          {displayText}
+        </span>
+        {open ? <ChevronUp className="w-3 h-3 shrink-0 text-slate-400" /> : <ChevronDown className="w-3 h-3 shrink-0 text-slate-400" />}
+      </button>
+      {open && (
+        <div className="absolute z-20 top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-2 space-y-1.5 min-w-[200px] max-w-[260px]">
+          {options.map(opt => (
+            <label key={opt} className="flex items-start gap-2 cursor-pointer text-xs leading-snug">
+              <input
+                type="checkbox"
+                checked={selected.includes(opt)}
+                onChange={() => onToggle(opt)}
+                className="accent-amber-500 w-3.5 h-3.5 mt-0.5 shrink-0"
+              />
+              <span className={selected.includes(opt) ? "text-slate-800 font-medium" : "text-slate-600"}>{opt}</span>
+            </label>
+          ))}
+          {/* Other */}
+          <label className="flex items-start gap-2 cursor-pointer text-xs leading-snug">
+            <input
+              type="checkbox"
+              checked={selected.includes("Other")}
+              onChange={() => onToggle("Other")}
+              className="accent-amber-500 w-3.5 h-3.5 mt-0.5 shrink-0"
+            />
+            <span className={selected.includes("Other") ? "text-slate-800 font-medium" : "text-slate-600"}>Other</span>
+          </label>
+          {selected.includes("Other") && (
+            <Input
+              className="h-6 text-xs mt-1"
+              placeholder="Describe..."
+              value={otherValue}
+              onChange={e => onOtherChange(e.target.value)}
+              onClick={e => e.stopPropagation()}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BarrierIdentificationTool({ client, onSave, onComplete }) {
   const isCompleted = !!client?.bit_completed;
 
-  // Initialize barrier state from existing client data
   const initBarrierState = () => {
     const state = emptyBarrierState();
     for (let n = 1; n <= 3; n++) {
       const legacyKey = client?.[`barrier_${n}`];
       if (!legacyKey) continue;
-      // Find the BIT key that maps to this legacy key
       const bitKey = Object.entries(KEY_TO_LEGACY).find(([, v]) => v === legacyKey)?.[0] || legacyKey;
       if (state[bitKey] !== undefined) {
         state[bitKey] = {
+          ...state[bitKey],
           confirmed: true,
           notes: client?.[`barrier_${n}_notes`] || "",
         };
@@ -115,14 +175,31 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
   const [actionPlan, setActionPlan] = useState(emptyActionPlan());
   const [saving, setSaving] = useState(false);
   const [assessorName, setAssessorName] = useState("");
+  // Track which dropdown is open: `${barrierKey}_challenges` | `${barrierKey}_actions` | null
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   const confirmedBarriers = BIT_BARRIERS.filter(b => barrierState[b.key]?.confirmed === true);
 
   const setConfirmed = (key, val) =>
     setBarrierState(prev => ({ ...prev, [key]: { ...prev[key], confirmed: val } }));
 
-  const setNotes = (key, val) =>
-    setBarrierState(prev => ({ ...prev, [key]: { ...prev[key], notes: val } }));
+  const toggleItem = (barrierKey, field, item) => {
+    setBarrierState(prev => {
+      const cur = prev[barrierKey][field];
+      return {
+        ...prev,
+        [barrierKey]: {
+          ...prev[barrierKey],
+          [field]: cur.includes(item) ? cur.filter(x => x !== item) : [...cur, item],
+        },
+      };
+    });
+  };
+
+  const setField = (barrierKey, field, val) =>
+    setBarrierState(prev => ({ ...prev, [barrierKey]: { ...prev[barrierKey], [field]: val } }));
+
+  const toggleDropdown = (id) => setOpenDropdown(prev => prev === id ? null : id);
 
   const toggleFollowupMethod = (method) => {
     setActionPlan(prev => ({
@@ -134,11 +211,7 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
   };
 
   const buildSaveData = () => {
-    const data = {
-      barriers_addressed: confirmedBarriers.length > 0,
-      bit_completed: true,
-    };
-    // Map the first 3 confirmed barriers to barrier_1/2/3
+    const data = { barriers_addressed: confirmedBarriers.length > 0, bit_completed: true };
     for (let n = 1; n <= 3; n++) {
       const b = confirmedBarriers[n - 1];
       data[`barrier_${n}`] = b ? (KEY_TO_LEGACY[b.key] || b.key) : "";
@@ -178,7 +251,8 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
   };
 
   return (
-    <div className="space-y-6">
+    // Clicking outside closes dropdowns
+    <div className="space-y-6" onClick={() => setOpenDropdown(null)}>
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Step 1 — Barrier Identification Tool (BIT)</h2>
@@ -209,8 +283,11 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
               confirmedBarriers.map(b => (
                 <div key={b.key} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
                   <p className="text-sm font-semibold text-slate-800">{b.key}</p>
+                  {barrierState[b.key]?.selectedChallenges?.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-0.5">Challenges: {barrierState[b.key].selectedChallenges.join(", ")}</p>
+                  )}
                   {barrierState[b.key]?.notes && (
-                    <p className="text-xs text-slate-500 mt-0.5">{barrierState[b.key].notes}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{barrierState[b.key].notes}</p>
                   )}
                 </div>
               ))
@@ -219,7 +296,6 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
         </Card>
       )}
 
-      {/* Edit / entry view */}
       {editing && (
         <>
           {/* Participant Info */}
@@ -245,18 +321,18 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Barrier Identification</CardTitle>
-              <p className="text-xs text-slate-500">For each barrier, confirm whether support is needed (Yes/No).</p>
+              <p className="text-xs text-slate-500">For each barrier, confirm whether support is needed, then select applicable challenges and actions.</p>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" onClick={e => e.stopPropagation()}>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-200">
-                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[160px]">Barrier</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[150px]">Barrier</th>
                       <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[110px]">Support Needed?</th>
-                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700">Examples of Challenges</th>
-                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700">Recommended Actions</th>
-                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[200px]">Notes</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[200px]">Challenges</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[200px]">Recommended Actions</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700">Notes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -264,6 +340,8 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
                       const state = barrierState[b.key];
                       const isYes = state.confirmed === true;
                       const isNo = state.confirmed === false;
+                      const challengesId = `${b.key}_challenges`;
+                      const actionsId = `${b.key}_actions`;
                       return (
                         <tr key={b.key} className={isYes ? "bg-amber-50" : "bg-white"}>
                           <td className="px-4 py-3 font-medium text-slate-800 align-top">{b.key}</td>
@@ -291,15 +369,35 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
                               </label>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-slate-500 text-xs align-top leading-relaxed">{b.examples}</td>
-                          <td className="px-4 py-3 text-slate-500 text-xs align-top leading-relaxed">{b.actions}</td>
+                          <td className="px-4 py-3 align-top">
+                            <ChecklistCell
+                              options={b.examples}
+                              selected={state.selectedChallenges}
+                              onToggle={(item) => toggleItem(b.key, "selectedChallenges", item)}
+                              otherValue={state.challengeOther}
+                              onOtherChange={(val) => setField(b.key, "challengeOther", val)}
+                              open={openDropdown === challengesId}
+                              onToggleOpen={(e) => { e?.stopPropagation(); toggleDropdown(challengesId); }}
+                            />
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <ChecklistCell
+                              options={b.actions}
+                              selected={state.selectedActions}
+                              onToggle={(item) => toggleItem(b.key, "selectedActions", item)}
+                              otherValue={state.actionOther}
+                              onOtherChange={(val) => setField(b.key, "actionOther", val)}
+                              open={openDropdown === actionsId}
+                              onToggleOpen={(e) => { e?.stopPropagation(); toggleDropdown(actionsId); }}
+                            />
+                          </td>
                           <td className="px-4 py-3 align-top">
                             <Textarea
                               rows={2}
                               value={state.notes}
-                              onChange={e => setNotes(b.key, e.target.value)}
+                              onChange={e => setField(b.key, "notes", e.target.value)}
                               placeholder="Additional notes..."
-                              className="text-xs resize-none"
+                              className="text-xs resize-none min-w-[140px]"
                             />
                           </td>
                         </tr>
@@ -315,7 +413,6 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
           <Card>
             <CardHeader><CardTitle className="text-base">Action Plan Summary</CardTitle></CardHeader>
             <CardContent className="space-y-5">
-              {/* Key barriers identified */}
               <div className="space-y-1">
                 <Label>Key Barriers Identified</Label>
                 {confirmedBarriers.length > 0 ? (
@@ -332,7 +429,6 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
                 )}
               </div>
 
-              {/* Action Plan Recommendations */}
               <div className="space-y-1">
                 <Label>Action Plan Recommendations</Label>
                 <Textarea
@@ -343,100 +439,60 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
                 />
               </div>
 
-              {/* Check-in frequency */}
               <div className="space-y-2">
                 <Label>Check-in Frequency</Label>
                 <div className="flex gap-4 flex-wrap">
                   {CHECKIN_FREQUENCIES.map(f => (
                     <label key={f} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <input
-                        type="radio"
-                        name="checkin_frequency"
-                        checked={actionPlan.checkin_frequency === f}
-                        onChange={() => setActionPlan(p => ({ ...p, checkin_frequency: f }))}
-                        className="accent-blue-600 w-4 h-4"
-                      />
+                      <input type="radio" name="checkin_frequency" checked={actionPlan.checkin_frequency === f} onChange={() => setActionPlan(p => ({ ...p, checkin_frequency: f }))} className="accent-blue-600 w-4 h-4" />
                       {f}
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* Method of follow-up */}
               <div className="space-y-2">
                 <Label>Method of Follow-Up</Label>
                 <div className="flex gap-4 flex-wrap items-center">
                   {FOLLOWUP_METHODS.map(m => (
                     <label key={m} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <input
-                        type="checkbox"
-                        checked={actionPlan.followup_methods.includes(m)}
-                        onChange={() => toggleFollowupMethod(m)}
-                        className="accent-blue-600 w-4 h-4"
-                      />
+                      <input type="checkbox" checked={actionPlan.followup_methods.includes(m)} onChange={() => toggleFollowupMethod(m)} className="accent-blue-600 w-4 h-4" />
                       {m}
                     </label>
                   ))}
                   {actionPlan.followup_methods.includes("Other") && (
-                    <Input
-                      className="w-40 h-7 text-xs"
-                      placeholder="Specify..."
-                      value={actionPlan.followup_other}
-                      onChange={e => setActionPlan(p => ({ ...p, followup_other: e.target.value }))}
-                    />
+                    <Input className="w-40 h-7 text-xs" placeholder="Specify..." value={actionPlan.followup_other} onChange={e => setActionPlan(p => ({ ...p, followup_other: e.target.value }))} />
                   )}
                 </div>
               </div>
 
-              {/* Review dates */}
               <div className="space-y-2">
                 <Label>Review Dates</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {["1st", "2nd", "3rd", "4th"].map((ord, i) => (
                     <div key={i} className="space-y-1">
                       <label className="text-xs text-slate-500">{ord} Review Date</label>
-                      <Input
-                        type="date"
-                        value={actionPlan.review_dates[i]}
-                        onChange={e => {
-                          const dates = [...actionPlan.review_dates];
-                          dates[i] = e.target.value;
-                          setActionPlan(p => ({ ...p, review_dates: dates }));
-                        }}
-                      />
+                      <Input type="date" value={actionPlan.review_dates[i]} onChange={e => { const d = [...actionPlan.review_dates]; d[i] = e.target.value; setActionPlan(p => ({ ...p, review_dates: d })); }} />
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Progress */}
               <div className="space-y-2">
                 <Label>Progress</Label>
                 <div className="flex gap-4 flex-wrap">
                   {PROGRESS_OPTIONS.map(opt => (
                     <label key={opt} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <input
-                        type="radio"
-                        name="progress"
-                        checked={actionPlan.progress === opt}
-                        onChange={() => setActionPlan(p => ({ ...p, progress: opt }))}
-                        className="accent-blue-600 w-4 h-4"
-                      />
+                      <input type="radio" name="progress" checked={actionPlan.progress === opt} onChange={() => setActionPlan(p => ({ ...p, progress: opt }))} className="accent-blue-600 w-4 h-4" />
                       {opt}
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* Additional notes */}
               <div className="space-y-1">
                 <Label>Additional Notes</Label>
-                <Textarea
-                  rows={3}
-                  value={actionPlan.additional_notes}
-                  onChange={e => setActionPlan(p => ({ ...p, additional_notes: e.target.value }))}
-                  placeholder="Any additional context or observations..."
-                />
+                <Textarea rows={3} value={actionPlan.additional_notes} onChange={e => setActionPlan(p => ({ ...p, additional_notes: e.target.value }))} placeholder="Any additional context or observations..." />
               </div>
             </CardContent>
           </Card>
