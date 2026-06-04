@@ -35,8 +35,8 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
     const isNewStarted = status === "started" && prevStatus !== "started";
     const isNewCompleted = status === "completed" && prevStatus !== "completed";
     
-    // Trigger celebration for barriers when completed
-    if (isNewCompleted && item.isBarrier) {
+    // Trigger celebration for ANY item when marked as completed
+    if (isNewCompleted) {
       setCelebrate(true);
     }
     

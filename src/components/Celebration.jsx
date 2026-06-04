@@ -98,12 +98,12 @@ export default function Celebration({ trigger, onComplete }) {
     <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
       <div className="absolute inset-0 bg-gradient-to-t from-green-50/30 to-transparent animate-pulse" />
       <div className="text-center pointer-events-auto">
-        <div className="text-6xl mb-4 animate-bounce">👏</div>
+        <div className="text-6xl mb-4 animate-bounce">🎉</div>
         <div className="text-4xl font-bold text-green-600 drop-shadow-lg animate-pulse">
-          Barrier Resolved!
+          Milestone Completed!
         </div>
         <div className="text-xl text-green-500 mt-2 font-semibold">
-          Amazing progress! 🎉
+          Amazing progress! Keep it up! 🌟
         </div>
       </div>
     </div>
