@@ -2,79 +2,149 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Save, ChevronRight, AlertTriangle, Pencil, CheckCircle2 } from "lucide-react";
-
+import { Input } from "@/components/ui/input";
+import { Save, ChevronRight, AlertTriangle, Pencil, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask, taskBarriersIdentified } from "@/lib/compassTasks";
 
-const BARRIER_OPTIONS = [
-  "Transportation", "Childcare", "Language / Communication", "Mental Health",
-  "Housing Instability", "Domestic Violence", "Legal Issues", "Financial Barriers",
-  "Lack of Canadian Work Experience", "Credential Recognition", "Digital Literacy",
-  "Health / Disability", "Cultural / Social Adjustment", "Trauma / PTSD", "Substance Use", "Other",
+// The 9 official BIT barriers with their examples and recommended actions
+const BIT_BARRIERS = [
+  {
+    key: "Housing Stability",
+    examples: "Homelessness, unstable housing, unsafe living conditions.",
+    actions: "Refer to housing support services and shelters.",
+  },
+  {
+    key: "Childcare",
+    examples: "Lack of affordable childcare, unreliable babysitters.",
+    actions: "Connect with childcare subsidies, local providers.",
+  },
+  {
+    key: "Transportation",
+    examples: "No access to a vehicle, unreliable public transit.",
+    actions: "Provide transit passes, apply for TAG.",
+  },
+  {
+    key: "Mental Health",
+    examples: "Anxiety, depression, PTSD, and lack of coping skills.",
+    actions: "Refer to counselling, mental health resources.",
+  },
+  {
+    key: "Physical Health",
+    examples: "Chronic illness, disability, and lack of access to healthcare.",
+    actions: "Connect with healthcare providers, disability supports.",
+  },
+  {
+    key: "Language Proficiency",
+    examples: "Difficulty speaking, reading, or writing in English.",
+    actions: "Enroll in language classes, provide ELL resources.",
+  },
+  {
+    key: "Legal / Immigration",
+    examples: "Lack of work permits, criminal records, and unresolved legal issues.",
+    actions: "Referring to legal aid, immigration services.",
+  },
+  {
+    key: "Financial Stability",
+    examples: "Debt, lack of savings, and inability to afford work-related expenses.",
+    actions: "Provide budgeting tools, financial literacy workshops.",
+  },
+  {
+    key: "Social Support",
+    examples: "Isolation, lack of family or friends, and limited community connections.",
+    actions: "Connect with community groups, peer support programs.",
+  },
 ];
 
-const BARRIER_STATUSES = [
-  { value: "unresolved", label: "Unresolved" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "resolved", label: "Resolved" },
-];
+// Map BIT barrier keys → legacy barrier option names used elsewhere in the app
+const KEY_TO_LEGACY = {
+  "Housing Stability": "Housing Instability",
+  "Childcare": "Childcare",
+  "Transportation": "Transportation",
+  "Mental Health": "Mental Health",
+  "Physical Health": "Health / Disability",
+  "Language Proficiency": "Language / Communication",
+  "Legal / Immigration": "Legal Issues",
+  "Financial Stability": "Financial Barriers",
+  "Social Support": "Cultural / Social Adjustment",
+};
 
-const emptyBarrier = () => ({ type: "", other_description: "", status: "unresolved", notes: "" });
+const CHECKIN_FREQUENCIES = ["Weekly", "Bi-Weekly", "Monthly"];
+const FOLLOWUP_METHODS = ["Phone", "Email", "In-Person", "Other"];
+const PROGRESS_OPTIONS = ["Resolved", "Ongoing", "Needs Further Support"];
 
-const STATUS_COLORS = { unresolved: "text-red-600", in_progress: "text-amber-600", resolved: "text-green-600" };
+const emptyBarrierState = () =>
+  Object.fromEntries(BIT_BARRIERS.map(b => [b.key, { confirmed: null, notes: "" }]));
+
+const emptyActionPlan = () => ({
+  key_barriers: "",
+  recommendations: "",
+  checkin_frequency: "",
+  followup_methods: [],
+  followup_other: "",
+  review_dates: ["", "", "", ""],
+  progress: "",
+  additional_notes: "",
+});
 
 export default function BarrierIdentificationTool({ client, onSave, onComplete }) {
   const isCompleted = !!client?.bit_completed;
 
-  const initialBarriers = (() => {
-    const list = [];
+  // Initialize barrier state from existing client data
+  const initBarrierState = () => {
+    const state = emptyBarrierState();
     for (let n = 1; n <= 3; n++) {
-      if (client?.[`barrier_${n}`]) {
-        list.push({
-          type: client[`barrier_${n}`],
-          other_description: client[`barrier_${n}_other`] || "",
-          status: client[`barrier_${n}_status`] || "unresolved",
-          notes: client[`barrier_${n}_notes`] || "",
-        });
+      const legacyKey = client?.[`barrier_${n}`];
+      if (!legacyKey) continue;
+      // Find the BIT key that maps to this legacy key
+      const bitKey = Object.entries(KEY_TO_LEGACY).find(([, v]) => v === legacyKey)?.[0] || legacyKey;
+      if (state[bitKey] !== undefined) {
+        state[bitKey] = {
+          confirmed: true,
+          notes: client?.[`barrier_${n}_notes`] || "",
+        };
       }
     }
-    return list.length > 0 ? list : [emptyBarrier()];
-  })();
+    return state;
+  };
 
   const [submitted, setSubmitted] = useState(isCompleted);
   const [editing, setEditing] = useState(!isCompleted);
-  const [barriersIdentified, setBarriersIdentified] = useState(client?.barriers_addressed || false);
-  const [barriers, setBarriers] = useState(initialBarriers);
+  const [barrierState, setBarrierState] = useState(initBarrierState);
+  const [actionPlan, setActionPlan] = useState(emptyActionPlan());
   const [saving, setSaving] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
+  const [assessorName, setAssessorName] = useState("");
 
-  const hasBarrierData = barriers.some(b => b.type);
+  const confirmedBarriers = BIT_BARRIERS.filter(b => barrierState[b.key]?.confirmed === true);
 
-  const handleToggle = (val) => {
-    if (!val && hasBarrierData && barriersIdentified) { setConfirmClear(true); return; }
-    setBarriersIdentified(val);
-    if (!val) setBarriers([emptyBarrier()]);
+  const setConfirmed = (key, val) =>
+    setBarrierState(prev => ({ ...prev, [key]: { ...prev[key], confirmed: val } }));
+
+  const setNotes = (key, val) =>
+    setBarrierState(prev => ({ ...prev, [key]: { ...prev[key], notes: val } }));
+
+  const toggleFollowupMethod = (method) => {
+    setActionPlan(prev => ({
+      ...prev,
+      followup_methods: prev.followup_methods.includes(method)
+        ? prev.followup_methods.filter(m => m !== method)
+        : [...prev.followup_methods, method],
+    }));
   };
 
-  const confirmNo = () => { setBarriersIdentified(false); setBarriers([emptyBarrier()]); setConfirmClear(false); };
-
-  const addBarrier = () => setBarriers(prev => [...prev, emptyBarrier()]);
-  const removeBarrier = (i) => setBarriers(prev => prev.filter((_, idx) => idx !== i));
-  const updateBarrier = (i, field, val) => setBarriers(prev => prev.map((b, idx) => idx === i ? { ...b, [field]: val } : b));
-
   const buildSaveData = () => {
-    const data = { barriers_addressed: barriersIdentified, bit_completed: true };
+    const data = {
+      barriers_addressed: confirmedBarriers.length > 0,
+      bit_completed: true,
+    };
+    // Map the first 3 confirmed barriers to barrier_1/2/3
     for (let n = 1; n <= 3; n++) {
-      const b = barriers[n - 1];
-      data[`barrier_${n}`] = b?.type || "";
-      data[`barrier_${n}_status`] = b?.status || "unresolved";
-      data[`barrier_${n}_other`] = b?.other_description || "";
-      data[`barrier_${n}_notes`] = b?.notes || "";
+      const b = confirmedBarriers[n - 1];
+      data[`barrier_${n}`] = b ? (KEY_TO_LEGACY[b.key] || b.key) : "";
+      data[`barrier_${n}_status`] = b ? "unresolved" : "";
+      data[`barrier_${n}_other`] = "";
+      data[`barrier_${n}_notes`] = b ? (barrierState[b.key]?.notes || "") : "";
     }
     return data;
   };
@@ -83,15 +153,22 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
     setSaving(true);
     const data = buildSaveData();
     await onSave(data);
-    if (barriersIdentified && !client?.barriers_addressed) {
+    if (confirmedBarriers.length > 0 && !client?.barriers_addressed) {
       const updatedClient = { ...client, ...data };
       const t = taskBarriersIdentified(updatedClient);
-      await createCompassTask({ client_id: client.id, client_name: `${client.first_name} ${client.last_name}`, compass_hsid: client.compass_hsid, assigned_worker: client.assigned_worker, assigned_worker_name: client.assigned_worker_name, ...t });
+      await createCompassTask({
+        client_id: client.id,
+        client_name: `${client.first_name} ${client.last_name}`,
+        compass_hsid: client.compass_hsid,
+        assigned_worker: client.assigned_worker,
+        assigned_worker_name: client.assigned_worker_name,
+        ...t,
+      });
       base44.functions.invoke("sendAlertEmail", {
         alert_type: "barriers",
         client_name: `${client.first_name} ${client.last_name}`,
         client_id: client.id,
-        barriers: barriers.map(b => b.type === "Other" ? b.other_description || "Other" : b.type).filter(Boolean),
+        barriers: confirmedBarriers.map(b => b.key),
       }).catch(() => {});
     }
     setSaving(false);
@@ -105,10 +182,12 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Step 1 — Barrier Identification Tool (BIT)</h2>
-          <p className="text-sm text-slate-500 mt-1">Identify any barriers that may affect the client's ability to achieve employment.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Identify and document barriers that may prevent the participant from securing or maintaining employment.
+          </p>
         </div>
         {submitted && !editing && (
-          <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2 shrink-0">
             <Pencil className="w-4 h-4" /> Edit
           </Button>
         )}
@@ -124,111 +203,242 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-600">Barriers identified:</span>
-              <span className="text-sm font-semibold">{barriersIdentified ? "Yes" : "No"}</span>
-            </div>
-            {barriersIdentified && barriers.filter(b => b.type).map((b, i) => (
-              <div key={i} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 space-y-0.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-800">
-                    {b.type === "Other" ? (b.other_description || "Other") : b.type}
-                  </span>
-                  <span className={`text-xs font-semibold ${STATUS_COLORS[b.status] || ""}`}>
-                    {BARRIER_STATUSES.find(s => s.value === b.status)?.label}
-                  </span>
+            {confirmedBarriers.length === 0 ? (
+              <p className="text-sm text-slate-500">No barriers identified.</p>
+            ) : (
+              confirmedBarriers.map(b => (
+                <div key={b.key} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                  <p className="text-sm font-semibold text-slate-800">{b.key}</p>
+                  {barrierState[b.key]?.notes && (
+                    <p className="text-xs text-slate-500 mt-0.5">{barrierState[b.key].notes}</p>
+                  )}
                 </div>
-                {b.notes && <p className="text-xs text-slate-500">{b.notes}</p>}
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Edit view */}
+      {/* Edit / entry view */}
       {editing && (
         <>
-          {confirmClear && (
-            <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-              <div className="bg-white rounded-xl shadow-xl p-6 max-w-md mx-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <AlertTriangle className="w-6 h-6 text-amber-500" />
-                  <h3 className="font-bold text-slate-800">Are you sure?</h3>
-                </div>
-                <p className="text-sm text-slate-600 mb-4">Selecting "No" will clear all barrier information. This cannot be undone.</p>
-                <div className="flex gap-3 justify-end">
-                  <Button variant="outline" onClick={() => setConfirmClear(false)}>Cancel</Button>
-                  <Button variant="destructive" onClick={confirmNo}>Yes, Clear Barriers</Button>
-                </div>
+          {/* Participant Info */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Participant Information</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <Label>Name</Label>
+                <Input value={`${client?.first_name || ""} ${client?.last_name || ""}`.trim()} disabled className="bg-slate-50" />
               </div>
-            </div>
-          )}
+              <div className="space-y-1">
+                <Label>Date</Label>
+                <Input type="date" defaultValue={new Date().toISOString().split("T")[0]} disabled className="bg-slate-50" />
+              </div>
+              <div className="space-y-1">
+                <Label>Assessor</Label>
+                <Input value={assessorName} onChange={e => setAssessorName(e.target.value)} placeholder="Assessor name" />
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* Barrier Table */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base flex items-center justify-between">
-                <span>Have barriers been identified?</span>
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${!barriersIdentified ? "text-slate-700" : "text-slate-400"}`}>No</span>
-                  <Switch checked={barriersIdentified} onCheckedChange={handleToggle} />
-                  <span className={`text-sm font-medium ${barriersIdentified ? "text-slate-700" : "text-slate-400"}`}>Yes</span>
-                </div>
-              </CardTitle>
+              <CardTitle className="text-base">Barrier Identification</CardTitle>
+              <p className="text-xs text-slate-500">For each barrier, confirm whether support is needed (Yes/No).</p>
             </CardHeader>
-            {barriersIdentified && (
-              <CardContent className="space-y-4">
-                <p className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-3 py-2">
-                  Service navigator will be automatically notified when barriers are saved.
-                </p>
-                {barriers.map((barrier, i) => (
-                  <div key={i} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-slate-700 text-sm">Barrier #{i + 1}</h4>
-                      {barriers.length > 1 && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-600" onClick={() => removeBarrier(i)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label>Barrier Type</Label>
-                        <Select value={barrier.type} onValueChange={v => updateBarrier(i, "type", v)}>
-                          <SelectTrigger><SelectValue placeholder="Select barrier" /></SelectTrigger>
-                          <SelectContent>
-                            {BARRIER_OPTIONS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-100 border-b border-slate-200">
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[160px]">Barrier</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[110px]">Support Needed?</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700">Examples of Challenges</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700">Recommended Actions</th>
+                      <th className="text-left px-4 py-2.5 font-semibold text-slate-700 w-[200px]">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {BIT_BARRIERS.map(b => {
+                      const state = barrierState[b.key];
+                      const isYes = state.confirmed === true;
+                      const isNo = state.confirmed === false;
+                      return (
+                        <tr key={b.key} className={isYes ? "bg-amber-50" : "bg-white"}>
+                          <td className="px-4 py-3 font-medium text-slate-800 align-top">{b.key}</td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex flex-col gap-2">
+                              <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                  type="radio"
+                                  name={`barrier_${b.key}`}
+                                  checked={isYes}
+                                  onChange={() => setConfirmed(b.key, true)}
+                                  className="accent-amber-500 w-4 h-4"
+                                />
+                                <span className={`text-sm ${isYes ? "font-semibold text-amber-700" : "text-slate-600"}`}>Yes</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                  type="radio"
+                                  name={`barrier_${b.key}`}
+                                  checked={isNo}
+                                  onChange={() => setConfirmed(b.key, false)}
+                                  className="accent-slate-400 w-4 h-4"
+                                />
+                                <span className={`text-sm ${isNo ? "text-slate-700" : "text-slate-400"}`}>No</span>
+                              </label>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 text-xs align-top leading-relaxed">{b.examples}</td>
+                          <td className="px-4 py-3 text-slate-500 text-xs align-top leading-relaxed">{b.actions}</td>
+                          <td className="px-4 py-3 align-top">
+                            <Textarea
+                              rows={2}
+                              value={state.notes}
+                              onChange={e => setNotes(b.key, e.target.value)}
+                              placeholder="Additional notes..."
+                              className="text-xs resize-none"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Plan Summary */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Action Plan Summary</CardTitle></CardHeader>
+            <CardContent className="space-y-5">
+              {/* Key barriers identified */}
+              <div className="space-y-1">
+                <Label>Key Barriers Identified</Label>
+                {confirmedBarriers.length > 0 ? (
+                  <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2 space-y-1">
+                    {confirmedBarriers.map(b => (
+                      <div key={b.key} className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400">•</span>
+                        <span className="font-medium text-slate-800">{b.key}</span>
                       </div>
-                      <div className="space-y-1">
-                        <Label>Status</Label>
-                        <Select value={barrier.status} onValueChange={v => updateBarrier(i, "status", v)}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {BARRIER_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    {barrier.type === "Other" && (
-                      <div className="space-y-1">
-                        <Label>Please describe the barrier</Label>
-                        <Input value={barrier.other_description} onChange={e => updateBarrier(i, "other_description", e.target.value)} placeholder="Describe the barrier..." />
-                      </div>
-                    )}
-                    <div className="space-y-1">
-                      <Label>Notes</Label>
-                      <Textarea rows={2} value={barrier.notes} onChange={e => updateBarrier(i, "notes", e.target.value)} placeholder="Additional context about this barrier..." />
-                    </div>
+                    ))}
                   </div>
-                ))}
-                {barriers.length < 6 && (
-                  <Button variant="outline" size="sm" onClick={addBarrier} className="gap-2">
-                    <Plus className="w-4 h-4" /> Add Another Barrier
-                  </Button>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">No barriers marked Yes yet.</p>
                 )}
-              </CardContent>
-            )}
+              </div>
+
+              {/* Action Plan Recommendations */}
+              <div className="space-y-1">
+                <Label>Action Plan Recommendations</Label>
+                <Textarea
+                  rows={4}
+                  value={actionPlan.recommendations}
+                  onChange={e => setActionPlan(p => ({ ...p, recommendations: e.target.value }))}
+                  placeholder="List recommended actions for each identified barrier..."
+                />
+              </div>
+
+              {/* Check-in frequency */}
+              <div className="space-y-2">
+                <Label>Check-in Frequency</Label>
+                <div className="flex gap-4 flex-wrap">
+                  {CHECKIN_FREQUENCIES.map(f => (
+                    <label key={f} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="radio"
+                        name="checkin_frequency"
+                        checked={actionPlan.checkin_frequency === f}
+                        onChange={() => setActionPlan(p => ({ ...p, checkin_frequency: f }))}
+                        className="accent-blue-600 w-4 h-4"
+                      />
+                      {f}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Method of follow-up */}
+              <div className="space-y-2">
+                <Label>Method of Follow-Up</Label>
+                <div className="flex gap-4 flex-wrap items-center">
+                  {FOLLOWUP_METHODS.map(m => (
+                    <label key={m} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        checked={actionPlan.followup_methods.includes(m)}
+                        onChange={() => toggleFollowupMethod(m)}
+                        className="accent-blue-600 w-4 h-4"
+                      />
+                      {m}
+                    </label>
+                  ))}
+                  {actionPlan.followup_methods.includes("Other") && (
+                    <Input
+                      className="w-40 h-7 text-xs"
+                      placeholder="Specify..."
+                      value={actionPlan.followup_other}
+                      onChange={e => setActionPlan(p => ({ ...p, followup_other: e.target.value }))}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Review dates */}
+              <div className="space-y-2">
+                <Label>Review Dates</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {["1st", "2nd", "3rd", "4th"].map((ord, i) => (
+                    <div key={i} className="space-y-1">
+                      <label className="text-xs text-slate-500">{ord} Review Date</label>
+                      <Input
+                        type="date"
+                        value={actionPlan.review_dates[i]}
+                        onChange={e => {
+                          const dates = [...actionPlan.review_dates];
+                          dates[i] = e.target.value;
+                          setActionPlan(p => ({ ...p, review_dates: dates }));
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Progress */}
+              <div className="space-y-2">
+                <Label>Progress</Label>
+                <div className="flex gap-4 flex-wrap">
+                  {PROGRESS_OPTIONS.map(opt => (
+                    <label key={opt} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="radio"
+                        name="progress"
+                        checked={actionPlan.progress === opt}
+                        onChange={() => setActionPlan(p => ({ ...p, progress: opt }))}
+                        className="accent-blue-600 w-4 h-4"
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Additional notes */}
+              <div className="space-y-1">
+                <Label>Additional Notes</Label>
+                <Textarea
+                  rows={3}
+                  value={actionPlan.additional_notes}
+                  onChange={e => setActionPlan(p => ({ ...p, additional_notes: e.target.value }))}
+                  placeholder="Any additional context or observations..."
+                />
+              </div>
+            </CardContent>
           </Card>
 
           <div className="flex items-center justify-between">
