@@ -439,7 +439,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                   style={{ left: `${startP}%`, width: `${Math.max(2, endP - startP)}%`, top: 0, height: "100%" }}
                                   className="rounded-md overflow-hidden"
                                 >
-                                  <div className="w-full h-full rounded-md relative overflow-hidden" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                  <div className="w-full h-full rounded-md relative overflow-hidden pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
                                     {/* In-progress shimmer */}
                                     {isStarted && (
                                       <div className="absolute inset-0 rounded-md overflow-hidden">
@@ -467,7 +467,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                   style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
                                   className="rounded-full border-2 border-white shadow"
                                 >
-                                  <div className="w-full h-full rounded-full relative flex items-center justify-center" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                  <div className="w-full h-full rounded-full relative flex items-center justify-center pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
                                     {isCompleted && <CheckCheck className="w-2 h-2 text-white" />}
                                     {isCancelled && <X className="w-2 h-2 text-white" />}
                                   </div>
@@ -520,6 +520,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                   <div
                                     onClick={() => { setEditingMilestone(null); setOpenBITReview(openBITReview === i ? null : i); }}
                                     className={`w-5 h-5 rounded-full border-2 border-white shadow flex items-center justify-center text-[8px] font-bold text-white ${isDone ? "bg-green-400" : "bg-rose-400"}`}
+                                    style={{ pointerEvents: "auto" }}
                                   >
                                     {i + 1}
                                   </div>
