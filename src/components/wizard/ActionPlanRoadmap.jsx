@@ -729,7 +729,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
               </div>
             </div>
           </div>
-        </div>
         ) : (
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center text-sm text-slate-400">
             No dates set yet — click any item below to add start/end dates.
@@ -777,10 +776,11 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
             </div>
           </div>
         )}
-      </div>
-      )}
 
-      {/* ══ LIST VIEW ══ */}
+      </div>
+    )}
+
+    {/* ══ LIST VIEW ══ */}
       {view === "list" && (
         <div className="space-y-1">
           {items.map(item => {
