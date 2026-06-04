@@ -365,13 +365,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                 {/* Chart area */}
                 <div className="relative ml-40">
 
-                  {/* Grid lines — full height background layer */}
+                  {/* Rows container — all lines clipped to rows height */}
+                  <div className="relative" style={{ overflow: "clip" }}>
+
+                  {/* Grid lines — scoped to rows height */}
                   {monthLabels.map((ml, i) => (
                     <div key={i} className="absolute top-0 bottom-0 w-px bg-slate-100 z-0" style={{ left: `${ml.p}%` }} />
                   ))}
-
-                  {/* Rows container — milestone/today lines are siblings scoped to this height */}
-                  <div className="relative">
 
                   {/* Milestone lines — scoped to rows height */}
                   {milestones.map(ms => {
