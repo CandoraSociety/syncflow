@@ -75,13 +75,44 @@ const EMPLOYMENT_JOB_TYPES = [
   "Full-time", "Part-time", "Temporary", "Contract", "Seasonal", "Internship", "Volunteer", "Self-employed"
 ];
 
-const EMPLOYMENT_JOB_TITLE_PRESETS = [
+const EMPLOYMENT_JOB_TITLES = [
   "Retail Sales Associate", "Customer Service Representative", "Warehouse Worker",
   "Food Service Worker", "Administrative Assistant", "General Labourer",
   "Cashier", "Server / Waiter", "Kitchen Helper", "Housekeeper",
   "Caregiver / Personal Support Worker", "Security Guard", "Janitor / Cleaner",
   "Delivery Driver", "Construction Labourer", "Farm Worker",
   "Childcare Worker", "Landscaping Worker", "Production Line Worker",
+  "Receptionist", "Data Entry Clerk", "Office Clerk", "Stock Clerk",
+  "Cook", "Barista", "Dishwasher", "Baker", "Food Prep Worker",
+  "Nanny", "Elder Care Companion", "Disability Support Worker",
+  "Retail Manager", "Shift Supervisor", "Team Lead", "Foreman",
+  "Machine Operator", "Assembly Line Worker", "Quality Control Inspector",
+  "Driver", "Courier", "Bus Driver", "Taxi Driver",
+  "Hair Stylist", "Esthetician", "Massage Therapist",
+  "Other"
+];
+
+const EMPLOYMENT_INDUSTRIES = [
+  "Retail / Wholesale Trade",
+  "Food Service / Hospitality",
+  "Healthcare / Social Assistance",
+  "Construction / Trades",
+  "Manufacturing / Production",
+  "Agriculture / Farming",
+  "Transportation / Warehousing",
+  "Administrative / Office Support",
+  "Customer Service / Call Centre",
+  "Cleaning / Janitorial Services",
+  "Security / Safety Services",
+  "Childcare / Early Learning",
+  "IT / Technology",
+  "Finance / Banking",
+  "Education / Training",
+  "Oil & Gas / Energy",
+  "Nonprofit / Community Services",
+  "Arts / Culture / Recreation",
+  "Personal Services (salon, spa, etc.)",
+  "Other"
 ];
 
 const EDUCATION_TYPES = [
@@ -140,7 +171,7 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
   const [errors, setErrors] = useState({});
 
   const addEmploymentEntry = () => {
-    setEmploymentEntries([...employmentEntries, { company: "", job_title: "", job_type: "", start_date: "", end_date: "", responsibilities: "" }]);
+    setEmploymentEntries([...employmentEntries, { company: "", job_title: "", job_title_other: "", industry: "", job_type: "", start_date: "", end_date: "", responsibilities: "" }]);
   };
 
   const updateEmploymentEntry = (index, field, value) => {
@@ -412,18 +443,35 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
                       <Input value={entry.company} onChange={e => updateEmploymentEntry(index, "company", e.target.value)} placeholder="Company name" />
                     </div>
                     <div className="space-y-1">
+                      <Label className="text-xs">Industry</Label>
+                      <Select value={entry.industry} onValueChange={v => updateEmploymentEntry(index, "industry", v)}>
+                        <SelectTrigger><SelectValue placeholder="Select industry" /></SelectTrigger>
+                        <SelectContent>
+                          {EMPLOYMENT_INDUSTRIES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
                       <Label className="text-xs">Job Title</Label>
-                      <div className="relative">
-                        <Input value={entry.job_title} onChange={e => updateEmploymentEntry(index, "job_title", e.target.value)} placeholder="Select or enter job title" list={`job-titles-${index}`} />
-                        <datalist id={`job-titles-${index}`}>
-                          {EMPLOYMENT_JOB_TITLE_PRESETS.map(p => <option key={p} value={p} />)}
-                        </datalist>
-                      </div>
+                      <Select value={entry.job_title} onValueChange={v => updateEmploymentEntry(index, "job_title", v)}>
+                        <SelectTrigger><SelectValue placeholder="Select job title" /></SelectTrigger>
+                        <SelectContent>
+                          {EMPLOYMENT_JOB_TITLES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      {entry.job_title === "Other" && (
+                        <Input
+                          value={entry.job_title_other || ""}
+                          onChange={e => updateEmploymentEntry(index, "job_title_other", e.target.value)}
+                          placeholder="Specify job title"
+                          className="mt-1"
+                        />
+                      )}
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Job Type</Label>
                       <Select value={entry.job_type} onValueChange={v => updateEmploymentEntry(index, "job_type", v)}>
-                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select job type" /></SelectTrigger>
                         <SelectContent>
                           {EMPLOYMENT_JOB_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                         </SelectContent>
