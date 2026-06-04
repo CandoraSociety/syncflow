@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Save, X, CheckCircle2, Play, Calendar, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
+import Celebration from "../Celebration";
 
 const BARRIER_STATUS_COLORS = {
   unresolved: "bg-red-100 text-red-700 border-red-200",
@@ -25,6 +26,7 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
   const [startedDate, setStartedDate] = useState(currentStatus?.started_date || "");
   const [completedDate, setCompletedDate] = useState(currentStatus?.completed_date || format(new Date(), "yyyy-MM-dd"));
   const [showCompassPrompt, setShowCompassPrompt] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
   // When status changes to started/completed, show compass prompt
   const prevStatus = currentStatus?.status || "planned";
@@ -32,6 +34,12 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
   function handleSave() {
     const isNewStarted = status === "started" && prevStatus !== "started";
     const isNewCompleted = status === "completed" && prevStatus !== "completed";
+    
+    // Trigger celebration for barriers when completed
+    if (isNewCompleted && item.isBarrier) {
+      setCelebrate(true);
+    }
+    
     if (isNewStarted || isNewCompleted) {
       setShowCompassPrompt(true);
     } else {
@@ -42,10 +50,13 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
   function confirmSave() {
     setShowCompassPrompt(false);
     onSave({ startDate, endDate, notes, status, startedDate, completedDate });
+    // Celebration already triggered in handleSave
   }
 
   return (
-    <div className="mt-2 mb-3 bg-white border-2 border-primary/20 rounded-xl p-4 shadow-md space-y-4">
+    <>
+      {celebrate && <Celebration trigger={celebrate} onComplete={() => setCelebrate(false)} />}
+      <div className="mt-2 mb-3 bg-white border-2 border-primary/20 rounded-xl p-4 shadow-md space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -168,5 +179,6 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
         </div>
       )}
     </div>
+    </>
   );
 }
