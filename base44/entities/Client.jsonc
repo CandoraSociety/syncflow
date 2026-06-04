@@ -301,6 +301,10 @@
     "barrier_1_action_steps": {
       "type": "string"
     },
+    "barrier_1_challenges": {
+      "type": "string",
+      "description": "Newline-separated selected challenges from BIT for barrier 1"
+    },
     "barrier_1_timeline_start": {
       "type": "string",
       "format": "date"
@@ -336,6 +340,10 @@
     "barrier_2_action_steps": {
       "type": "string"
     },
+    "barrier_2_challenges": {
+      "type": "string",
+      "description": "Newline-separated selected challenges from BIT for barrier 2"
+    },
     "barrier_2_timeline_start": {
       "type": "string",
       "format": "date"
@@ -370,6 +378,10 @@
     },
     "barrier_3_action_steps": {
       "type": "string"
+    },
+    "barrier_3_challenges": {
+      "type": "string",
+      "description": "Newline-separated selected challenges from BIT for barrier 3"
     },
     "barrier_3_timeline_start": {
       "type": "string",

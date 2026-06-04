@@ -162,14 +162,33 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
     for (let n = 1; n <= 3; n++) {
       const legacyKey = client?.[`barrier_${n}`];
       if (!legacyKey) continue;
-      const bitKey = Object.entries(KEY_TO_LEGACY).find(([, v]) => v === legacyKey)?.[0] || legacyKey;
-      if (state[bitKey] !== undefined) {
-        state[bitKey] = {
-          ...state[bitKey],
-          confirmed: true,
-          notes: client?.[`barrier_${n}_notes`] || "",
-        };
-      }
+      const bitBarrier = BIT_BARRIERS.find(b => KEY_TO_LEGACY[b.key] === legacyKey || b.key === legacyKey);
+      const bitKey = bitBarrier?.key || legacyKey;
+      if (state[bitKey] === undefined) continue;
+
+      // Restore saved actions — split selected (known options) from custom others
+      const savedActions = (client?.[`barrier_${n}_action_steps`] || "")
+        .split("\n").map(s => s.trim()).filter(Boolean);
+      const knownActions = bitBarrier?.actions || [];
+      const selectedActions = savedActions.filter(a => knownActions.includes(a));
+      const actionOthers = savedActions.filter(a => !knownActions.includes(a));
+
+      // Restore saved challenges
+      const savedChallenges = (client?.[`barrier_${n}_challenges`] || "")
+        .split("\n").map(s => s.trim()).filter(Boolean);
+      const knownChallenges = bitBarrier?.examples || [];
+      const selectedChallenges = savedChallenges.filter(c => knownChallenges.includes(c));
+      const challengeOthers = savedChallenges.filter(c => !knownChallenges.includes(c));
+
+      state[bitKey] = {
+        ...state[bitKey],
+        confirmed: true,
+        notes: client?.[`barrier_${n}_notes`] || "",
+        selectedActions,
+        actionOthers: actionOthers.length > 0 ? actionOthers : [""],
+        selectedChallenges,
+        challengeOthers: challengeOthers.length > 0 ? challengeOthers : [""],
+      };
     }
     return state;
   };
@@ -246,9 +265,15 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
           ...(state.selectedActions || []),
           ...(state.actionOthers || []).filter(v => v.trim()),
         ];
+        const challenges = [
+          ...(state.selectedChallenges || []),
+          ...(state.challengeOthers || []).filter(v => v.trim()),
+        ];
         data[`barrier_${n}_action_steps`] = actions.join("\n");
+        data[`barrier_${n}_challenges`] = challenges.join("\n");
       } else {
         data[`barrier_${n}_action_steps`] = "";
+        data[`barrier_${n}_challenges`] = "";
       }
     }
     return data;
