@@ -10,6 +10,7 @@ const NAV_ITEMS = [
 { label: "My Dashboard", path: "/dashboard" },
 { label: "Reports", path: "/reports" },
 { label: "Outcomes", path: "/outcomes" },
+{ label: "Billing", path: "/billing" },
 { label: "CRT", path: "/crt" },
 { label: "Invoices", path: "/invoices" },
 { label: "Supervisor Portal", path: "/supervisor" },
