@@ -20,7 +20,7 @@ function msPct(date, minMs, rangeMs) {
   return Math.max(0, Math.min(100, ((d.getTime() - minMs) / rangeMs) * 100));
 }
 
-import { CheckCircle2, Circle, Clock, AlertTriangle, CalendarCheck, LayoutList, BarChart2, AlertCircle, X, Save, CheckCheck } from "lucide-react";
+import { CheckCircle2, Circle, Clock, AlertTriangle, CalendarCheck, LayoutList, BarChart2, AlertCircle, X, Save, CheckCheck, Calendar } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -310,6 +310,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           <button onClick={() => setView("list")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "list" ? "bg-white shadow text-primary" : "text-slate-500 hover:text-slate-700"}`}>
             <LayoutList className="w-3.5 h-3.5" /> List
+          </button>
+          <button onClick={() => setView("calendar")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${view === "calendar" ? "bg-white shadow text-primary" : "text-slate-500 hover:text-slate-700"}`}>
+            <Calendar className="w-3.5 h-3.5" /> Calendar
           </button>
         </div>
       </div>
@@ -865,6 +869,92 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           {items.length === 0 && bitReviewDates.length === 0 && (
             <div className="text-center py-10 text-slate-400 text-sm">No action plan items yet.</div>
           )}
+        </div>
+      )}
+
+      {/* ══ CALENDAR VIEW ══ */}
+      {view === "calendar" && (
+        <div className="bg-white border border-slate-200 rounded-xl p-4">
+          <div className="grid grid-cols-7 gap-px mb-2">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+              <div key={day} className="text-xs font-semibold text-slate-500 uppercase tracking-wide py-2 text-center">
+                {day}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+            {(() => {
+              const today = new Date();
+              const currentMonth = today.getMonth();
+              const currentYear = today.getFullYear();
+              const firstDay = new Date(currentYear, currentMonth, 1);
+              const lastDay = new Date(currentYear, currentMonth + 1, 0);
+              const startDay = firstDay.getDay();
+              const totalDays = lastDay.getDate();
+              const days = [];
+              
+              // Previous month days
+              for (let i = 0; i < startDay; i++) {
+                days.push(<div key={`empty-${i}`} className="bg-slate-50 min-h-[80px]" />);
+              }
+              
+              // Current month days
+              for (let day = 1; day <= totalDays; day++) {
+                const dateStr = format(new Date(currentYear, currentMonth, day), "yyyy-MM-dd");
+                const dayItems = items.filter(item => {
+                  const start = item.detail?.timeline_start || item.statusData?.started_date;
+                  const end = item.detail?.timeline_end || item.statusData?.completed_date;
+                  if (start && end) {
+                    return dateStr >= start && dateStr <= end;
+                  }
+                  return start === dateStr || end === dateStr;
+                });
+                const bitItems = bitReviewDates.filter(d => d === dateStr);
+                const isToday = dateStr === format(today, "yyyy-MM-dd");
+                
+                days.push(
+                  <div key={day} className={`bg-white min-h-[80px] p-1 ${isToday ? "bg-blue-50" : ""}`}>
+                    <div className={`text-xs font-medium mb-1 ${isToday ? "text-blue-600" : "text-slate-700"}`}>{day}</div>
+                    <div className="space-y-0.5 overflow-y-auto max-h-[60px]">
+                      {dayItems.map(item => {
+                        const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
+                        const typeColor = getItemColor(item.key);
+                        return (
+                          <div
+                            key={item.key}
+                            className="text-[9px] px-1 py-0.5 rounded truncate"
+                            style={{ backgroundColor: `${typeColor}33`, color: typeColor, borderLeft: `2px solid ${cfg.ring}` }}
+                            title={item.label}
+                          >
+                            {item.label.length > 15 ? item.label.substring(0, 15) + "…" : item.label}
+                          </div>
+                        );
+                      })}
+                      {bitItems.map((_, i) => (
+                        <div
+                          key={`bit-${i}`}
+                          className="text-[9px] px-1 py-0.5 rounded bg-rose-100 text-rose-700 truncate"
+                          title="BIT Review"
+                        >
+                          BIT {i + 1}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              
+              return days;
+            })()}
+          </div>
+          <div className="mt-3 flex items-center gap-4 text-[10px] text-slate-500">
+            <span className="font-semibold">Legend:</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-500" />Today</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-amber-500" />Barrier</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-purple-500" />Workshop</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" />Placement</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-rose-500" />BIT Review</span>
+          </div>
         </div>
       )}
 
