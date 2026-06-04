@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaffMonthlyReports from "../components/reports/StaffMonthlyReports";
+import OutcomesReport from "../components/reports/OutcomesReport";
 
 // All available client fields
 const ALL_FIELDS = [
@@ -251,6 +252,7 @@ export default function Reports() {
       <Tabs defaultValue="data" className="max-w-7xl mx-auto px-6 py-6">
         <TabsList className="mb-4">
           <TabsTrigger value="data">Data Reports</TabsTrigger>
+          <TabsTrigger value="outcomes">Outcomes Reports</TabsTrigger>
           <TabsTrigger value="staff">Staff Monthly Reports</TabsTrigger>
         </TabsList>
 
@@ -501,6 +503,11 @@ export default function Reports() {
             </Card>
           )}
         </div>
+        </TabsContent>
+
+        {/* Outcomes Report Tab */}
+        <TabsContent value="outcomes">
+          <OutcomesReport />
         </TabsContent>
 
         <TabsContent value="staff">
