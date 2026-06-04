@@ -33,6 +33,8 @@ import ClientStatusHistory from "@/components/client/ClientStatusHistory";
 import StatusChangeDialog from "@/components/client/StatusChangeDialog";
 import { createCompassTask, taskFileClosed } from "@/lib/compassTasks";
 import ProgramFlowWizard from "@/components/wizard/ProgramFlowWizard";
+import DEAClosingDialog from "@/components/wizard/DEAClosingDialog";
+import { addDays, differenceInDays, format } from "date-fns";
 
 export default function ClientProfile() {
   const { id } = useParams();
@@ -43,12 +45,25 @@ export default function ClientProfile() {
   const [closingSaving, setClosingSaving] = useState(false);
   const [showStatusChangeDialog, setShowStatusChangeDialog] = useState(false);
   const [statusHistoryKey, setStatusHistoryKey] = useState(0);
+  const [showDEAClosing, setShowDEAClosing] = useState(false);
 
   useEffect(() => {
     base44.entities.Client.list().then(clients => {
       const found = clients.find(c => c.id === id);
       setClient(found || null);
       setLoading(false);
+      // Check if DEA closing dialog should show
+      if (found?.service_type === "direct_to_employment" && !found?.file_closed && !found?.dea_closing_dismissed) {
+        const endDate = found.completion_date
+          ? new Date(found.completion_date)
+          : found.service_start_date
+          ? addDays(new Date(found.service_start_date), 14)
+          : null;
+        if (endDate) {
+          const days = differenceInDays(endDate, new Date());
+          if (days <= 3) setShowDEAClosing(true);
+        }
+      }
     });
   }, [id]);
 
@@ -74,6 +89,31 @@ export default function ClientProfile() {
     const updates = { file_closed: false, status: "active" };
     await base44.entities.Client.update(id, updates);
     setClient(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleDEAContinue = async () => {
+    const updates = { dea_closing_dismissed: true };
+    await base44.entities.Client.update(id, updates);
+    setClient(prev => ({ ...prev, ...updates }));
+    setShowDEAClosing(false);
+  };
+
+  const handleDEASwitchToPathways = async (reason) => {
+    const switchEntry = {
+      from_stream: "direct_to_employment",
+      to_stream: "pathways",
+      reason: "program_review",
+      notes: reason,
+      date: format(new Date(), "yyyy-MM-dd"),
+    };
+    const updates = {
+      service_type: "pathways",
+      dea_closing_dismissed: true,
+      program_stream_switches: [...(client?.program_stream_switches || []), switchEntry],
+    };
+    await base44.entities.Client.update(id, updates);
+    setClient(prev => ({ ...prev, ...updates }));
+    setShowDEAClosing(false);
   };
 
   if (loading) return (
@@ -174,6 +214,15 @@ export default function ClientProfile() {
         onConfirm={handleCloseFile}
         saving={closingSaving}
       />
+
+      {showDEAClosing && client && (
+        <DEAClosingDialog
+          client={client}
+          onContinueDEA={handleDEAContinue}
+          onSwitchToPathways={handleDEASwitchToPathways}
+          onDismiss={() => setShowDEAClosing(false)}
+        />
+      )}
 
       <div className="max-w-6xl mx-auto p-6">
         <Tabs defaultValue="program_flow">

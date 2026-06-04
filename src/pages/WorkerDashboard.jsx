@@ -98,6 +98,20 @@ export default function WorkerDashboard() {
     return dateA.localeCompare(dateB);
   });
 
+  // DEA clients whose 2-week program end is within 3 days
+  const deaClosingClients = clients.filter(c => {
+    if (c.service_type !== "direct_to_employment") return false;
+    if (c.file_closed) return false;
+    const endDate = c.completion_date
+      ? new Date(c.completion_date)
+      : c.service_start_date
+      ? addDays(new Date(c.service_start_date), 14)
+      : null;
+    if (!endDate) return false;
+    const days = differenceInDays(endDate, new Date());
+    return days <= 3;
+  });
+
   // Approaching roadmap items (ending within 7 days, not completed)
   const approachingItems = clients.flatMap(c => {
     const items = [];
@@ -195,6 +209,43 @@ export default function WorkerDashboard() {
           </div>
         ) : (
           <>
+            {/* DEA closing alert */}
+            {deaClosingClients.length > 0 && (
+              <div className="mb-4 border border-blue-300 bg-blue-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bell className="w-4 h-4 text-blue-600 animate-bounce" />
+                  <span className="text-sm font-bold text-blue-800">DEA Program Period Closing Soon</span>
+                  <span className="ml-auto text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-semibold">{deaClosingClients.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {deaClosingClients.map(c => {
+                    const endDate = c.completion_date
+                      ? new Date(c.completion_date)
+                      : addDays(new Date(c.service_start_date), 14);
+                    const days = differenceInDays(endDate, new Date());
+                    const isOverdue = days < 0;
+                    return (
+                      <div key={c.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-sm ${isOverdue ? "bg-red-50 border-red-300" : "bg-white border-blue-200"}`}>
+                        <div className="flex items-center gap-2">
+                          <CalendarClock className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                          <Link to={`/client/${c.id}`} className="font-semibold hover:underline" style={{ color: "hsl(231,64%,28%)" }}>
+                            {c.first_name} {c.last_name}
+                          </Link>
+                          <span className="text-xs text-slate-500">— DEA period ends {format(endDate, "MMM d, yyyy")}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`font-bold px-2 py-0.5 rounded-full ${isOverdue ? "bg-red-100 text-red-700" : days <= 1 ? "bg-amber-200 text-amber-800" : "bg-blue-100 text-blue-700"}`}>
+                            {isOverdue ? `${Math.abs(days)}d past end` : days === 0 ? "Ends today!" : `${days}d left`}
+                          </span>
+                          <Link to={`/client/${c.id}`}><Button size="sm" variant="outline" className="text-xs h-6 px-2">Open File</Button></Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Upcoming 90-day follow-ups alert panel */}
             {upcomingFollowups.length > 0 && (
               <div className="mb-4 border border-amber-300 bg-amber-50 rounded-xl p-4">

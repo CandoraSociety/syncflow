@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { CheckCircle2, Circle, Map, Menu, X } from "lucide-react";
+import { CheckCircle2, Circle, Map, Menu } from "lucide-react";
 import BarrierIdentificationTool from "./BarrierIdentificationTool";
 import BarrierActionPlan from "./BarrierActionPlan";
 import EmploymentActionPlan from "./EmploymentActionPlan";
 import InternalPlacementStep from "./InternalPlacementStep";
 import ExposuresSupportsStep from "./ExposuresSupportsStep";
 import ActionPlanRoadmap from "./ActionPlanRoadmap.jsx";
+import CasualNotesPanel from "./CasualNotesPanel";
+import DEAFlowPanel from "./DEAFlowPanel";
 
 const STEPS = [
   { key: "bit", label: "Barrier Identification", short: "BIT" },
@@ -21,6 +23,19 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const isPathways = client?.service_type === "pathways";
+  const isCasual = client?.service_type === "casual";
+  const isDEA = client?.service_type === "direct_to_employment";
+
+  // Casual: just show notes panel, no wizard
+  if (isCasual) {
+    return <CasualNotesPanel client={client} onSave={onSave} />;
+  }
+
+  // DEA: show DEA-specific activities panel, no barrier/placement wizard
+  if (isDEA) {
+    return <DEAFlowPanel client={client} onSave={onSave} />;
+  }
+
   const steps = STEPS.filter(s => !s.pathwaysOnly || isPathways);
 
   const getStepStatus = (stepKey) => {

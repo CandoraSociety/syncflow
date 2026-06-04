@@ -615,6 +615,67 @@
           }
         }
       }
+    },
+    "casual_activity_log": {
+      "type": "array",
+      "description": "Activity and guidance notes for Casual stream clients",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "logged_by": {
+            "type": "string"
+          },
+          "logged_by_name": {
+            "type": "string"
+          },
+          "logged_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dea_activities": {
+      "type": "array",
+      "description": "Employment Development Activities for DEA stream clients",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "logged_by": {
+            "type": "string"
+          },
+          "logged_by_name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dea_closing_dismissed": {
+      "type": "boolean",
+      "description": "Whether the DEA closing dialog has been dismissed for this period"
     }
   },
   "required": [
