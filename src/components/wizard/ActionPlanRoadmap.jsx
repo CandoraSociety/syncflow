@@ -174,8 +174,22 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
         </div>
       )}
 
+      {/* Timeline / Gantt view */}
+      {viewMode === "gantt" && (
+        <GanttView
+          items={items}
+          serviceStart={serviceStart}
+          projectedEnd={projectedEnd}
+          actualEnd={actualEnd}
+          followup90={followup90}
+          bitReviewDates={bitReviewDates}
+          bitCheckins={bitCheckins}
+          roadmapStatus={roadmapStatus}
+        />
+      )}
+
       {/* Item list */}
-      <div className="space-y-1">
+      {viewMode === "list" && <div className="space-y-1">
         {items.map(item => {
           const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.planned;
           const Icon = cfg.icon;
@@ -253,6 +267,162 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
         {items.length === 0 && bitReviewDates.length === 0 && (
           <div className="text-center py-10 text-slate-400 text-sm">No action plan items yet.</div>
         )}
+      </div>}
+    </div>
+  );
+}
+
+function GanttView({ items, serviceStart, projectedEnd, actualEnd, followup90, bitReviewDates, bitCheckins, roadmapStatus }) {
+  // Determine overall date range for the chart
+  const allDates = [
+    serviceStart,
+    projectedEnd,
+    actualEnd,
+    followup90,
+    ...items.flatMap(item => [
+      item.detail?.timeline_start ? new Date(item.detail.timeline_start) : null,
+      item.detail?.timeline_end ? new Date(item.detail.timeline_end) : null,
+      roadmapStatus[item.key]?.started_date ? new Date(roadmapStatus[item.key].started_date) : null,
+      roadmapStatus[item.key]?.completed_date ? new Date(roadmapStatus[item.key].completed_date) : null,
+    ]),
+    ...bitReviewDates.map(d => d ? new Date(d) : null),
+  ].filter(Boolean);
+
+  if (allDates.length === 0) {
+    return (
+      <div className="text-center py-10 text-slate-400 text-sm">
+        No dates set. Add start/end dates to items to see the timeline.
+      </div>
+    );
+  }
+
+  const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+  const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+  // Pad by 1 week on each side
+  minDate.setDate(minDate.getDate() - 7);
+  maxDate.setDate(maxDate.getDate() + 14);
+  const totalMs = maxDate - minDate;
+
+  function pct(date) {
+    if (!date) return null;
+    return ((new Date(date) - minDate) / totalMs) * 100;
+  }
+
+  const monthLabels = [];
+  const cursor = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+  while (cursor <= maxDate) {
+    monthLabels.push({ label: format(cursor, "MMM yyyy"), pct: pct(cursor) });
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  const STATUS_COLORS = {
+    planned: "bg-slate-300",
+    started: "bg-blue-400",
+    completed: "bg-green-500",
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[600px]">
+        {/* Month axis */}
+        <div className="relative h-6 mb-2 border-b border-slate-200">
+          {monthLabels.map((m, i) => (
+            <span
+              key={i}
+              className="absolute text-xs text-slate-400 font-medium"
+              style={{ left: `${Math.max(0, m.pct)}%`, transform: "translateX(-50%)" }}
+            >
+              {m.label}
+            </span>
+          ))}
+        </div>
+
+        {/* Vertical today line + markers */}
+        <div className="relative">
+          {/* Program start marker */}
+          {serviceStart && (
+            <div className="absolute top-0 bottom-0 w-px bg-green-500 z-10" style={{ left: `${pct(serviceStart)}%` }}>
+              <span className="absolute -top-5 left-1 text-xs text-green-600 font-medium whitespace-nowrap">Start</span>
+            </div>
+          )}
+          {/* Projected/actual end marker */}
+          {(actualEnd || projectedEnd) && (
+            <div className="absolute top-0 bottom-0 w-px z-10" style={{ left: `${pct(actualEnd || projectedEnd)}%`, background: actualEnd ? "#16a34a" : "#3b82f6", borderStyle: actualEnd ? "solid" : "dashed", borderWidth: "0 0 0 1px" }}>
+              <span className="absolute -top-5 left-1 text-xs font-medium whitespace-nowrap" style={{ color: actualEnd ? "#16a34a" : "#3b82f6" }}>
+                {actualEnd ? "End" : "Proj. End"}
+              </span>
+            </div>
+          )}
+          {/* 90-day follow-up marker */}
+          {followup90 && (
+            <div className="absolute top-0 bottom-0 w-px bg-purple-400 z-10" style={{ left: `${pct(followup90)}%` }}>
+              <span className="absolute -top-5 left-1 text-xs text-purple-600 font-medium whitespace-nowrap">90-day</span>
+            </div>
+          )}
+
+          {/* Item rows */}
+          <div className="space-y-1.5 pt-6">
+            {items.map(item => {
+              const status = roadmapStatus[item.key]?.status || "planned";
+              const barColor = STATUS_COLORS[status] || STATUS_COLORS.planned;
+              const startPct = pct(item.detail?.timeline_start || roadmapStatus[item.key]?.started_date);
+              const endPct = pct(item.detail?.timeline_end || roadmapStatus[item.key]?.completed_date);
+              const hasBar = startPct != null && endPct != null && endPct > startPct;
+
+              return (
+                <div key={item.key} className="flex items-center gap-2 h-8">
+                  <div className="w-40 shrink-0 text-xs text-slate-700 font-medium truncate pr-2 text-right">{item.label}</div>
+                  <div className="flex-1 relative h-5 bg-slate-100 rounded-full overflow-hidden">
+                    {hasBar && (
+                      <div
+                        className={`absolute h-full rounded-full ${barColor} opacity-80`}
+                        style={{ left: `${startPct}%`, width: `${Math.max(1, endPct - startPct)}%` }}
+                      />
+                    )}
+                    {!hasBar && startPct != null && (
+                      <div
+                        className={`absolute h-full w-2 rounded-full ${barColor}`}
+                        style={{ left: `${startPct}%` }}
+                      />
+                    )}
+                    {startPct == null && endPct == null && (
+                      <div className="h-full flex items-center px-2">
+                        <span className="text-xs text-slate-400 italic">No dates set</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* BIT Review date markers */}
+            {bitReviewDates.map((date, i) => {
+              const checkin = bitCheckins.find?.(c => c?.index === i) || bitCheckins[i];
+              const isDone = checkin?.completed;
+              const datePct = pct(new Date(date));
+              return (
+                <div key={`bit_${i}`} className="flex items-center gap-2 h-8">
+                  <div className="w-40 shrink-0 text-xs text-rose-600 font-medium truncate pr-2 text-right">BIT Review {i + 1}</div>
+                  <div className="flex-1 relative h-5 bg-slate-100 rounded-full overflow-hidden">
+                    {datePct != null && (
+                      <div
+                        className={`absolute top-0.5 w-4 h-4 rounded-full border-2 ${isDone ? "bg-green-400 border-green-600" : "bg-rose-300 border-rose-500"}`}
+                        style={{ left: `calc(${datePct}% - 8px)` }}
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex gap-4 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-slate-300 inline-block" />Planned</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-400 inline-block" />Started</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block" />Completed</span>
+        </div>
       </div>
     </div>
   );
