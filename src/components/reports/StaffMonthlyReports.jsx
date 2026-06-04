@@ -28,6 +28,7 @@ export default function StaffMonthlyReports() {
   // Form state
   const [editingReport, setEditingReport] = useState(null);
   const [formData, setFormData] = useState({
+    submitted_by_name: "",
     trends: "",
     marketing_activities: "",
     success_stories: "",
@@ -64,6 +65,7 @@ export default function StaffMonthlyReports() {
       if (existingReport) {
         setEditingReport(existingReport);
         setFormData({
+          submitted_by_name: existingReport.submitted_by_name || user.full_name || "",
           trends: existingReport.trends || "",
           marketing_activities: existingReport.marketing_activities || "",
           success_stories: existingReport.success_stories || "",
@@ -72,6 +74,11 @@ export default function StaffMonthlyReports() {
           goals_next_month: existingReport.goals_next_month || "",
           additional_notes: existingReport.additional_notes || ""
         });
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          submitted_by_name: user.full_name || ""
+        }));
       }
       
       setLoading(false);
@@ -88,7 +95,6 @@ export default function StaffMonthlyReports() {
           ...formData,
           report_month: selectedMonth,
           submitted_by: currentUser.email,
-          submitted_by_name: currentUser.full_name,
           submitted_date: format(new Date(), "yyyy-MM-dd"),
           status: "draft"
         });
@@ -97,7 +103,6 @@ export default function StaffMonthlyReports() {
           ...formData,
           report_month: selectedMonth,
           submitted_by: currentUser.email,
-          submitted_by_name: currentUser.full_name,
           submitted_date: format(new Date(), "yyyy-MM-dd"),
           status: "draft"
         });
@@ -187,6 +192,22 @@ export default function StaffMonthlyReports() {
                   onChange={e => setSelectedMonth(e.target.value)}
                   className="mt-1"
                 />
+              </div>
+              <div>
+                <Label>Your Name</Label>
+                <Select
+                  value={formData.submitted_by_name}
+                  onValueChange={(v) => setFormData({...formData, submitted_by_name: v})}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select your name" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workers.map(worker => (
+                      <SelectItem key={worker} value={worker}>{worker}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <Tabs defaultValue="trends">
