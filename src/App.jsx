@@ -18,6 +18,7 @@ import Invoices from "./pages/Invoices";
 import SupervisorPortal from "./pages/SupervisorPortal";
 import Resources from "./pages/Resources";
 import Compass from "./pages/Compass";
+import Outcomes from "./pages/Outcomes";
 import AppNav from "./components/layout/AppNav";
 import { useBranding } from '@/hooks/useBranding';
 
@@ -61,6 +62,7 @@ const AuthenticatedApp = () => {
         <Route path="/supervisor" element={<SupervisorPortal />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/compass" element={<Compass />} />
+        <Route path="/outcomes" element={<Outcomes />} />
         {/* Add your page Route elements here */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>

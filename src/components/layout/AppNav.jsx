@@ -9,6 +9,7 @@ const NAV_ITEMS = [
 { label: "Master List", path: "/master" },
 { label: "My Dashboard", path: "/dashboard" },
 { label: "Reports", path: "/reports" },
+{ label: "Outcomes", path: "/outcomes" },
 { label: "CRT", path: "/crt" },
 { label: "Invoices", path: "/invoices" },
 { label: "Supervisor Portal", path: "/supervisor" },
