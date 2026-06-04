@@ -267,6 +267,17 @@
       "type": "boolean",
       "description": "BIT step has been completed"
     },
+    "bit_review_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "BIT Action Plan review dates (up to 4)"
+    },
+    "bit_checkin_frequency": {
+      "type": "string",
+      "description": "BIT check-in frequency"
+    },
     "barrier_action_plan_completed": {
       "type": "boolean",
       "description": "Barrier Action Plan completed"

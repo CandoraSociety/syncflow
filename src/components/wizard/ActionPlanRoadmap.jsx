@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, parseISO, isValid, differenceInDays, addDays, min, max } from "date-fns";
-import { AlertTriangle, Calendar, CalendarDays, CheckCircle2, ArrowRight, Play } from "lucide-react";
+import { AlertTriangle, Calendar, CalendarDays, CheckCircle2, ArrowRight, Play, Flag } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createCompassTask } from "@/lib/compassTasks";
 import RoadmapItemPanel from "./RoadmapItemPanel";
@@ -354,8 +354,34 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   const rowsWithDates = rows.filter(r => r.start || r.end);
   const rowsWithoutDates = rows.filter(r => !r.start && !r.end);
 
-  const allStarts = rowsWithDates.map(r => r.start).filter(Boolean);
-  const allEnds = rowsWithDates.map(r => r.end || r.start).filter(Boolean);
+  // BIT review dates as milestone markers
+  const reviewDates = (client?.bit_review_dates || [])
+    .map((d, i) => ({ date: parseDate(d), label: `BIT Review ${i + 1}`, raw: d }))
+    .filter(m => m.date);
+
+  // Barrier resolution timelines as dedicated rows (shown even if barrier_support not selected)
+  const barrierRows = [];
+  for (let n = 1; n <= 3; n++) {
+    const type = client?.[`barrier_${n}`];
+    if (!type) continue;
+    const label = type === "Other" ? (client[`barrier_${n}_other`] || "Other") : type;
+    const start = parseDate(client?.[`barrier_${n}_timeline_start`]);
+    const end = parseDate(client?.[`barrier_${n}_timeline_end`]);
+    if (start || end) {
+      barrierRows.push({ id: `barrier_ref_${n}`, label, start, end, n });
+    }
+  }
+
+  const allStarts = [
+    ...rowsWithDates.map(r => r.start),
+    ...barrierRows.map(r => r.start),
+    ...reviewDates.map(m => m.date),
+  ].filter(Boolean);
+  const allEnds = [
+    ...rowsWithDates.map(r => r.end || r.start),
+    ...barrierRows.map(r => r.end || r.start),
+    ...reviewDates.map(m => m.date),
+  ].filter(Boolean);
   const timelineStart = allStarts.length > 0 ? min(allStarts) : null;
   const timelineEnd = allEnds.length > 0 ? max(allEnds) : null;
   const totalDays = timelineStart && timelineEnd ? Math.max(differenceInDays(timelineEnd, timelineStart), 1) : 1;
@@ -500,9 +526,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
         </div>
 
         {/* Gantt */}
-        {rowsWithDates.length > 0 && (
+        {(rowsWithDates.length > 0 || barrierRows.length > 0 || reviewDates.length > 0) && (
           <div className="overflow-x-auto">
             <div className="min-w-[500px]">
+              {/* Month axis */}
               <div className="relative h-6 mb-3 ml-36 border-b border-slate-200">
                 {monthMarkers.map((m, i) => (
                   <div key={i} className="absolute top-0 flex flex-col items-start" style={{ left: `${m.pct}%` }}>
@@ -510,10 +537,58 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                     <div className="w-px h-2 bg-slate-200 mt-0.5" />
                   </div>
                 ))}
+                {/* BIT review date markers on the axis */}
+                {reviewDates.map((m, i) => {
+                  const pct = (differenceInDays(m.date, timelineStart) / totalDays) * 100;
+                  return (
+                    <div key={i} className="absolute top-0 flex flex-col items-center" style={{ left: `${pct}%` }} title={`${m.label}: ${m.raw}`}>
+                      <Flag className="w-3 h-3 text-rose-500" />
+                      <div className="w-px h-2 bg-rose-400 mt-0.5" />
+                    </div>
+                  );
+                })}
               </div>
+
               <div className="space-y-2">
                 {rowsWithDates.map(row => <GanttRow key={row.id} row={row} />)}
+
+                {/* Barrier resolution timeline rows */}
+                {barrierRows.map(b => {
+                  const barStyle = getBarStyle({ start: b.start, end: b.end }, timelineStart, totalDays);
+                  return (
+                    <div key={b.id} className="flex items-center gap-2">
+                      <div className="w-36 shrink-0 text-right pr-2 flex items-center justify-end gap-1">
+                        <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                        <span className="text-xs text-slate-600 font-medium leading-tight line-clamp-2">{b.label}</span>
+                      </div>
+                      <div className="flex-1 relative h-8 bg-slate-50 rounded-md border border-slate-100">
+                        <div
+                          className="absolute h-full rounded-md border-2 flex items-center gap-1.5 px-2 bg-amber-100 border-amber-400 text-amber-800 shadow-sm"
+                          style={barStyle}
+                        >
+                          <span className="text-xs font-medium truncate">{b.label}</span>
+                        </div>
+                      </div>
+                      <div className="w-40 shrink-0 text-xs text-slate-400">
+                        {b.start && <span>{format(b.start, "MMM d")}</span>}
+                        {b.end && <span> – {format(b.end, "MMM d")}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* BIT review date legend */}
+              {reviewDates.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-3 ml-36">
+                  {reviewDates.map((m, i) => (
+                    <div key={i} className="flex items-center gap-1 text-xs text-rose-600">
+                      <Flag className="w-3 h-3" />
+                      <span>{m.label}: {m.raw}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

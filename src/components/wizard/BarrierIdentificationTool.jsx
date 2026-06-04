@@ -196,7 +196,13 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
   const [submitted, setSubmitted] = useState(isCompleted);
   const [editing, setEditing] = useState(!isCompleted);
   const [barrierState, setBarrierState] = useState(initBarrierState);
-  const [actionPlan, setActionPlan] = useState(emptyActionPlan());
+  const [actionPlan, setActionPlan] = useState(() => ({
+    ...emptyActionPlan(),
+    review_dates: client?.bit_review_dates?.length
+      ? [...client.bit_review_dates, "", "", "", ""].slice(0, 4)
+      : ["", "", "", ""],
+    checkin_frequency: client?.bit_checkin_frequency || "",
+  }));
   const [saving, setSaving] = useState(false);
   const [assessorName, setAssessorName] = useState("");
   // Track which dropdown is open: `${barrierKey}_challenges` | `${barrierKey}_actions` | null
@@ -252,7 +258,12 @@ export default function BarrierIdentificationTool({ client, onSave, onComplete }
   };
 
   const buildSaveData = () => {
-    const data = { barriers_addressed: confirmedBarriers.length > 0, bit_completed: true };
+    const data = {
+      barriers_addressed: confirmedBarriers.length > 0,
+      bit_completed: true,
+      bit_review_dates: actionPlan.review_dates.filter(Boolean),
+      bit_checkin_frequency: actionPlan.checkin_frequency,
+    };
     for (let n = 1; n <= 3; n++) {
       const b = confirmedBarriers[n - 1];
       // Always clear previous barrier slot first, then populate if there's a barrier
