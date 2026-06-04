@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import StaffMonthlyReports from "../components/reports/StaffMonthlyReports";
 
 // All available client fields
 const ALL_FIELDS = [
@@ -242,12 +243,18 @@ export default function Reports() {
     <div className="min-h-screen bg-background">
       <div className="bg-white border-b border-slate-200 px-6 py-4">
         <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <FileBarChart className="w-5 h-5" /> Data Reports
+          <FileBarChart className="w-5 h-5" /> Reports
         </h1>
-        <p className="text-sm text-slate-500">Build, save, and run custom reports with demographic filters and metrics</p>
+        <p className="text-sm text-slate-500">Data reports and staff monthly submissions</p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <Tabs defaultValue="data" className="max-w-7xl mx-auto px-6 py-6">
+        <TabsList className="mb-4">
+          <TabsTrigger value="data">Data Reports</TabsTrigger>
+          <TabsTrigger value="staff">Staff Monthly Reports</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="data" className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left: config */}
         <div className="lg:col-span-1 space-y-4">
 
@@ -494,7 +501,12 @@ export default function Reports() {
             </Card>
           )}
         </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="staff">
+          <StaffMonthlyReports />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

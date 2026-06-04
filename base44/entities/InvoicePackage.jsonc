@@ -1,0 +1,174 @@
+{
+  "name": "InvoicePackage",
+  "type": "object",
+  "properties": {
+    "package_number": {
+      "type": "string",
+      "description": "Package number (e.g., PKG-2025-01)"
+    },
+    "billing_month": {
+      "type": "string",
+      "description": "Month being billed (YYYY-MM format)"
+    },
+    "prepared_by": {
+      "type": "string",
+      "description": "Email of person preparing the package"
+    },
+    "prepared_by_name": {
+      "type": "string",
+      "description": "Name of person preparing the package"
+    },
+    "prepared_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date package was prepared"
+    },
+    "config_id": {
+      "type": "string",
+      "description": "Reference to InvoiceConfig used"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "ready_for_review",
+        "submitted",
+        "approved"
+      ],
+      "default": "draft",
+      "description": "Package status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "General notes about this package"
+    },
+    "crt_included": {
+      "type": "boolean",
+      "description": "Whether CRT report is included",
+      "default": true
+    },
+    "invoice_id": {
+      "type": "string",
+      "description": "Reference to generated Invoice"
+    },
+    "supporting_documents": {
+      "type": "array",
+      "description": "Uploaded supporting documents",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "exposure_course",
+              "employment_supports",
+              "child_minding",
+              "paid_placement",
+              "other"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "uploaded_by": {
+            "type": "string"
+          },
+          "uploaded_date": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "paid_placements": {
+      "type": "array",
+      "description": "Paid external placement details for reimbursement",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "employer_name": {
+            "type": "string"
+          },
+          "placement_start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "placement_end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "wage_rate": {
+            "type": "number"
+          },
+          "hours_worked": {
+            "type": "number"
+          },
+          "total_amount": {
+            "type": "number"
+          },
+          "receipt_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "auto_populated_items": {
+      "type": "array",
+      "description": "Auto-populated billable items for this month",
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "receipt_required": {
+            "type": "boolean"
+          },
+          "receipt_uploaded": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "billing_month",
+    "prepared_by"
+  ]
+}

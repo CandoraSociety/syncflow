@@ -31,7 +31,7 @@ export default function InvoicePackageDetail({ package: pkg, onUpdate, onClose }
           <div>
             <h2 className="text-xl font-bold text-slate-800">{pkg.package_number}</h2>
             <p className="text-sm text-slate-500">
-              {pkg.billing_month ? format(parseISO(pkg.billing_month + "-01"), "MMMM yyyy")} Billing Package
+              {pkg.billing_month ? `${format(parseISO(pkg.billing_month + "-01"), "MMMM yyyy")} Billing Package` : "Billing Package"}
             </p>
           </div>
         </div>
