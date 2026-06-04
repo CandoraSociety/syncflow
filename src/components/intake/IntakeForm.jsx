@@ -469,9 +469,9 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
                       )}
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">Job Type</Label>
+                      <Label className="text-xs">Employment Type</Label>
                       <Select value={entry.job_type} onValueChange={v => updateEmploymentEntry(index, "job_type", v)}>
-                        <SelectTrigger><SelectValue placeholder="Select job type" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select employment type" /></SelectTrigger>
                         <SelectContent>
                           {EMPLOYMENT_JOB_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                         </SelectContent>
