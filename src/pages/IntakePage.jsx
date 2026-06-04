@@ -102,7 +102,9 @@ export default function IntakePage() {
     setDuplicates([]);
   };
 
-  const displayed = applyFiltersAndSort(clients, search, filters, sortKey);
+  // Intake list = only clients not yet assigned to a worker
+  const unassignedClients = clients.filter(c => !c.assigned_worker);
+  const displayed = applyFiltersAndSort(unassignedClients, search, filters, sortKey);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -114,8 +116,8 @@ export default function IntakePage() {
     <div className="min-h-screen bg-background">
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Intake Dashboard</h1>
-          <p className="text-sm text-slate-500">Welcome, {user?.full_name}</p>
+          <h1 className="text-xl font-bold text-slate-800">Intake — Unassigned Clients</h1>
+          <p className="text-sm text-slate-500">{unassignedClients.length} awaiting assignment · Welcome, {user?.full_name}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
            <Button variant="outline" size="sm" onClick={() => navigate("/master")}>Master List</Button>
@@ -196,7 +198,9 @@ export default function IntakePage() {
                       </tr>
                     ))}
                     {displayed.length === 0 && (
-                      <tr><td colSpan={9} className="text-center py-10 text-slate-400">No clients match your filters.</td></tr>
+                     <tr><td colSpan={9} className="text-center py-10 text-slate-400">
+                       {unassignedClients.length === 0 ? "All clients have been assigned to a career counsellor." : "No clients match your filters."}
+                     </td></tr>
                     )}
                   </tbody>
                 </table>

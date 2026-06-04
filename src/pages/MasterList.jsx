@@ -64,8 +64,10 @@ export default function MasterList() {
     });
   }, []);
 
-  const activeClients = clients.filter(c => !c.file_closed);
-  const closedClients = clients.filter(c => c.file_closed);
+  // Master list = only clients assigned to a worker (unassigned stay in Intake)
+  const assignedClients = clients.filter(c => c.assigned_worker);
+  const activeClients = assignedClients.filter(c => !c.file_closed);
+  const closedClients = assignedClients.filter(c => c.file_closed);
   const sourceList = activeTab === "active" ? activeClients : closedClients;
   const displayed = applyFiltersAndSort(sourceList, search, filters, sortKey);
 
@@ -80,10 +82,9 @@ export default function MasterList() {
       <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style={{ background: "hsl(231,64%,20%)" }}>
         <div>
           <h1 className="text-xl font-bold text-white">Master Client List</h1>
-          <p className="text-sm text-white/60">{displayed.length} shown · {activeClients.length} active · {closedClients.length} closed</p>
+          <p className="text-sm text-white/60">{displayed.length} shown · {activeClients.length} active · {closedClients.length} closed · {clients.filter(c => !c.assigned_worker).length} unassigned in intake</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => navigate("/intake")} style={{ background: "hsl(42,100%,54%)", color: "hsl(231,64%,16%)" }} className="font-semibold hover:opacity-90 border-0">Intake</Button>
           <Button size="sm" onClick={() => navigate("/reports")} variant="outline" className="border-white/30 text-white hover:bg-white/10">Reports</Button>
           <Button variant="ghost" size="icon" onClick={() => base44.auth.logout()} className="text-white/70 hover:text-white hover:bg-white/10"><LogOut className="w-4 h-4" /></Button>
         </div>
