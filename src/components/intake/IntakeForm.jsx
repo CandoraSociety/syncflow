@@ -71,7 +71,11 @@ const CAREER_PRESETS = [
   "Social Services / Nonprofit", "Skilled Trades / Apprenticeship", "Teaching / Tutoring",
 ];
 
-const EMPLOYMENT_HISTORY_PRESETS = [
+const EMPLOYMENT_JOB_TYPES = [
+  "Full-time", "Part-time", "Temporary", "Contract", "Seasonal", "Internship", "Volunteer", "Self-employed"
+];
+
+const EMPLOYMENT_JOB_TITLE_PRESETS = [
   "Retail Sales Associate", "Customer Service Representative", "Warehouse Worker",
   "Food Service Worker", "Administrative Assistant", "General Labourer",
   "Cashier", "Server / Waiter", "Kitchen Helper", "Housekeeper",
@@ -80,11 +84,11 @@ const EMPLOYMENT_HISTORY_PRESETS = [
   "Childcare Worker", "Landscaping Worker", "Production Line Worker",
 ];
 
-const EDUCATION_PRESETS = [
+const EDUCATION_TYPES = [
   "High School Diploma", "GED / Adult Learning Certificate",
-  "College Diploma / Certificate", "Bachelor's Degree", "Master's Degree",
-  "Trade Certificate / Apprenticeship", "Professional Certification",
-  "ESL / LINC Training", "Workshop / Short Course", "On-the-Job Training",
+  "College Diploma", "College Certificate", "Bachelor's Degree", "Master's Degree", "Doctorate",
+  "Trade Certificate", "Apprenticeship", "Professional Certification",
+  "ESL / LINC Training", "Workshop", "Short Course", "On-the-Job Training",
 ];
 
 const VEHICLE_OPTIONS = [
@@ -123,14 +127,45 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
     employment_status: client?.employment_status || "",
     has_vehicle: client?.has_vehicle || "",
     career_objectives: client?.career_objectives || "",
-    employment_history: client?.employment_history || "",
-    education: client?.education || "",
+    employment_history_entries: client?.employment_history_entries || [],
+    education_entries: client?.education_entries || [],
     resume_urls: client?.resume_urls || [],
   });
+
+  const [employmentEntries, setEmploymentEntries] = useState(client?.employment_history_entries || []);
+  const [educationEntries, setEducationEntries] = useState(client?.education_entries || []);
 
   const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const addEmploymentEntry = () => {
+    setEmploymentEntries([...employmentEntries, { company: "", job_title: "", job_type: "", start_date: "", end_date: "", responsibilities: "" }]);
+  };
+
+  const updateEmploymentEntry = (index, field, value) => {
+    const updated = [...employmentEntries];
+    updated[index] = { ...updated[index], [field]: value };
+    setEmploymentEntries(updated);
+  };
+
+  const removeEmploymentEntry = (index) => {
+    setEmploymentEntries(employmentEntries.filter((_, i) => i !== index));
+  };
+
+  const addEducationEntry = () => {
+    setEducationEntries([...educationEntries, { institution: "", education_type: "", field_of_study: "", start_date: "", end_date: "", description: "" }]);
+  };
+
+  const updateEducationEntry = (index, field, value) => {
+    const updated = [...educationEntries];
+    updated[index] = { ...updated[index], [field]: value };
+    setEducationEntries(updated);
+  };
+
+  const removeEducationEntry = (index) => {
+    setEducationEntries(educationEntries.filter((_, i) => i !== index));
+  };
 
   const validate = (data) => {
     const errs = {};
@@ -177,7 +212,7 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
     const errs = validate(form);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-    onSave(form);
+    onSave({ ...form, employment_history_entries: employmentEntries, education_entries: educationEntries });
   };
 
   const workerUsers = [
@@ -362,50 +397,109 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
           </div>
           <div className="space-y-1 md:col-span-2">
             <Label>Employment History</Label>
-            <Textarea
-              value={form.employment_history}
-              onChange={e => set("employment_history", e.target.value)}
-              rows={4}
-              placeholder="Describe relevant work experience, job roles, responsibilities..."
-            />
-            <div className="mt-2">
-              <p className="text-xs text-slate-500 mb-1.5">Quick add job roles:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {EMPLOYMENT_HISTORY_PRESETS.map(preset => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setForm(prev => ({ ...prev, employment_history: prev.employment_history ? `${prev.employment_history}\n${preset}` : preset }))}
-                    className="text-xs px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400 transition-colors"
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-3">
+              {employmentEntries.map((entry, index) => (
+                <div key={index} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-slate-700">Position {index + 1}</h4>
+                    <button type="button" onClick={() => removeEmploymentEntry(index)} className="text-slate-400 hover:text-red-500">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Company / Employer</Label>
+                      <Input value={entry.company} onChange={e => updateEmploymentEntry(index, "company", e.target.value)} placeholder="Company name" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Job Title</Label>
+                      <div className="relative">
+                        <Input value={entry.job_title} onChange={e => updateEmploymentEntry(index, "job_title", e.target.value)} placeholder="Select or enter job title" list={`job-titles-${index}`} />
+                        <datalist id={`job-titles-${index}`}>
+                          {EMPLOYMENT_JOB_TITLE_PRESETS.map(p => <option key={p} value={p} />)}
+                        </datalist>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Job Type</Label>
+                      <Select value={entry.job_type} onValueChange={v => updateEmploymentEntry(index, "job_type", v)}>
+                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                        <SelectContent>
+                          {EMPLOYMENT_JOB_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Start Date</Label>
+                        <Input type="date" value={entry.start_date} onChange={e => updateEmploymentEntry(index, "start_date", e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">End Date</Label>
+                        <Input type="date" value={entry.end_date} onChange={e => updateEmploymentEntry(index, "end_date", e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label className="text-xs">Responsibilities</Label>
+                      <Textarea value={entry.responsibilities} onChange={e => updateEmploymentEntry(index, "responsibilities", e.target.value)} rows={2} placeholder="Key duties and responsibilities..." />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={addEmploymentEntry} className="w-full">
+                + Add Position
+              </Button>
             </div>
           </div>
           <div className="space-y-1 md:col-span-2">
             <Label>Education & Training</Label>
-            <Textarea
-              value={form.education}
-              onChange={e => set("education", e.target.value)}
-              rows={4}
-              placeholder="List education, certifications, training programs completed..."
-            />
-            <div className="mt-2">
-              <p className="text-xs text-slate-500 mb-1.5">Quick add education/certifications:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {EDUCATION_PRESETS.map(preset => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setForm(prev => ({ ...prev, education: prev.education ? `${prev.education}\n${preset}` : preset }))}
-                    className="text-xs px-2 py-1 rounded-full border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400 transition-colors"
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-3">
+              {educationEntries.map((entry, index) => (
+                <div key={index} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-slate-700">Education {index + 1}</h4>
+                    <button type="button" onClick={() => removeEducationEntry(index)} className="text-slate-400 hover:text-red-500">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Institution / School</Label>
+                      <Input value={entry.institution} onChange={e => updateEducationEntry(index, "institution", e.target.value)} placeholder="School or institution name" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Education Type</Label>
+                      <Select value={entry.education_type} onValueChange={v => updateEducationEntry(index, "education_type", v)}>
+                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                        <SelectContent>
+                          {EDUCATION_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label className="text-xs">Field of Study / Program</Label>
+                      <Input value={entry.field_of_study} onChange={e => updateEducationEntry(index, "field_of_study", e.target.value)} placeholder="e.g. Business Administration, Healthcare Assistant..." />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Start Date</Label>
+                        <Input type="date" value={entry.start_date} onChange={e => updateEducationEntry(index, "start_date", e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">End Date / Expected</Label>
+                        <Input type="date" value={entry.end_date} onChange={e => updateEducationEntry(index, "end_date", e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label className="text-xs">Description / Achievements</Label>
+                      <Textarea value={entry.description} onChange={e => updateEducationEntry(index, "description", e.target.value)} rows={2} placeholder="Relevant coursework, honors, certifications..." />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={addEducationEntry} className="w-full">
+                + Add Education / Training
+              </Button>
             </div>
           </div>
           <div className="space-y-1 md:col-span-2">
