@@ -77,12 +77,12 @@ export default function MasterList() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="px-6 py-4 flex items-center justify-between" style={{ background: "hsl(231,64%,20%)" }}>
+      <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" style={{ background: "hsl(231,64%,20%)" }}>
         <div>
           <h1 className="text-xl font-bold text-white">Master Client List</h1>
           <p className="text-sm text-white/60">{displayed.length} shown · {activeClients.length} active · {closedClients.length} closed</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button size="sm" onClick={() => navigate("/intake")} style={{ background: "hsl(42,100%,54%)", color: "hsl(231,64%,16%)" }} className="font-semibold hover:opacity-90 border-0">Intake</Button>
           <Button size="sm" onClick={() => navigate("/reports")} variant="outline" className="border-white/30 text-white hover:bg-white/10">Reports</Button>
           <Button variant="ghost" size="icon" onClick={() => base44.auth.logout()} className="text-white/70 hover:text-white hover:bg-white/10"><LogOut className="w-4 h-4" /></Button>

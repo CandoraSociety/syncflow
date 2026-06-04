@@ -112,12 +112,12 @@ export default function IntakePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+      <header className="bg-white border-b border-slate-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-800">Intake Dashboard</h1>
           <p className="text-sm text-slate-500">Welcome, {user?.full_name}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
            <Button variant="outline" size="sm" onClick={() => navigate("/master")}>Master List</Button>
            <Button variant="outline" size="sm" onClick={() => navigate("/reports")}>Reports</Button>
           {!showForm && (

@@ -106,7 +106,7 @@ export default function WorkerDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="px-6 py-4 flex items-center justify-between" style={{ background: "hsl(231,64%,20%)" }}>
+      <header className="px-4 py-3 flex items-center justify-between" style={{ background: "hsl(231,64%,20%)" }}>
         <div>
           <h1 className="text-xl font-bold text-white">
             {isDawn ? "Service Navigator Dashboard" : "My Clients"}
