@@ -371,19 +371,27 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   ))}
 
                   {/* Today line */}
-                  {todayPct !== null && (
-                    <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 opacity-70 z-0" style={{ left: `${todayPct}%` }}>
-                      <span className="absolute top-0 left-1 text-[9px] text-amber-600 font-bold whitespace-nowrap bg-white/80 px-0.5 rounded">
-                        {format(new Date(), "MMM d")}
-                      </span>
-                    </div>
-                  )}
+                  {todayPct !== null && (() => {
+                    // Offset by 4px if today lands on same position as a milestone line
+                    const onMilestone = milestones.some(ms => {
+                      const mp = ms.forcePct ?? pct(ms.date);
+                      return Math.abs((mp === 0 ? 0 : mp) - todayPct) < 0.5;
+                    });
+                    return (
+                      <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-20"
+                        style={{ left: onMilestone ? `calc(${todayPct}% + 4px)` : `${todayPct}%` }}>
+                        <span className="absolute top-0 left-1 text-[9px] text-amber-600 font-bold whitespace-nowrap bg-white/80 px-0.5 rounded">
+                          {format(new Date(), "MMM d")}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   {/* Milestone lines */}
                   {milestones.map(ms => {
                     const lineLeft = ms.forcePct ?? pct(ms.date);
                     return (
-                      <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-0"
+                      <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-10"
                         style={{ left: lineLeft === 0 ? "1px" : `${lineLeft}%`, backgroundColor: ms.color, opacity: 0.9,
                           borderStyle: ms.dashed ? "dashed" : "solid" }} />
                     );
