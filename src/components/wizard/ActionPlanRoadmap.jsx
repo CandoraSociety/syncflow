@@ -732,22 +732,24 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                     )}
 
                     {/* Legend */}
-                    <div className="relative z-10 bg-white mt-6 pt-3 border-t border-slate-100 ml-40 text-[11px] text-slate-500">
-                      <div className="flex flex-wrap gap-x-5 gap-y-2">
-                  <span className="font-semibold text-slate-400 uppercase tracking-wide">Type:</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#f59e0b" }} />Barrier</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#a855f7" }} />Workshop</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#22c55e" }} />Placement</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#64748b" }} />Other</span>
-                  <span className="font-semibold text-slate-400 uppercase tracking-wide ml-2">Status ring:</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block border-2" style={{ borderColor: "#94a3b8" }} />Not Started</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block border-2" style={{ borderColor: "#3b82f6" }} />In Progress</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block border-2" style={{ borderColor: "#22c55e" }} />Completed</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block border-2" style={{ borderColor: "#ef4444" }} />Cancelled</span>
-                  <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-emerald-500 inline-block" />Milestones</span>
-                  <span className="flex items-center gap-1.5"><span className="w-0.5 h-3 bg-amber-400 inline-block" />Today</span>
-                </div>
-              </div>
+                     <div className="relative z-10 bg-white mt-6 pt-3 border-t border-slate-100 ml-40 text-[10px] text-slate-500 space-y-1">
+                       <div className="flex items-center gap-4">
+                         <span className="font-semibold text-slate-400 uppercase tracking-wide w-16 shrink-0">Type:</span>
+                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded inline-block" style={{ backgroundColor: "#f59e0b" }} />Barrier</span>
+                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded inline-block" style={{ backgroundColor: "#a855f7" }} />Workshop</span>
+                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded inline-block" style={{ backgroundColor: "#22c55e" }} />Placement</span>
+                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded inline-block" style={{ backgroundColor: "#64748b" }} />Other</span>
+                         <span className="flex items-center gap-1"><span className="w-0.5 h-3 bg-emerald-500 inline-block" />Milestones</span>
+                         <span className="flex items-center gap-1"><span className="w-0.5 h-3 bg-amber-400 inline-block" />Today</span>
+                       </div>
+                       <div className="flex items-center gap-4">
+                         <span className="font-semibold text-slate-400 uppercase tracking-wide w-16 shrink-0">Status:</span>
+                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded inline-block border-2" style={{ borderColor: "#94a3b8" }} />Not Started</span>
+                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded inline-block border-2" style={{ borderColor: "#3b82f6" }} />In Progress</span>
+                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded inline-block border-2" style={{ borderColor: "#22c55e" }} />Completed</span>
+                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded inline-block border-2" style={{ borderColor: "#ef4444" }} />Cancelled</span>
+                       </div>
+                     </div>
             </div>
           </div>
         </div>
