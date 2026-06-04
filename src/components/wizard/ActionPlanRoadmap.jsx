@@ -229,8 +229,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   }
 
   // ─── Timeline bounds (raw ms math — avoids date-fns UTC rounding) ─────────
-  const allDates = [
-    intakeDate, serviceStart, projectedEnd, actualEnd, followup90,
+  // rightDates includes everything except the anchor (intake/serviceStart) so the right bound is correct
+  const rightDates = [
+    projectedEnd, actualEnd, followup90,
     ...items.flatMap(item => [
       parseDate(item.detail?.timeline_start || item.statusData?.started_date),
       parseDate(item.detail?.timeline_end   || item.statusData?.completed_date),
@@ -238,18 +239,20 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     ...bitReviewDates.map(d => parseDate(d)),
   ].filter(Boolean);
 
+  // The left anchor is always intake date (or service start, or earliest right date)
+  const leftAnchor = intakeDate || serviceStart;
+  const allDates = [leftAnchor, ...rightDates].filter(Boolean);
+
   const hasTimelineData = allDates.length > 0;
   let minMs = 0, rangeMs = 1;
   let minDate, maxDate;
 
   if (hasTimelineData) {
-    const timestamps = allDates.map(d => d.getTime());
-    const rawMinMs = Math.min(...timestamps);
-    const rawMaxMs = Math.max(...timestamps);
-    // No left padding — earliest date (intake) anchors at 0%; pad 14 days on right only
-    const rawMin = new Date(rawMinMs);
-    const rawMax = new Date(rawMaxMs);
-    minDate = new Date(rawMin.getFullYear(), rawMin.getMonth(), rawMin.getDate(), 12, 0, 0);
+    // minDate is ALWAYS the left anchor — intake is pinned to left edge (0%)
+    const rawMax = new Date(Math.max(...rightDates.filter(Boolean).map(d => d.getTime()), leftAnchor?.getTime() || 0));
+    minDate = leftAnchor
+      ? new Date(leftAnchor.getFullYear(), leftAnchor.getMonth(), leftAnchor.getDate(), 12, 0, 0)
+      : new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate(), 12, 0, 0);
     maxDate = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate() + 14, 12, 0, 0);
     minMs   = minDate.getTime();
     rangeMs = maxDate.getTime() - minMs;
