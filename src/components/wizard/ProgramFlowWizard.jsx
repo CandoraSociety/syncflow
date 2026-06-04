@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { CheckCircle2, Circle, Map, Menu } from "lucide-react";
+import { CheckCircle2, Circle, Map, Menu, PlayCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { base44 } from "@/api/base44Client";
 import BarrierIdentificationTool from "./BarrierIdentificationTool";
 import BarrierActionPlan from "./BarrierActionPlan";
 import EmploymentActionPlan from "./EmploymentActionPlan";
@@ -15,12 +18,15 @@ const STEPS = [
   { key: "employment_action_plan", label: "Employment Action Plan", short: "Emp. Action Plan" },
   { key: "internal_placement", label: "Placement", short: "Placement", pathwaysOnly: true },
   { key: "exposures", label: "Exposure Courses & Supports", short: "Supports" },
-  { key: "roadmap", label: "Program Progress", short: "Roadmap" },
+  { key: "roadmap", label: "Program Progress", short: "Program Progress" },
 ];
 
 export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
   const [activeStep, setActiveStep] = useState("bit");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showStartPrompt, setShowStartPrompt] = useState(false);
+  const [startDate, setStartDate] = useState(client?.service_start_date || "");
+  const [savingStart, setSavingStart] = useState(false);
 
   const isPathways = client?.service_type === "pathways";
   const isCasual = client?.service_type === "casual";
@@ -171,10 +177,60 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
         )}
         {activeStep === "roadmap" && (
           <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">Program Progress</h2>
-              <p className="text-sm text-slate-500 mt-1">Full timeline and overview of the client's program progress.</p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-800">Program Progress</h2>
+                <p className="text-sm text-slate-500 mt-1">Full timeline and overview of the client's program progress.</p>
+              </div>
+              {(isPathways || isDEA) && (
+                <div className="shrink-0">
+                  {client?.service_start_date ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">Started: <strong className="text-slate-700">{client.service_start_date}</strong></span>
+                      <button onClick={() => { setStartDate(client.service_start_date); setShowStartPrompt(true); }} className="text-xs text-primary underline hover:no-underline">Edit</button>
+                    </div>
+                  ) : (
+                    <Button size="sm" className="gap-2" onClick={() => { setStartDate(""); setShowStartPrompt(true); }}>
+                      <PlayCircle className="w-4 h-4" /> Start Program
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Start Program date prompt */}
+            {showStartPrompt && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <PlayCircle className="w-5 h-5 text-green-600 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-green-800 mb-1">Set Program Start Date</p>
+                  <p className="text-xs text-green-600">This will record the official service start date for the client.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    className="h-8 text-sm w-40"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={!startDate || savingStart}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={async () => {
+                      setSavingStart(true);
+                      await onSave({ service_start_date: startDate });
+                      setShowStartPrompt(false);
+                      setSavingStart(false);
+                    }}
+                  >
+                    {savingStart ? "Saving…" : "Confirm"}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowStartPrompt(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
             {client?.action_plan_submitted && client?.sdp_items?.length > 0
               ? <ActionPlanRoadmap client={client} selectedItems={client.sdp_items} itemDetails={client.sdp_item_details || {}} onClientUpdate={onClientUpdate} />
               : <div className="flex flex-col items-center justify-center py-16 text-center text-slate-400">
