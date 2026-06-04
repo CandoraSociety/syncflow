@@ -11,8 +11,6 @@ const NAV_ITEMS = [
 { label: "Reports", path: "/reports" },
 { label: "Outcomes", path: "/outcomes" },
 { label: "Billing", path: "/billing" },
-{ label: "CRT", path: "/crt" },
-{ label: "Invoices", path: "/invoices" },
 { label: "Supervisor Portal", path: "/supervisor" },
 { label: "Resources", path: "/resources" },
 { label: "Compass", path: "/compass" }];
