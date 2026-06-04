@@ -365,37 +365,39 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                 {/* Chart area */}
                 <div className="relative ml-40">
 
-                  {/* Grid lines */}
+                  {/* Grid lines — full height background layer */}
                   {monthLabels.map((ml, i) => (
                     <div key={i} className="absolute top-0 bottom-0 w-px bg-slate-100 z-0" style={{ left: `${ml.p}%` }} />
                   ))}
 
-                  {/* Today line */}
+                  {/* Rows container — milestone/today lines are siblings scoped to this height */}
+                  <div className="relative">
+
+                  {/* Milestone lines — scoped to rows height */}
+                  {milestones.map(ms => {
+                    const lineLeft = ms.forcePct ?? pct(ms.date);
+                    return (
+                      <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-10 pointer-events-none"
+                        style={{ left: lineLeft === 0 ? "1px" : `${lineLeft}%`, backgroundColor: ms.color, opacity: 0.9,
+                          borderStyle: ms.dashed ? "dashed" : "solid" }} />
+                    );
+                  })}
+
+                  {/* Today line — scoped to rows height */}
                   {todayPct !== null && (() => {
-                    // Offset by 4px if today lands on same position as a milestone line
                     const onMilestone = milestones.some(ms => {
                       const mp = ms.forcePct ?? pct(ms.date);
                       return Math.abs((mp === 0 ? 0 : mp) - todayPct) < 0.5;
                     });
                     return (
-                      <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-20"
+                      <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-20 pointer-events-none"
                         style={{ left: onMilestone ? `calc(${todayPct}% + 4px)` : `${todayPct}%` }}>
-                        <span className="absolute top-0 left-1 text-[9px] text-amber-600 font-bold whitespace-nowrap bg-white/80 px-0.5 rounded">
+                        <span className="absolute top-0 left-1 text-[9px] text-amber-600 font-bold whitespace-nowrap bg-white/80 px-0.5 rounded pointer-events-none">
                           {format(new Date(), "MMM d")}
                         </span>
                       </div>
                     );
                   })()}
-
-                  {/* Milestone lines */}
-                  {milestones.map(ms => {
-                    const lineLeft = ms.forcePct ?? pct(ms.date);
-                    return (
-                      <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-10"
-                        style={{ left: lineLeft === 0 ? "1px" : `${lineLeft}%`, backgroundColor: ms.color, opacity: 0.9,
-                          borderStyle: ms.dashed ? "dashed" : "solid" }} />
-                    );
-                  })}
 
                   {/* Milestone date editors */}
                   {milestones.map(ms => (
@@ -738,6 +740,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                         )}
                       </div>
                     )}
+
+                  </div>{/* end rows relative wrapper */}
 
                     {/* Legend */}
                      <div className="relative z-10 bg-white mt-6 pt-3 border-t border-slate-100 ml-40 text-[10px] text-slate-500 space-y-1">
