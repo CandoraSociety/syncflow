@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3 } from "lucide-react";
+import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3, Receipt } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 import {
   Select,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaffMonthlyReports from "../components/reports/StaffMonthlyReports";
+import BillingReport from "../components/reports/BillingReport";
 
 // All available client fields
 const ALL_FIELDS = [
@@ -63,6 +64,13 @@ const ALL_FIELDS = [
   { key: "employment_supports", label: "Employment Supports", category: "metric" },
   { key: "compass_verified", label: "Compass Verified", category: "metric" },
   { key: "compass_verified_date", label: "Compass Verified Date", category: "metric" },
+  { key: "post_completion_employment_status", label: "Post-Completion Employment Status", category: "metric" },
+  { key: "post_completion_employment_date", label: "Post-Completion Employment Date", category: "date" },
+  { key: "closed_reason", label: "Close Reason", category: "metric" },
+  { key: "closed_date", label: "Close Date", category: "date" },
+  { key: "closed_notes", label: "Close Notes", category: "metric" },
+  { key: "compass_verified", label: "Compass Verified", category: "metric" },
+  { key: "compass_verified_date", label: "Compass Verified Date", category: "date" },
   { key: "_duration_months", label: "Months in Program (calculated)", category: "metric" },
   { key: "_stream_switch_count", label: "# Stream Switches (calculated)", category: "metric" },
 ];
@@ -83,6 +91,9 @@ const DEMOGRAPHIC_FILTERS = [
   { key: "assigned_worker_name", label: "Career Counsellor", type: "multi-select" },
   { key: "city", label: "City", type: "text" },
   { key: "has_vehicle", label: "Has Vehicle", type: "select" },
+  { key: "barrier_1", label: "Barrier Type", type: "multi-select" },
+  { key: "closed_reason", label: "Close Reason", type: "multi-select" },
+  { key: "compass_verified", label: "Compass Verified", type: "boolean-select" },
 ];
 
 function getDisplayValue(client, key) {
@@ -251,6 +262,7 @@ export default function Reports() {
       <Tabs defaultValue="data" className="max-w-7xl mx-auto px-6 py-6">
         <TabsList className="mb-4">
           <TabsTrigger value="data">Data Reports</TabsTrigger>
+          <TabsTrigger value="billing" className="flex items-center gap-1"><Receipt className="w-3 h-3" />Billing Reports</TabsTrigger>
           <TabsTrigger value="staff">Staff Monthly Reports</TabsTrigger>
         </TabsList>
 
@@ -322,6 +334,25 @@ export default function Reports() {
                               <SelectItem value="yes">Yes</SelectItem>
                               <SelectItem value="no_has_license">Yes (has license)</SelectItem>
                               <SelectItem value="no_no_license">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    } else if (f.type === "boolean-select") {
+                      return (
+                        <div key={f.key}>
+                          <Label className="text-xs mb-1 block">{f.label}</Label>
+                          <Select
+                            value={filters[f.key] ?? ""}
+                            onValueChange={(v) => setTextFilter(f.key, v === "" ? "" : v === "true")}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Any" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={null}>Any</SelectItem>
+                              <SelectItem value="true">Yes</SelectItem>
+                              <SelectItem value="false">No</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -495,12 +526,34 @@ export default function Reports() {
                         </tr>
                       )}
                     </tbody>
+                    {results.length > 0 && (
+                      <tfoot className="bg-slate-100 border-t-2 border-slate-300 text-xs font-semibold text-slate-600">
+                        <tr>
+                          {orderedFields.map((f, i) => {
+                            if (i === 0) return <td key={f.key} className="px-3 py-2 whitespace-nowrap">Total: {results.length}</td>;
+                            if (f.key === "_duration_months") {
+                              const avg = Math.round(results.filter(c => c.service_start_date).reduce((sum, c) => sum + differenceInMonths(new Date(), new Date(c.service_start_date)), 0) / (results.filter(c => c.service_start_date).length || 1));
+                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">Avg: {avg} mo</td>;
+                            }
+                            if (f.category === "metric" && typeof results[0]?.[f.key] === "boolean") {
+                              const count = results.filter(c => c[f.key] === true).length;
+                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{count} yes</td>;
+                            }
+                            return <td key={f.key} className="px-3 py-2"></td>;
+                          })}
+                        </tr>
+                      </tfoot>
+                    )}
                   </table>
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <BillingReport />
         </TabsContent>
 
         <TabsContent value="staff">
