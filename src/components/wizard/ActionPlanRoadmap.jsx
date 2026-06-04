@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { addWeeks, format, parseISO, differenceInDays, isWithinInterval, addDays } from "date-fns";
+import { addWeeks, format, differenceInDays, isWithinInterval, addDays } from "date-fns";
+
+// Parse date strings as local noon to avoid UTC offset shifting dates by a day
+function parseDate(str) {
+  if (!str) return null;
+  if (str instanceof Date) return str;
+  const [y, m, d] = str.split("-").map(Number);
+  return new Date(y, m - 1, d, 12, 0, 0);
+}
 import { CheckCircle2, Circle, Clock, AlertTriangle, CalendarCheck, LayoutList, BarChart2, AlertCircle, X, Save } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -76,7 +84,7 @@ function isApproaching(item) {
   if (item.status === "completed") return false;
   const endStr = item.detail?.timeline_end || item.statusData?.completed_date;
   if (!endStr) return false;
-  const end = parseISO(endStr);
+  const end = parseDate(endStr);
   const today = new Date();
   return isWithinInterval(end, { start: today, end: addDays(today, 7) });
 }
@@ -112,12 +120,12 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   const bitCheckins   = client?.bit_review_checkins || [];
   const bitReviewDates = client?.bit_review_dates || [];
 
-  const intakeDate   = client?.intake_date        ? parseISO(client.intake_date)        : null;
-  const serviceStart = client?.service_start_date ? parseISO(client.service_start_date) : null;
+  const intakeDate   = parseDate(client?.intake_date);
+  const serviceStart = parseDate(client?.service_start_date);
   const isPathways   = client?.service_type === "pathways";
   const programWeeks = isPathways ? 16 : 2;
   const projectedEnd = serviceStart ? addWeeks(serviceStart, programWeeks) : null;
-  const actualEnd    = client?.completion_date ? parseISO(client.completion_date) : null;
+  const actualEnd    = parseDate(client?.completion_date);
   const followup90   = actualEnd ? addWeeks(actualEnd, 13) : null;
 
   const items = buildItems(selectedItems, itemDetails, otherDesc, roadmapStatus, client);
@@ -186,10 +194,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   items.forEach(item => {
     const sd = item.detail?.timeline_start || item.statusData?.started_date;
     const ed = item.detail?.timeline_end   || item.statusData?.completed_date;
-    if (sd) allDates.push(parseISO(sd));
-    if (ed) allDates.push(parseISO(ed));
+    if (sd) allDates.push(parseDate(sd));
+    if (ed) allDates.push(parseDate(ed));
   });
-  bitReviewDates.forEach(d => { if (d) allDates.push(parseISO(d)); });
+  bitReviewDates.forEach(d => { if (d) allDates.push(parseDate(d)); });
 
   const hasTimelineData = allDates.length > 0;
   let minDate, maxDate, totalDays;
@@ -203,7 +211,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
 
   function pct(dateVal) {
     if (!dateVal || !hasTimelineData) return null;
-    const d = (dateVal instanceof Date) ? dateVal : parseISO(dateVal);
+    const d = parseDate(dateVal);
     return Math.max(0, Math.min(100, (differenceInDays(d, minDate) / totalDays) * 100));
   }
 
