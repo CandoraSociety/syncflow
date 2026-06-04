@@ -347,13 +347,14 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                 <div className="relative h-5 ml-40 mb-1">
                   {milestones.map((ms, idx) => {
                     const p = ms.forcePct ?? pct(ms.date);
+                    const labelLeft = p === 0 ? "1px" : `${p}%`;
                     // Avoid labels overflowing left edge: first milestone anchors left, others center
                     const transform = p < 5 ? "translateX(0)" : p > 95 ? "translateX(-100%)" : "translateX(-50%)";
                     return (
                       <button key={ms.key}
                         onClick={() => ms.editLabel && setEditingMilestone(editingMilestone === ms.key ? null : ms.key)}
                         className={`absolute text-[9px] font-bold whitespace-nowrap flex items-center gap-0.5 ${ms.textColor} ${ms.editLabel ? "hover:underline cursor-pointer" : "cursor-default"}`}
-                        style={{ left: `${p}%`, transform }}
+                        style={{ left: labelLeft, transform }}
                         title={ms.editLabel ? `Click to edit ${ms.editLabel}` : format(parseDate(ms.date), "MMM d, yyyy")}>
                         ▼ {ms.label}
                       </button>
@@ -379,11 +380,14 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   )}
 
                   {/* Milestone lines */}
-                  {milestones.map(ms => (
-                    <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-0"
-                      style={{ left: `${ms.forcePct ?? pct(ms.date)}%`, backgroundColor: ms.color, opacity: 0.7,
-                        borderStyle: ms.dashed ? "dashed" : "solid" }} />
-                  ))}
+                  {milestones.map(ms => {
+                    const lineLeft = ms.forcePct ?? pct(ms.date);
+                    return (
+                      <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-0"
+                        style={{ left: lineLeft === 0 ? "1px" : `${lineLeft}%`, backgroundColor: ms.color, opacity: 0.9,
+                          borderStyle: ms.dashed ? "dashed" : "solid" }} />
+                    );
+                  })}
 
                   {/* Milestone date editors */}
                   {milestones.map(ms => (
