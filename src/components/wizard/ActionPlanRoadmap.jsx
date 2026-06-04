@@ -707,12 +707,11 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             )}
                           </div>
                         )}
-                    </div>
-                  </div>
-                </div>
+                      </div>
+                    )}
 
-                {/* Legend */}
-                <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 pt-3 border-t border-slate-100 ml-40 text-[11px] text-slate-500">
+                    {/* Legend */}
+                    <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 pt-3 border-t border-slate-100 ml-40 text-[11px] text-slate-500">
                   <span className="font-semibold text-slate-400 uppercase tracking-wide">Type:</span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#f59e0b" }} />Barrier</span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#a855f7" }} />Workshop</span>
