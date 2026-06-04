@@ -365,32 +365,45 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                 {/* Chart area */}
                 <div className="relative ml-40">
 
-                  {/* Rows container — all lines clipped to rows height */}
-                  <div className="relative" style={{ overflow: "clip" }}>
+                  {/* Rows container — lines clipped via inner overlay, labels visible outside */}
+                  <div className="relative">
 
-                  {/* Grid lines — scoped to rows height */}
-                  {monthLabels.map((ml, i) => (
-                    <div key={i} className="absolute top-0 bottom-0 w-px bg-slate-100 z-0" style={{ left: `${ml.p}%` }} />
-                  ))}
+                  {/* Clipping layer for vertical lines only — sits behind rows, clips to chart width */}
+                  <div className="absolute inset-0 pointer-events-none" style={{ overflow: "clip" }}>
+                    {/* Grid lines */}
+                    {monthLabels.map((ml, i) => (
+                      <div key={i} className="absolute top-0 bottom-0 w-px bg-slate-100 z-0" style={{ left: `${ml.p}%` }} />
+                    ))}
+                    {/* Milestone lines */}
+                    {milestones.map(ms => {
+                      const lineLeft = ms.forcePct ?? pct(ms.date);
+                      return (
+                        <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-10 pointer-events-none"
+                          style={{ left: lineLeft === 0 ? "1px" : `${lineLeft}%`, backgroundColor: ms.color, opacity: 0.9,
+                            borderStyle: ms.dashed ? "dashed" : "solid" }} />
+                      );
+                    })}
+                    {/* Today line */}
+                    {todayPct !== null && (() => {
+                      const onMilestone = milestones.some(ms => {
+                        const mp = ms.forcePct ?? pct(ms.date);
+                        return Math.abs((mp === 0 ? 0 : mp) - todayPct) < 0.5;
+                      });
+                      return (
+                        <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-20 pointer-events-none"
+                          style={{ left: onMilestone ? `calc(${todayPct}% + 4px)` : `${todayPct}%` }} />
+                      );
+                    })()}
+                  </div>
 
-                  {/* Milestone lines — scoped to rows height */}
-                  {milestones.map(ms => {
-                    const lineLeft = ms.forcePct ?? pct(ms.date);
-                    return (
-                      <div key={ms.key} className="absolute top-0 bottom-0 w-0.5 z-10 pointer-events-none"
-                        style={{ left: lineLeft === 0 ? "1px" : `${lineLeft}%`, backgroundColor: ms.color, opacity: 0.9,
-                          borderStyle: ms.dashed ? "dashed" : "solid" }} />
-                    );
-                  })}
-
-                  {/* Today line — scoped to rows height */}
+                  {/* Today date label */}
                   {todayPct !== null && (() => {
                     const onMilestone = milestones.some(ms => {
                       const mp = ms.forcePct ?? pct(ms.date);
                       return Math.abs((mp === 0 ? 0 : mp) - todayPct) < 0.5;
                     });
                     return (
-                      <div className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-20 pointer-events-none"
+                      <div className="absolute top-0 w-0.5 pointer-events-none z-20"
                         style={{ left: onMilestone ? `calc(${todayPct}% + 4px)` : `${todayPct}%` }}>
                         <span className="absolute top-0 left-1 text-[9px] text-amber-600 font-bold whitespace-nowrap bg-white/80 px-0.5 rounded pointer-events-none">
                           {format(new Date(), "MMM d")}
