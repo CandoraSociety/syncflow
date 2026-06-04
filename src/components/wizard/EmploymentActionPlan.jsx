@@ -53,14 +53,14 @@ const CATEGORIES = [
 // DEA-specific options (no placements)
 const DEA_EDA_OPTIONS = ACTION_PLAN_OPTIONS.filter(o => o.category !== "placement");
 
-function buildDEACompassText(itemDetails, client, notes) {
+function buildDEACompassText(itemDetails, client, notes, deaTimeline) {
   const slots = [1, 2, 3].map(n => {
     const d = itemDetails[`eda_${n}`] || {};
     if (!d.activity) return null;
     const opt = DEA_EDA_OPTIONS.find(o => o.key === d.activity);
     const label = d.activity === "other" ? (d.other_desc || "Other") : (opt?.label || d.activity);
     const parts = [`  EDA ${n}: ${label}`];
-    if (d.timeline) parts.push(`    Timeline: ${d.timeline}`);
+    parts.push(`    Timeline: ${deaTimeline}`);
     if (d.notes) parts.push(`    Notes: ${d.notes}`);
     return parts.join("\n");
   }).filter(Boolean);
@@ -157,8 +157,16 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
 
   const isDEA = client?.service_type === "direct_to_employment";
 
+  // For DEA: timeline is always 2 weeks from service_start_date
+  const deaTimeline = (() => {
+    if (!client?.service_start_date) return "Within 2 weeks of program start";
+    const start = new Date(client.service_start_date);
+    start.setDate(start.getDate() + 14);
+    return start.toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
+  })();
+
   const compassText = isDEA
-    ? buildDEACompassText(itemDetails, client, notes)
+    ? buildDEACompassText(itemDetails, client, notes, deaTimeline)
     : buildCompassText(selectedItems, otherDesc, itemDetails, client, notes);
 
   const toggleItem = (key) => {
@@ -264,7 +272,7 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
                             {d.activity ? (d.activity === "other" ? (d.other_desc || "Other") : opt?.label) : <span className="text-slate-400 italic">Not set</span>}
                           </span>
                         </div>
-                        {d.timeline && <p className="text-xs text-slate-500">Timeline: {d.timeline}</p>}
+                        <p className="text-xs text-slate-500">Timeline: {deaTimeline}</p>
                         {d.notes && <p className="text-xs text-slate-500">Notes: {d.notes}</p>}
                       </div>
                     );
@@ -391,7 +399,9 @@ export default function EmploymentActionPlan({ client, onSave, onComplete }) {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <Label className="text-xs mb-1 block">Target Timeline</Label>
-                          <Input value={d.timeline || ""} onChange={e => updateSlot("timeline", e.target.value)} placeholder="e.g. Within 2 weeks..." />
+                          <div className="h-9 flex items-center px-3 rounded-md border border-slate-200 bg-slate-100 text-sm text-slate-600">
+                            {deaTimeline}
+                          </div>
                         </div>
                         <div>
                           <Label className="text-xs mb-1 block">Notes</Label>
