@@ -445,8 +445,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                       const endStr   = item.detail?.timeline_end   || item.statusData?.completed_date;
                       const startP   = pct(startStr);
                       const endP     = pct(endStr);
-                      const hasBar   = startP != null && endP != null && (endP - startP) > 1.5;
-                      const hasDot   = startP != null && !hasBar;
+                      const hasBar   = startP != null;
+                      const barWidth = endP != null && (endP - startP) > 1.5 ? Math.max(2, endP - startP) : 4;
                       const isCancelled = item.status === "cancelled";
                       const isCompleted = item.status === "completed";
                       const isStarted   = item.status === "started";
@@ -490,7 +490,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                               {hasBar && (
                                 <Tooltip
                                   content={tooltipLines}
-                                  style={{ left: `${startP}%`, width: `${Math.max(2, endP - startP)}%`, top: 0, height: "100%" }}
+                                  style={{ left: `${startP}%`, width: `${barWidth}%`, top: 0, height: "100%" }}
                                   className="rounded-md overflow-hidden"
                                 >
                                   <div className="w-full h-full rounded-md relative overflow-hidden pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
@@ -501,32 +501,20 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                       </div>
                                     )}
                                     {/* Completed checkmark */}
-                                    {isCompleted && (endP - startP) > 8 && (
+                                    {isCompleted && barWidth > 8 && (
                                       <span className="absolute inset-0 flex items-center justify-center">
                                         <CheckCheck className="w-4 h-4 drop-shadow-md" style={{ color: "#16a34a", filter: "drop-shadow(0 0 3px rgba(255,255,255,0.9))" }} />
                                       </span>
                                     )}
                                     {/* Cancelled X */}
-                                    {isCancelled && (endP - startP) > 8 && (
+                                    {isCancelled && barWidth > 8 && (
                                       <span className="absolute inset-0 flex items-center justify-center">
                                         <X className="w-3 h-3 text-white drop-shadow" />
                                       </span>
                                     )}
-                                    </div>
-                                    </Tooltip>
-                                    )}
-                                    {hasDot && (
-                                    <Tooltip
-                                    content={tooltipLines}
-                                    style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
-                                    className="rounded-full border-2 border-white shadow"
-                                    >
-                                    <div className="w-full h-full rounded-full relative flex items-center justify-center pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
-                                    {isCompleted && <CheckCheck className="w-2.5 h-2.5" style={{ color: "#16a34a", filter: "drop-shadow(0 0 2px rgba(255,255,255,0.9))" }} />}
-                                    {isCancelled && <X className="w-2 h-2 text-white" />}
-                                    </div>
-                                    </Tooltip>
-                                    )}
+                                  </div>
+                                </Tooltip>
+                              )}
                                     </div>
                                     </button>
 
@@ -560,8 +548,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                           const endStr   = item.detail?.timeline_end   || item.statusData?.completed_date;
                           const startP   = pct(startStr);
                           const endP     = pct(endStr);
-                          const hasBar   = startP != null && endP != null && (endP - startP) > 1.5;
-                          const hasDot   = startP != null && !hasBar;
+                          const hasBar   = startP != null;
+                          const barWidth = endP != null && (endP - startP) > 1.5 ? Math.max(2, endP - startP) : 4;
                           const isCancelled = item.status === "cancelled";
                           const isCompleted = item.status === "completed";
                           const isStarted   = item.status === "started";
@@ -616,7 +604,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                   {hasBar && (
                                     <Tooltip
                                       content={tooltipLines}
-                                      style={{ left: `${startP}%`, width: `${Math.max(2, endP - startP)}%`, top: 0, height: "100%" }}
+                                      style={{ left: `${startP}%`, width: `${barWidth}%`, top: 0, height: "100%" }}
                                       className="rounded-md overflow-hidden"
                                     >
                                       <div className="w-full h-full rounded-md relative overflow-hidden pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
@@ -625,28 +613,16 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                             <div className="h-full" style={{ animation: "typeShimmer 2s infinite linear", backgroundImage: `linear-gradient(90deg, transparent, ${barColor}cc, rgba(255,255,255,0.5), ${barColor}cc, transparent)`, backgroundSize: "200% 100%" }} />
                                           </div>
                                         )}
-                                        {isCompleted && (endP - startP) > 8 && (
+                                        {isCompleted && barWidth > 8 && (
                                           <span className="absolute inset-0 flex items-center justify-center">
                                             <CheckCheck className="w-4 h-4 drop-shadow-md" style={{ color: "#16a34a", filter: "drop-shadow(0 0 3px rgba(255,255,255,0.9))" }} />
                                           </span>
                                         )}
-                                        {isCancelled && (endP - startP) > 8 && (
+                                        {isCancelled && barWidth > 8 && (
                                           <span className="absolute inset-0 flex items-center justify-center">
                                             <X className="w-3 h-3 text-white drop-shadow" />
                                           </span>
                                         )}
-                                      </div>
-                                    </Tooltip>
-                                  )}
-                                  {hasDot && (
-                                    <Tooltip
-                                      content={tooltipLines}
-                                      style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
-                                      className="rounded-full border-2 border-white shadow"
-                                    >
-                                      <div className="w-full h-full rounded-full relative flex items-center justify-center pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
-                                        {isCompleted && <CheckCheck className="w-2.5 h-2.5" style={{ color: "#16a34a", filter: "drop-shadow(0 0 2px rgba(255,255,255,0.9))" }} />}
-                                        {isCancelled && <X className="w-2 h-2 text-white" />}
                                       </div>
                                     </Tooltip>
                                   )}
