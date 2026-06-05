@@ -175,6 +175,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   const items = buildItems(selectedItems, itemDetails, otherDesc, roadmapStatus, client);
   const itemsWithDates    = items.filter(item => item.detail?.timeline_start || item.statusData?.started_date || item.detail?.timeline_end || item.statusData?.completed_date);
   const itemsNeedingDates = items.filter(item => !item.detail?.timeline_start && !item.statusData?.started_date && !item.detail?.timeline_end && !item.statusData?.completed_date);
+  const hasMilestoneDates = serviceStart || projectedEnd || actualEnd || followup90 || intakeDate;
 
   async function handleSaveItem(key, saveData) {
     setSaving(true);
@@ -245,7 +246,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   const leftAnchor = intakeDate || serviceStart;
   const allDates = [leftAnchor, ...rightDates].filter(Boolean);
 
-  const hasTimelineData = allDates.length > 0;
+  const hasTimelineData = allDates.length > 0 || hasMilestoneDates;
   let minMs = 0, rangeMs = 1;
   let minDate, maxDate;
 
