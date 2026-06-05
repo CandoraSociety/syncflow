@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3, Info } from "lucide-react";
+import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3, Info, FileText, Calendar } from "lucide-react";
 import { format, differenceInMonths, startOfYear, endOfYear, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   Select,
@@ -428,6 +428,73 @@ export default function Reports() {
     ? buildInvoiceAggregates(finApplyClientFilter ? results.map(c => c.id) : null)
     : null;
 
+  // Build summary statistics for the report
+  function buildSummaryStats(data) {
+    if (!data || data.length === 0) return null;
+    
+    // Employment status counts
+    const employmentStatusCounts = {};
+    data.forEach(c => {
+      const status = c.employment_status;
+      if (status) employmentStatusCounts[status] = (employmentStatusCounts[status] || 0) + 1;
+    });
+
+    // Program starters by stream (service_start_date within date range)
+    const deaStarters = data.filter(c => c.service_type === "direct_to_employment" && c.service_start_date && 
+      (!dateFrom || c.service_start_date >= dateFrom) && (!dateTo || c.service_start_date <= dateTo)).length;
+    const pathwaysStarters = data.filter(c => c.service_type === "pathways" && c.service_start_date && 
+      (!dateFrom || c.service_start_date >= dateFrom) && (!dateTo || c.service_start_date <= dateTo)).length;
+
+    // Program completers by stream
+    const deaCompleters = data.filter(c => c.service_type === "direct_to_employment" && c.program_status === "complete").length;
+    const pathwaysCompleters = data.filter(c => c.service_type === "pathways" && c.program_status === "complete").length;
+
+    // Exposure courses count and total cost
+    const exposureCourseCount = data.reduce((sum, c) => sum + (c._fin_exposure || 0), 0);
+    const exposureCourseTotal = data.reduce((sum, c) => sum + (c._fin_exposure || 0), 0);
+    
+    // Count of clients with exposure courses (from financial records)
+    const clientsWithExposure = data.filter(c => c._fin_exposure > 0).length;
+
+    // Total direct costs
+    const totalDirectCosts = data.reduce((sum, c) => 
+      sum + (c._fin_exposure || 0) + (c._fin_placement || 0) + (c._fin_supports || 0), 0);
+
+    // Barriers identified
+    const clientsWithBarriers = data.filter(c => c.barriers_addressed === true).length;
+    const bitCompleted = data.filter(c => c.bit_completed === true).length;
+
+    // Employment outcomes
+    const employmentOutcomes = data.filter(c => c.employment_start_date || ["E-RF", "E-UF", "E-PT"].includes(c.employment_status)).length;
+    const ninetyDayOutcomes = data.filter(c => c.followup_90day_status && ["E-RF", "E-UF", "E-PT"].includes(c.followup_90day_status)).length;
+
+    // Service stream breakdown
+    const streamCounts = {};
+    data.forEach(c => {
+      const stream = c.service_type;
+      if (stream) streamCounts[stream] = (streamCounts[stream] || 0) + 1;
+    });
+
+    return {
+      totalClients: data.length,
+      employmentStatusCounts,
+      deaStarters,
+      pathwaysStarters,
+      deaCompleters,
+      pathwaysCompleters,
+      clientsWithExposure,
+      exposureCourseTotal,
+      totalDirectCosts,
+      clientsWithBarriers,
+      bitCompleted,
+      employmentOutcomes,
+      ninetyDayOutcomes,
+      streamCounts,
+    };
+  }
+
+  const summaryStats = results ? buildSummaryStats(results) : null;
+
   if (loading) return (
     <div className="fixed inset-0 flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
@@ -784,7 +851,7 @@ export default function Reports() {
         </div>
 
         {/* Right: results */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 space-y-4">
           {results === null ? (
             <div className="flex flex-col items-center justify-center h-64 text-slate-400">
               <FileBarChart className="w-12 h-12 mb-3 opacity-30" />
@@ -792,10 +859,129 @@ export default function Reports() {
               <p className="text-sm mt-1">Select filters, columns, and date range, then click Run Report.</p>
             </div>
           ) : (
+            <>
+              {/* Summary Statistics Card */}
+              {summaryStats && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold text-slate-700">Report Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Top-level totals */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-xs text-slate-500 font-medium">Total Clients</p>
+                        <p className="text-lg font-bold text-slate-800">{summaryStats.totalClients}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-xs text-slate-500 font-medium">Employment Outcomes</p>
+                        <p className="text-lg font-bold text-slate-800">{summaryStats.employmentOutcomes}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-xs text-slate-500 font-medium">90-Day Outcomes</p>
+                        <p className="text-lg font-bold text-slate-800">{summaryStats.ninetyDayOutcomes}</p>
+                      </div>
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-xs text-slate-500 font-medium">Total Direct Costs</p>
+                        <p className="text-lg font-bold text-emerald-700">{fmt$(summaryStats.totalDirectCosts)}</p>
+                      </div>
+                    </div>
+
+                    {/* Program Starters & Completers */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <p className="text-xs text-blue-600 font-medium">DEA Starters</p>
+                        <p className="text-lg font-bold text-blue-800">{summaryStats.deaStarters}</p>
+                      </div>
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <p className="text-xs text-blue-600 font-medium">Pathways Starters</p>
+                        <p className="text-lg font-bold text-blue-800">{summaryStats.pathwaysStarters}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                        <p className="text-xs text-green-600 font-medium">DEA Completers</p>
+                        <p className="text-lg font-bold text-green-800">{summaryStats.deaCompleters}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                        <p className="text-xs text-green-600 font-medium">Pathways Completers</p>
+                        <p className="text-lg font-bold text-green-800">{summaryStats.pathwaysCompleters}</p>
+                      </div>
+                    </div>
+
+                    {/* Employment Status Breakdown */}
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-2">Employment Status Breakdown</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {Object.entries(summaryStats.employmentStatusCounts).map(([status, count]) => (
+                          <div key={status} className="bg-slate-50 rounded p-2 border border-slate-200">
+                            <p className="text-xs text-slate-500">{status}</p>
+                            <p className="text-base font-bold text-slate-800">{count}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Service Stream Breakdown */}
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 mb-2">Service Stream Breakdown</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {Object.entries(summaryStats.streamCounts).map(([stream, count]) => (
+                          <div key={stream} className="bg-slate-50 rounded p-2 border border-slate-200">
+                            <p className="text-xs text-slate-500">{SERVICE_LABELS[stream] || stream}</p>
+                            <p className="text-base font-bold text-slate-800">{count}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Exposure Courses & Supports */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                        <p className="text-xs text-amber-700 font-medium">Clients with Exposure Courses</p>
+                        <p className="text-lg font-bold text-amber-900">{summaryStats.clientsWithExposure}</p>
+                        <p className="text-xs text-amber-600 mt-1">Total: {fmt$(summaryStats.exposureCourseTotal)}</p>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                        <p className="text-xs text-purple-700 font-medium">Clients with Barriers Identified</p>
+                        <p className="text-lg font-bold text-purple-900">{summaryStats.clientsWithBarriers}</p>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                        <p className="text-xs text-purple-700 font-medium">BIT Completed</p>
+                        <p className="text-lg font-bold text-purple-900">{summaryStats.bitCompleted}</p>
+                      </div>
+                    </div>
+
+                    {/* Invoice totals (if applicable) */}
+                    {hasInvoiceColumns && invoiceAgg && (
+                      <div className="pt-3 border-t border-slate-200">
+                        <p className="text-xs font-semibold text-slate-600 mb-2">Invoice Totals</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="bg-slate-50 rounded p-2 border border-slate-200">
+                            <p className="text-xs text-slate-500">Total Billed</p>
+                            <p className="text-base font-bold text-slate-800">{fmt$(invoiceAgg._inv_total_amount)}</p>
+                          </div>
+                          <div className="bg-slate-50 rounded p-2 border border-slate-200">
+                            <p className="text-xs text-slate-500">Base Fees</p>
+                            <p className="text-base font-bold text-slate-800">{fmt$(invoiceAgg._inv_base_amount)}</p>
+                          </div>
+                          <div className="bg-slate-50 rounded p-2 border border-slate-200">
+                            <p className="text-xs text-slate-500">Deliverables</p>
+                            <p className="text-base font-bold text-slate-800">{fmt$(invoiceAgg._inv_subtotal_deliverables)}</p>
+                          </div>
+                          <div className="bg-slate-50 rounded p-2 border border-slate-200">
+                            <p className="text-xs text-slate-500">Direct Costs</p>
+                            <p className="text-base font-bold text-slate-800">{fmt$(invoiceAgg._inv_subtotal_direct_costs)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm">{results.length} client{results.length !== 1 ? "s" : ""} in results</CardTitle>
+                  <CardTitle className="text-sm">Client List ({results.length} clients)</CardTitle>
                   {hasInvoiceColumns && (
                     <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
                       <Info className="w-3 h-3" />
@@ -875,6 +1061,7 @@ export default function Reports() {
                 </div>
               </CardContent>
             </Card>
+            </>
           )}
         </div>
         </div>
