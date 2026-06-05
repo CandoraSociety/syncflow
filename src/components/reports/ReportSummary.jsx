@@ -65,6 +65,7 @@ function MiniPie({ rows }) {
               dataKey="value"
               label={({ percent }) => percent > 0.03 ? `${(percent * 100).toFixed(0)}%` : ""}
               labelLine={false}
+              labelPosition="inside"
             >
               {data.map((entry, i) => (
                 <Cell key={i} fill={entry.fill} />
