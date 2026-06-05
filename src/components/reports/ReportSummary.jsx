@@ -47,39 +47,43 @@ function StatCard({ title, value, sub, icon: Icon, color = "text-primary" }) {
 
 function MiniPie({ rows }) {
   const data = rows.map((r, i) => ({
-    name: r.label.length > 20 ? r.label.substring(0, 20) + "…" : r.label,
+    name: r.label,
     value: r.count,
     fill: r.color || PIE_COLORS[i % PIE_COLORS.length],
   }));
   return (
-    <div className="mt-4 pt-3 border-t border-slate-100">
-      <ResponsiveContainer width="100%" height={220}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="45%"
-            outerRadius={60}
-            innerRadius={35}
-            dataKey="value"
-            label={({ name, percent }) => percent > 0.08 ? `${(percent * 100).toFixed(0)}%` : ""}
-            labelLine={false}
-            paddingAngle={2}
-          >
-            {data.map((entry, i) => (
-              <Cell key={i} fill={entry.fill} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(val, name) => [val, name]} />
-          <Legend
-            iconType="circle"
-            iconSize={8}
-            verticalAlign="bottom"
-            height={60}
-            formatter={(value) => <span className="text-xs text-slate-700 block mb-0.5">{value}</span>}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="mt-4 pt-3 border-t border-slate-100 -mx-6 px-6 pb-4">
+      <div className="flex flex-col lg:flex-row gap-4 items-center lg:items-start justify-center">
+        <div className="w-full lg:w-1/2 flex justify-center">
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                outerRadius={50}
+                dataKey="value"
+                label={({ percent }) => percent > 0.06 ? `${(percent * 100).toFixed(0)}%` : ""}
+                labelLine={false}
+              >
+                {data.map((entry, i) => (
+                  <Cell key={i} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(val) => val} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="w-full lg:w-1/2 flex flex-col gap-1.5">
+          {data.map((item, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.fill }} />
+              <span className="text-slate-700 truncate">{item.name}</span>
+              <span className="text-slate-500 ml-auto shrink-0">{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
