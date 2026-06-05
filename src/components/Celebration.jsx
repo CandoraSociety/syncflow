@@ -15,50 +15,13 @@ export default function Celebration({ trigger, onComplete }) {
     // Play applause sound
     const playSound = async () => {
       try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioContext();
-
-        // Simulate applause: repeated bursts of filtered white noise
-        const totalDuration = 3.0;
-        const burstCount = 18;
-
-        for (let i = 0; i < burstCount; i++) {
-          const startTime = ctx.currentTime + i * (totalDuration / burstCount);
-          const burstLen = 0.12;
-
-          const bufferSize = ctx.sampleRate * burstLen;
-          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          for (let j = 0; j < bufferSize; j++) {
-            data[j] = (Math.random() * 2 - 1);
-          }
-
-          const source = ctx.createBufferSource();
-          source.buffer = buffer;
-
-          // Bandpass filter to give a "clapping hands" timbre
-          const bandpass = ctx.createBiquadFilter();
-          bandpass.type = "bandpass";
-          bandpass.frequency.value = 1200;
-          bandpass.Q.value = 0.8;
-
-          // Gain envelope: quick attack, fast decay
-          const gainNode = ctx.createGain();
-          gainNode.gain.setValueAtTime(0, startTime);
-          gainNode.gain.linearRampToValueAtTime(0.6, startTime + 0.01);
-          gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + burstLen);
-
-          source.connect(bandpass);
-          bandpass.connect(gainNode);
-          gainNode.connect(ctx.destination);
-          source.start(startTime);
-          source.stop(startTime + burstLen);
-        }
-
-        setTimeout(() => {
-          ctx.close();
+        const audio = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-animated-small-group-applause-523.mp3");
+        audio.volume = 0.7;
+        audioRef.current = audio;
+        await audio.play();
+        audio.onended = () => {
           if (onComplete) onComplete();
-        }, totalDuration * 1000 + 200);
+        };
       } catch (error) {
         console.log("Audio play failed:", error);
         if (onComplete) setTimeout(onComplete, 3000);
@@ -121,6 +84,10 @@ export default function Celebration({ trigger, onComplete }) {
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
     };
   }, [trigger, onComplete]);
