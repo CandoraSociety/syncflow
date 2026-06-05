@@ -288,7 +288,7 @@ export default function Reports() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.Client.list("-intake_date", 1000),
+      base44.entities.Client.list("-created_date", 1000),
       base44.entities.FinancialRecord.list("-date", 2000),
     ]).then(([clientData, finData]) => {
       const map = {};
