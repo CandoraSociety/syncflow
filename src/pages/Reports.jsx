@@ -852,7 +852,7 @@ function OutcomesSection({ clients }) {
     assignedWorker: "all",
     serviceType: "all",
     status: "all",
-    dateRangeType: "fiscal",
+    dateRangeType: "all",
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
     startDate: "",
@@ -875,7 +875,11 @@ function OutcomesSection({ clients }) {
     const now = new Date();
     let startDate, endDate, label;
 
-    if (filters.dateRangeType === "calendar") {
+    if (filters.dateRangeType === "all") {
+      startDate = new Date(2000, 0, 1);
+      endDate = new Date(2100, 0, 1);
+      label = "All Time";
+    } else if (filters.dateRangeType === "calendar") {
       startDate = new Date(filters.year, 0, 1);
       endDate = new Date(filters.year + 1, 0, 1);
       label = `Calendar Year ${filters.year}`;
@@ -922,7 +926,7 @@ function OutcomesSection({ clients }) {
             <Users className="w-4 h-4 mr-1" />
             {filteredClients.length} / {clients.length} Clients
           </Badge>
-          {(filters.assignedWorker !== "all" || filters.serviceType !== "all" || filters.status !== "all" || filters.dateRangeType !== "fiscal") && (
+          {(filters.assignedWorker !== "all" || filters.serviceType !== "all" || filters.status !== "all" || filters.dateRangeType !== "all") && (
             <Button
               size="sm"
               variant="ghost"
@@ -930,7 +934,7 @@ function OutcomesSection({ clients }) {
                 assignedWorker: "all", 
                 serviceType: "all", 
                 status: "all",
-                dateRangeType: "fiscal",
+                dateRangeType: "all",
                 year: new Date().getFullYear(),
                 month: new Date().getMonth() + 1,
                 startDate: "",
@@ -1004,6 +1008,7 @@ function OutcomesSection({ clients }) {
                   <SelectValue placeholder="Select range" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
                   <SelectItem value="fiscal">Fiscal Year (Apr-Mar)</SelectItem>
                   <SelectItem value="calendar">Calendar Year</SelectItem>
                   <SelectItem value="month">Month</SelectItem>
