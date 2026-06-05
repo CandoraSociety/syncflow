@@ -39,6 +39,15 @@
       "type": "string",
       "description": "Postal code"
     },
+    "sex": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other"
+      ],
+      "description": "Sex"
+    },
     "compass_hsid": {
       "type": "string",
       "description": "Compass HSID# (Government of Alberta database)"

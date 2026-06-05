@@ -31,7 +31,7 @@ const REPORT_SECTIONS = [
   { key: "barriers", label: "Top Barriers Identified", default: true },
   { key: "client_demographics", label: "Client Demographics", default: false, subOptions: [
     { key: "age_distribution", label: "Age Distribution", default: true },
-    { key: "gender_distribution", label: "Gender Distribution", default: true },
+    { key: "sex_distribution", label: "Sex", default: true },
     { key: "residency_status", label: "Residency Status", default: true },
     { key: "city_distribution", label: "City Distribution", default: true },
     { key: "postal_code_distribution", label: "Postal Code Distribution (FSA)", default: true },

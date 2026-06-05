@@ -33,6 +33,14 @@ const VEHICLE_OPTIONS = [
   { value: "no_no_license", label: "No (no licence)" },
 ];
 
+const GENDER_OPTIONS = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "non-binary", label: "Non-binary" },
+  { value: "other", label: "Other" },
+  { value: "prefer_not_to_say", label: "Prefer not to say" },
+];
+
 const SERVICE_TYPES = [
   { value: "direct_to_employment", label: "Direct to Employment (DEA)" },
   { value: "pathways", label: "Pathways" },
@@ -141,6 +149,13 @@ export default function ClientProfileOverview({ client, onSave }) {
               <div className="space-y-1"><Label>First Name</Label><Input value={form.first_name || ""} onChange={e => set("first_name", e.target.value)} /></div>
               <div className="space-y-1"><Label>Last Name</Label><Input value={form.last_name || ""} onChange={e => set("last_name", e.target.value)} /></div>
               <div className="space-y-1"><Label>Date of Birth</Label><Input type="date" value={form.date_of_birth || ""} onChange={e => set("date_of_birth", e.target.value)} /></div>
+              <div className="space-y-1">
+                <Label>Sex</Label>
+                <Select value={form.gender || ""} onValueChange={v => set("gender", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{GENDER_OPTIONS.map(g => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1"><Label>Phone</Label><Input value={form.phone || ""} onChange={e => set("phone", e.target.value)} /></div>
               <div className="space-y-1"><Label>Email</Label><Input value={form.email || ""} onChange={e => set("email", e.target.value)} /></div>
               <div className="space-y-1"><Label>Compass HSID#</Label><Input value={form.compass_hsid || ""} onChange={e => set("compass_hsid", e.target.value)} /></div>
@@ -173,6 +188,7 @@ export default function ClientProfileOverview({ client, onSave }) {
               <Field label="First Name" value={form.first_name} />
               <Field label="Last Name" value={form.last_name} />
               <Field label="Date of Birth" value={form.date_of_birth} />
+              <Field label="Sex" value={form.gender ? labelOf(GENDER_OPTIONS, form.gender) : ""} />
               <Field label="Phone" value={form.phone} />
               <Field label="Email" value={form.email} />
               <Field label="Compass HSID#" value={form.compass_hsid} />

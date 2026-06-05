@@ -134,10 +134,19 @@ const STATUSES = [
 ];
 
 export default function IntakeForm({ client, users, onSave, onCancel }) {
+  const GENDER_OPTIONS = [
+    { value: "male", label: "Male" },
+    { value: "female", label: "Female" },
+    { value: "non-binary", label: "Non-binary" },
+    { value: "other", label: "Other" },
+    { value: "prefer_not_to_say", label: "Prefer not to say" },
+  ];
+
   const [form, setForm] = useState({
     first_name: client?.first_name || "",
     last_name: client?.last_name || "",
     date_of_birth: client?.date_of_birth || "",
+    gender: client?.gender || "",
     phone: client?.phone || "",
     email: client?.email || "",
     address: client?.address || "",
@@ -279,6 +288,15 @@ export default function IntakeForm({ client, users, onSave, onCancel }) {
           <div className="space-y-1">
             <Label>Date of Birth</Label>
             <Input type="date" value={form.date_of_birth} onChange={e => set("date_of_birth", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label>Sex</Label>
+            <Select value={form.gender} onValueChange={v => set("gender", v)}>
+              <SelectTrigger><SelectValue placeholder="Select sex" /></SelectTrigger>
+              <SelectContent>
+                {GENDER_OPTIONS.map(g => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1">
             <Label>Phone</Label>

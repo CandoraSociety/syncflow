@@ -574,12 +574,12 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       .map(([k, v]) => ({ label: k, count: v }))
       .sort((a, b) => b.count - a.count);
 
-    const genderCounts = {};
+    const sexCounts = {};
     results.forEach(c => {
-      if (c.gender) genderCounts[c.gender] = (genderCounts[c.gender] || 0) + 1;
+      if (c.sex) sexCounts[c.sex] = (sexCounts[c.sex] || 0) + 1;
     });
-    const genderRows = Object.entries(genderCounts)
-      .map(([k, v]) => ({ label: k === "male" ? "Male" : k === "female" ? "Female" : k, count: v }))
+    const sexRows = Object.entries(sexCounts)
+      .map(([k, v]) => ({ label: k === "male" ? "Male" : k === "female" ? "Female" : k === "non-binary" ? "Non-binary" : k === "other" ? "Other" : k === "prefer_not_to_say" ? "Prefer not to say" : k, count: v }))
       .sort((a, b) => b.count - a.count);
 
     // Financial rows for pie
@@ -604,7 +604,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       totalExposure, totalPlacement, totalSupports,
       totalDirect: totalExposure + totalPlacement + totalSupports,
       ageRows,
-      genderRows,
+      sexRows,
       residencyRows,
       cityRows,
       postalRows,
@@ -1062,9 +1062,9 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
                   <BreakdownTable rows={stats.ageRows} />
                 </BreakdownCard>
               )}
-              {showDemographic("gender_distribution") && stats.genderRows && stats.genderRows.length > 0 && (
-                <BreakdownCard title="Gender Distribution" rows={stats.genderRows}>
-                  <BreakdownTable rows={stats.genderRows} />
+              {showDemographic("sex_distribution") && stats.sexRows && stats.sexRows.length > 0 && (
+                <BreakdownCard title="Sex" rows={stats.sexRows}>
+                  <BreakdownTable rows={stats.sexRows} />
                 </BreakdownCard>
               )}
               {showDemographic("residency_status") && stats.residencyRows && stats.residencyRows.length > 0 && (
