@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Users, TrendingUp, DollarSign, Briefcase, BookOpen, Award, Printer, FileDown, Share2, PieChart as PieIcon } from "lucide-react";
+import { Download, Users, TrendingUp, DollarSign, Briefcase, BookOpen, Award, Printer, FileDown, Share2, PieChart as PieIcon, User } from "lucide-react";
 import { toast } from "sonner";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -103,7 +103,7 @@ function MiniPie({ rows }) {
   );
 }
 
-function BreakdownCard({ title, rows, children }) {
+function BreakdownCard({ title, rows, children, showDemographics, onToggleDemographics, demographicBreakdownData }) {
   const [showPie, setShowPie] = useState(false);
   const hasData = rows && rows.length > 0;
   const total = hasData ? rows.reduce((s, r) => s + r.count, 0) : 0;
@@ -113,20 +113,51 @@ function BreakdownCard({ title, rows, children }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm">{title}</CardTitle>
-          {hasData && total > 0 && (
-            <button
-              onClick={() => setShowPie(p => !p)}
-              title={showPie ? "Hide pie chart" : "Show pie chart"}
-              className={`p-1 rounded hover:bg-slate-100 transition-colors ${showPie ? "text-primary" : "text-slate-400"}`}
-            >
-              <PieIcon className="w-4 h-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {hasData && total > 0 && (
+              <button
+                onClick={() => setShowPie(p => !p)}
+                title={showPie ? "Hide pie chart" : "Show pie chart"}
+                className={`p-1 rounded hover:bg-slate-100 transition-colors ${showPie ? "text-primary" : "text-slate-400"}`}
+              >
+                <PieIcon className="w-4 h-4" />
+              </button>
+            )}
+            {hasData && total > 0 && demographicBreakdownData && (
+              <button
+                onClick={onToggleDemographics}
+                title={showDemographics ? "Hide demographic breakdown" : "Show demographic breakdown"}
+                className={`p-1 rounded hover:bg-slate-100 transition-colors ${showDemographics ? "text-primary" : "text-slate-400"}`}
+              >
+                <User className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         {children}
         {showPie && hasData && <MiniPie rows={rows} />}
+        {showDemographics && demographicBreakdownData && (
+          <div className="mt-4 pt-3 border-t border-slate-100 -mx-6 px-6 pb-4">
+            <h5 className="text-xs font-semibold text-slate-600 mb-2">Breakdown by Demographics</h5>
+            <div className="space-y-3">
+              {demographicBreakdownData.map((demo, idx) => (
+                <div key={idx} className="space-y-1">
+                  <p className="text-xs font-medium text-slate-700">{demo.label}</p>
+                  <div className="space-y-1">
+                    {demo.breakdown.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600">{item.label}</span>
+                        <span className="font-medium text-slate-800">{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -195,6 +226,14 @@ function formatFilterDisplay(filterKey, filterValue, allLabel, allClients = [], 
 
 export default function ReportSummary({ results, financialRecords, selectedSections = [], demographicOptions = [], onClear, onExportCSV, dateRange, appliedFilters, allClients, demographicFilters }) {
   const reportRef = useRef(null);
+  const [demographicBreakdowns, setDemographicBreakdowns] = useState({});
+
+  const toggleDemographicBreakdown = (sectionKey) => {
+    setDemographicBreakdowns(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }));
+  };
 
   // Helper to check if all options for a filter are selected
   const getAllFilterOptions = (key) => {
@@ -568,6 +607,103 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
     };
   }, [results, financialRecords]);
 
+  // Compute demographic breakdown for a given category
+  const computeDemographicBreakdown = (categoryField) => {
+    const breakdown = [];
+    
+    if (demographicOptions.includes("age_distribution") && stats.ageRows) {
+      const ageBreakdown = {};
+      results.forEach(c => {
+        if (!c.date_of_birth) return;
+        const birthDate = new Date(c.date_of_birth);
+        const age = new Date().getFullYear() - birthDate.getFullYear() - (new Date() < new Date(new Date().getFullYear(), birthDate.getMonth(), birthDate.getDate()) ? 1 : 0);
+        const ageGroup = age < 25 ? "Under 25" : age < 35 ? "25-34" : age < 45 ? "35-44" : age < 55 ? "45-54" : age < 65 ? "55-64" : "65+";
+        const categoryValue = c[categoryField];
+        if (categoryValue) {
+          if (!ageBreakdown[ageGroup]) ageBreakdown[ageGroup] = {};
+          if (!ageBreakdown[ageGroup][categoryValue]) ageBreakdown[ageGroup][categoryValue] = 0;
+          ageBreakdown[ageGroup][categoryValue]++;
+        }
+      });
+      
+      breakdown.push({
+        label: "By Age",
+        breakdown: Object.entries(ageBreakdown).map(([ageGroup, categories]) => ({
+          label: ageGroup,
+          count: Object.values(categories).reduce((a, b) => a + b, 0)
+        }))
+      });
+    }
+    
+    if (demographicOptions.includes("residency_status") && stats.residencyRows) {
+      const residencyBreakdown = {};
+      results.forEach(c => {
+        if (!c.residency_status) return;
+        const categoryValue = c[categoryField];
+        if (categoryValue) {
+          if (!residencyBreakdown[c.residency_status]) residencyBreakdown[c.residency_status] = {};
+          if (!residencyBreakdown[c.residency_status][categoryValue]) residencyBreakdown[c.residency_status][categoryValue] = 0;
+          residencyBreakdown[c.residency_status][categoryValue]++;
+        }
+      });
+      
+      breakdown.push({
+        label: "By Residency Status",
+        breakdown: Object.entries(residencyBreakdown).map(([status, categories]) => ({
+          label: status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
+          count: Object.values(categories).reduce((a, b) => a + b, 0)
+        }))
+      });
+    }
+    
+    if (demographicOptions.includes("city_distribution") && stats.cityRows) {
+      const cityBreakdown = {};
+      results.forEach(c => {
+        if (!c.city) return;
+        const categoryValue = c[categoryField];
+        if (categoryValue) {
+          if (!cityBreakdown[c.city]) cityBreakdown[c.city] = {};
+          if (!cityBreakdown[c.city][categoryValue]) cityBreakdown[c.city][categoryValue] = 0;
+          cityBreakdown[c.city][categoryValue]++;
+        }
+      });
+      
+      breakdown.push({
+        label: "By City",
+        breakdown: Object.entries(cityBreakdown).map(([city, categories]) => ({
+          label: city,
+          count: Object.values(categories).reduce((a, b) => a + b, 0)
+        })).slice(0, 5)
+      });
+    }
+    
+    if (demographicOptions.includes("postal_code_distribution") && stats.postalRows) {
+      const postalBreakdown = {};
+      results.forEach(c => {
+        if (!c.zip) return;
+        const fsa = c.zip.replace(/\s/g, "").slice(0, 3).toUpperCase();
+        if (fsa.length === 3 && fsa.match(/^[A-Z][0-9][A-Z]$/)) {
+          const categoryValue = c[categoryField];
+          if (categoryValue) {
+            if (!postalBreakdown[fsa]) postalBreakdown[fsa] = {};
+            if (!postalBreakdown[fsa][categoryValue]) postalBreakdown[fsa][categoryValue] = 0;
+            postalBreakdown[fsa][categoryValue]++;
+          }
+        }
+      });
+      
+      breakdown.push({
+        label: "By Postal Code (FSA)",
+        breakdown: Object.entries(postalBreakdown).map(([fsa, categories]) => ({
+          label: fsa,
+          count: Object.values(categories).reduce((a, b) => a + b, 0)
+        }))
+      });
+    }
+    
+    return breakdown.length > 0 ? breakdown : null;
+  };
+
   if (!stats) {
     return (
       <div className="text-center py-10 text-slate-400 text-sm">
@@ -816,18 +952,36 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
         {/* Breakdowns grid - Page 2/3 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 print-break-inside-avoid print-section-break">
           {show("service_stream") && (
-            <BreakdownCard title="Service Stream" rows={stats.streamRows}>
+            <BreakdownCard 
+              title="Service Stream" 
+              rows={stats.streamRows}
+              showDemographics={demographicBreakdowns["service_stream"]}
+              onToggleDemographics={() => toggleDemographicBreakdown("service_stream")}
+              demographicBreakdownData={computeDemographicBreakdown("service_type")}
+            >
               <BreakdownTable rows={stats.streamRows} />
             </BreakdownCard>
           )}
 
           {show("case_program_status") && (
             <>
-              <BreakdownCard title="Case Status" rows={stats.caseStatusRows}>
+              <BreakdownCard 
+                title="Case Status" 
+                rows={stats.caseStatusRows}
+                showDemographics={demographicBreakdowns["case_status"]}
+                onToggleDemographics={() => toggleDemographicBreakdown("case_status")}
+                demographicBreakdownData={computeDemographicBreakdown("status")}
+              >
                 <BreakdownTable rows={stats.caseStatusRows} />
               </BreakdownCard>
               {stats.programStatusRows.length > 0 && (
-                <BreakdownCard title="Program Status" rows={stats.programStatusRows}>
+                <BreakdownCard 
+                  title="Program Status" 
+                  rows={stats.programStatusRows}
+                  showDemographics={demographicBreakdowns["program_status"]}
+                  onToggleDemographics={() => toggleDemographicBreakdown("program_status")}
+                  demographicBreakdownData={computeDemographicBreakdown("program_status")}
+                >
                   <BreakdownTable rows={stats.programStatusRows} />
                 </BreakdownCard>
               )}
@@ -835,31 +989,61 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           )}
 
           {show("referral_source") && (
-            <BreakdownCard title="Referral Source" rows={stats.referralRows}>
+            <BreakdownCard 
+              title="Referral Source" 
+              rows={stats.referralRows}
+              showDemographics={demographicBreakdowns["referral_source"]}
+              onToggleDemographics={() => toggleDemographicBreakdown("referral_source")}
+              demographicBreakdownData={computeDemographicBreakdown("referral_source")}
+            >
               <BreakdownTable rows={stats.referralRows} />
             </BreakdownCard>
           )}
 
           {show("employment_intake") && (
-            <BreakdownCard title="Employment Status at Intake" rows={stats.intakeEmpRows}>
+            <BreakdownCard 
+              title="Employment Status at Intake" 
+              rows={stats.intakeEmpRows}
+              showDemographics={demographicBreakdowns["employment_intake"]}
+              onToggleDemographics={() => toggleDemographicBreakdown("employment_intake")}
+              demographicBreakdownData={computeDemographicBreakdown("employment_status")}
+            >
               <BreakdownTable rows={stats.intakeEmpRows} />
             </BreakdownCard>
           )}
 
           {show("employment_post") && stats.postEmpRows.length > 0 && (
-            <BreakdownCard title="Post-Completion Employment Status" rows={stats.postEmpRows}>
+            <BreakdownCard 
+              title="Post-Completion Employment Status" 
+              rows={stats.postEmpRows}
+              showDemographics={demographicBreakdowns["employment_post"]}
+              onToggleDemographics={() => toggleDemographicBreakdown("employment_post")}
+              demographicBreakdownData={computeDemographicBreakdown("post_completion_employment_status")}
+            >
               <BreakdownTable rows={stats.postEmpRows} />
             </BreakdownCard>
           )}
 
           {show("employment_90day") && stats.fu90Rows.length > 0 && (
-            <BreakdownCard title="90-Day Follow-Up Status" rows={stats.fu90Rows}>
+            <BreakdownCard 
+              title="90-Day Follow-Up Status" 
+              rows={stats.fu90Rows}
+              showDemographics={demographicBreakdowns["employment_90day"]}
+              onToggleDemographics={() => toggleDemographicBreakdown("employment_90day")}
+              demographicBreakdownData={computeDemographicBreakdown("followup_90day_status")}
+            >
               <BreakdownTable rows={stats.fu90Rows} />
             </BreakdownCard>
           )}
 
           {show("barriers") && stats.barrierRows.length > 0 && (
-            <BreakdownCard title="Top Barriers Identified" rows={stats.barrierRows}>
+            <BreakdownCard 
+              title="Top Barriers Identified" 
+              rows={stats.barrierRows}
+              showDemographics={demographicBreakdowns["barriers"]}
+              onToggleDemographics={() => toggleDemographicBreakdown("barriers")}
+              demographicBreakdownData={computeDemographicBreakdown("barrier_1")}
+            >
               <BreakdownTable rows={stats.barrierRows} />
             </BreakdownCard>
           )}
