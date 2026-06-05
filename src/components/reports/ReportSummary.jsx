@@ -413,6 +413,50 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
 
+    // Client demographics breakdown
+    const ageGroups = {};
+    const today = new Date();
+    results.forEach(c => {
+      if (!c.date_of_birth) return;
+      const birthDate = new Date(c.date_of_birth);
+      const age = today.getFullYear() - birthDate.getFullYear() - (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate()) ? 1 : 0);
+      const group = age < 25 ? "Under 25" : age < 35 ? "25-34" : age < 45 ? "35-44" : age < 55 ? "45-54" : age < 65 ? "55-64" : "65+";
+      ageGroups[group] = (ageGroups[group] || 0) + 1;
+    });
+    const ageRows = Object.entries(ageGroups)
+      .map(([k, v]) => ({ label: k, count: v }))
+      .sort((a, b) => {
+        const order = ["Under 25", "25-34", "35-44", "45-54", "55-64", "65+"];
+        return order.indexOf(a.label) - order.indexOf(b.label);
+      });
+
+    const residencyCounts = {};
+    results.forEach(c => {
+      if (!c.residency_status) return;
+      residencyCounts[c.residency_status] = (residencyCounts[c.residency_status] || 0) + 1;
+    });
+    const residencyRows = Object.entries(residencyCounts)
+      .map(([k, v]) => ({ label: k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()), count: v }))
+      .sort((a, b) => b.count - a.count);
+
+    const cityCounts = {};
+    results.forEach(c => {
+      if (!c.city) return;
+      cityCounts[c.city] = (cityCounts[c.city] || 0) + 1;
+    });
+    const cityRows = Object.entries(cityCounts)
+      .map(([k, v]) => ({ label: k, count: v }))
+      .sort((a, b) => b.count - a.count);
+
+    const genderCounts = {};
+    results.forEach(c => {
+      // Note: gender field may not exist, adjust if needed
+      if (c.gender) genderCounts[c.gender] = (genderCounts[c.gender] || 0) + 1;
+    });
+    const genderRows = Object.entries(genderCounts)
+      .map(([k, v]) => ({ label: k, count: v }))
+      .sort((a, b) => b.count - a.count);
+
     // Financial rows for pie
     const financialRows = [
       { label: "Exposure Courses", count: exposureRecords.length, color: "#f59e0b" },
@@ -434,6 +478,10 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       supportsCount: supportsRecords.length,
       totalExposure, totalPlacement, totalSupports,
       totalDirect: totalExposure + totalPlacement + totalSupports,
+      ageRows,
+      residencyRows,
+      cityRows,
+      genderRows,
     };
   }, [results, financialRecords]);
 
@@ -742,6 +790,26 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
             <BreakdownCard title="Top Barriers Identified" rows={stats.barrierRows}>
               <BreakdownTable rows={stats.barrierRows} />
             </BreakdownCard>
+          )}
+
+          {show("client_demographics") && (
+            <>
+              {stats.ageRows && stats.ageRows.length > 0 && (
+                <BreakdownCard title="Age Distribution" rows={stats.ageRows}>
+                  <BreakdownTable rows={stats.ageRows} />
+                </BreakdownCard>
+              )}
+              {stats.residencyRows && stats.residencyRows.length > 0 && (
+                <BreakdownCard title="Residency Status" rows={stats.residencyRows}>
+                  <BreakdownTable rows={stats.residencyRows} />
+                </BreakdownCard>
+              )}
+              {stats.cityRows && stats.cityRows.length > 0 && (
+                <BreakdownCard title="City Distribution" rows={stats.cityRows}>
+                  <BreakdownTable rows={stats.cityRows} />
+                </BreakdownCard>
+              )}
+            </>
           )}
         </div>
       </div>

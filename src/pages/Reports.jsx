@@ -29,6 +29,7 @@ const REPORT_SECTIONS = [
   { key: "starters_completers", label: "Program Starters & Completers", default: true },
   { key: "financial_summary", label: "Financial Summary", default: true },
   { key: "barriers", label: "Top Barriers Identified", default: true },
+  { key: "client_demographics", label: "Client Demographics", default: false },
 ];
 
 // All available fields
