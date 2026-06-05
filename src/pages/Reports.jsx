@@ -444,7 +444,6 @@ export default function Reports() {
           <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
           <TabsTrigger value="data">Data Reports</TabsTrigger>
           <TabsTrigger value="staff">Staff Monthly Reports</TabsTrigger>
-          <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="data">
