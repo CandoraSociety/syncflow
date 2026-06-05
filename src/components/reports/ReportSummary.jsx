@@ -61,10 +61,9 @@ function MiniPie({ rows }) {
               data={data}
               cx="50%"
               cy="50%"
-              outerRadius={70}
-              innerRadius={40}
+              outerRadius={80}
               dataKey="value"
-              label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ""}
+              label={({ percent }) => percent > 0.03 ? `${(percent * 100).toFixed(0)}%` : ""}
               labelLine={false}
             >
               {data.map((entry, i) => (
