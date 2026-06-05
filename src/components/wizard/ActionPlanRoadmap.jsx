@@ -469,12 +469,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             onClick={() => { setEditingMilestone(null); setOpenItem(isOpen ? null : item.key); }}
                             className="w-full flex items-center h-8 group"
                           >
-                            {/* Label — coloured by type, green if completed */}
+                            {/* Label — coloured by type with pulsating aura if completed */}
                             <div
                               className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right"
                               style={{ 
-                                color: isCancelled ? "#94a3b8" : isCompleted ? "#16a34a" : typeColor,
-                                fontWeight: isCompleted ? "600" : "500"
+                                color: isCancelled ? "#94a3b8" : typeColor,
+                                fontWeight: "500",
+                                ...(isCompleted ? { animation: "completedPulse 2s infinite", borderRadius: "4px" } : {})
                               }}
                             >
                               {item.isBarrier && <span className="mr-0.5">⚠</span>}
@@ -488,7 +489,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 backgroundColor: "#f8fafc",
                                 outline: `2px solid ${cfg.ring}`,
                                 outlineOffset: "-1px",
-                                ...(isCompleted ? { animation: "completedPulse 2s infinite" } : {})
                               }}
                             >
                               {hasBar && (
@@ -497,7 +497,14 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                   style={{ left: `${startP}%`, width: `${barWidth}%`, top: 0, height: "100%" }}
                                   className="rounded-md overflow-hidden"
                                 >
-                                  <div className="w-full h-full rounded-md relative overflow-hidden pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                  <div 
+                                    className="w-full h-full rounded-md relative overflow-hidden pointer-events-none" 
+                                    style={{ 
+                                      backgroundColor: barColor, 
+                                      opacity: isCancelled ? 0.5 : 0.85,
+                                      ...(isCompleted ? { animation: "completedPulse 2s infinite" } : {})
+                                    }}
+                                  >
                                     {/* In-progress shimmer */}
                                     {isStarted && (
                                       <div className="absolute inset-0 rounded-md overflow-hidden">
@@ -592,8 +599,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 <div
                                   className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right"
                                   style={{ 
-                                    color: isCancelled ? "#94a3b8" : isCompleted ? "#16a34a" : typeColor,
-                                    fontWeight: isCompleted ? "600" : "500"
+                                    color: isCancelled ? "#94a3b8" : typeColor,
+                                    fontWeight: "500",
+                                    ...(isCompleted ? { animation: "completedPulse 2s infinite", borderRadius: "4px" } : {})
                                   }}
                                 >
                                   {item.isBarrier && <span className="mr-0.5">⚠</span>}
@@ -606,7 +614,6 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                     backgroundColor: "#fffbeb",
                                     outline: `2px solid ${cfg.ring}`,
                                     outlineOffset: "-1px",
-                                    ...(isCompleted ? { animation: "completedPulse 2s infinite" } : {})
                                   }}
                                 >
                                   {hasBar && (
@@ -615,7 +622,14 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                       style={{ left: `${startP}%`, width: `${barWidth}%`, top: 0, height: "100%" }}
                                       className="rounded-md overflow-hidden"
                                     >
-                                      <div className="w-full h-full rounded-md relative overflow-hidden pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                      <div 
+                                        className="w-full h-full rounded-md relative overflow-hidden pointer-events-none" 
+                                        style={{ 
+                                          backgroundColor: barColor, 
+                                          opacity: isCancelled ? 0.5 : 0.85,
+                                          ...(isCompleted ? { animation: "completedPulse 2s infinite" } : {})
+                                        }}
+                                      >
                                         {isStarted && (
                                           <div className="absolute inset-0 rounded-md overflow-hidden">
                                             <div className="h-full" style={{ animation: "typeShimmer 2s infinite linear", backgroundImage: `linear-gradient(90deg, transparent, ${barColor}cc, rgba(255,255,255,0.5), ${barColor}cc, transparent)`, backgroundSize: "200% 100%" }} />
