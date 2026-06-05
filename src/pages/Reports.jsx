@@ -367,8 +367,8 @@ export default function Reports() {
       });
     });
 
-    // Apply date range filter
-    if (dateFrom || dateTo) {
+    // Apply date range filter (only if a date preset is selected)
+    if (datePreset !== "none" && (dateFrom || dateTo)) {
       data = data.filter(c => {
         const d = c[dateField];
         if (!d) return false;
