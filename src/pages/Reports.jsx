@@ -127,11 +127,24 @@ const CASE_STATUS_OPTIONS = [
   { value: "closed", label: "Closed" },
 ];
 
+const RESIDENCY_STATUS_OPTIONS = [
+  { value: "canadian_citizen", label: "Canadian Citizen" },
+  { value: "permanent_resident", label: "Permanent Resident" },
+  { value: "protected_person", label: "Protected Person" },
+  { value: "convention_refugee", label: "Convention Refugee" },
+  { value: "refugee_claimant", label: "Refugee Claimant" },
+  { value: "temporary_resident", label: "Temporary Resident" },
+  { value: "work_permit", label: "Work Permit" },
+  { value: "study_permit", label: "Study Permit" },
+  { value: "visitor", label: "Visitor" },
+  { value: "other", label: "Other" },
+];
+
 const DEMOGRAPHIC_FILTERS = [
   { key: "service_type", label: "Service Stream", type: "multi-select", fixedOptions: SERVICE_TYPE_OPTIONS },
   { key: "status", label: "Case Status", type: "multi-select", fixedOptions: CASE_STATUS_OPTIONS },
   { key: "program_status", label: "Program Status", type: "multi-select" },
-  { key: "residency_status", label: "Residency Status", type: "multi-select" },
+  { key: "residency_status", label: "Residency Status", type: "multi-select", fixedOptions: RESIDENCY_STATUS_OPTIONS },
   { key: "clb_level", label: "CLB Level", type: "multi-select" },
   { key: "employment_status", label: "Employment Status", type: "multi-select" },
   { key: "referral_source", label: "Referral Source", type: "multi-select" },
