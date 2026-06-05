@@ -448,6 +448,19 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       .map(([k, v]) => ({ label: k, count: v }))
       .sort((a, b) => b.count - a.count);
 
+    // Postal code distribution (FSA - first 3 characters)
+    const postalCounts = {};
+    results.forEach(c => {
+      if (!c.zip) return;
+      const fsa = c.zip.replace(/\s/g, "").slice(0, 3).toUpperCase();
+      if (fsa.length === 3 && fsa.match(/^[A-Z][0-9][A-Z]$/)) {
+        postalCounts[fsa] = (postalCounts[fsa] || 0) + 1;
+      }
+    });
+    const postalRows = Object.entries(postalCounts)
+      .map(([k, v]) => ({ label: k, count: v }))
+      .sort((a, b) => b.count - a.count);
+
     const genderCounts = {};
     results.forEach(c => {
       // Note: gender field may not exist, adjust if needed
@@ -481,6 +494,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       ageRows,
       residencyRows,
       cityRows,
+      postalRows,
       genderRows,
     };
   }, [results, financialRecords]);
@@ -818,6 +832,11 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {showDemographic("city_distribution") && stats.cityRows && stats.cityRows.length > 0 && (
                 <BreakdownCard title="City Distribution" rows={stats.cityRows}>
                   <BreakdownTable rows={stats.cityRows} />
+                </BreakdownCard>
+              )}
+              {showDemographic("postal_code_distribution") && stats.postalRows && stats.postalRows.length > 0 && (
+                <BreakdownCard title="Postal Code Distribution (FSA)" rows={stats.postalRows}>
+                  <BreakdownTable rows={stats.postalRows} />
                 </BreakdownCard>
               )}
             </>

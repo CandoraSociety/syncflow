@@ -33,6 +33,7 @@ const REPORT_SECTIONS = [
     { key: "age_distribution", label: "Age Distribution", default: true },
     { key: "residency_status", label: "Residency Status", default: true },
     { key: "city_distribution", label: "City Distribution", default: true },
+    { key: "postal_code_distribution", label: "Postal Code Distribution (FSA)", default: true },
   ]},
 ];
 
