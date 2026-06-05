@@ -866,6 +866,9 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
 
           {show("client_demographics") && (
             <>
+              <div className="md:col-span-2 lg:col-span-3">
+                <h4 className="text-sm font-semibold text-slate-700 mb-3">Client Demographics</h4>
+              </div>
               {showDemographic("age_distribution") && stats.ageRows && stats.ageRows.length > 0 && (
                 <BreakdownCard title="Age Distribution" rows={stats.ageRows}>
                   <BreakdownTable rows={stats.ageRows} />
