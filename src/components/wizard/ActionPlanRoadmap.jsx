@@ -171,7 +171,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   const isDEA        = client?.service_type === "direct_to_employment";
   const projectedEnd = serviceStart ? addWeeks(serviceStart, isPathways ? 16 : 2) : null;
   const actualEnd    = parseDate(client?.completion_date);
-  const followup90   = actualEnd ? addWeeks(actualEnd, 13) : (projectedEnd ? addWeeks(projectedEnd, 13) : null);
+  const followup90   = actualEnd ? addWeeks(actualEnd, 13) : null;
 
   const items = buildItems(selectedItems, itemDetails, otherDesc, roadmapStatus, client);
   const itemsWithDates    = items.filter(item => item.detail?.timeline_start || item.statusData?.started_date || item.detail?.timeline_end || item.statusData?.completed_date);
