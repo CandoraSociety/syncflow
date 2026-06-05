@@ -16,7 +16,7 @@ export default function Celebration({ trigger, onComplete }) {
     const playSound = async () => {
       try {
         // Using a free sound effect from Mixkit
-        audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2040/2040-preview.mp3");
+        audioRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3");
         audioRef.current.volume = 0.6;
         await audioRef.current.play();
         
