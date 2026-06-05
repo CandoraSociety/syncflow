@@ -47,22 +47,24 @@ function StatCard({ title, value, sub, icon: Icon, color = "text-primary" }) {
 
 function MiniPie({ rows }) {
   const data = rows.map((r, i) => ({
-    name: r.label,
+    name: r.label.length > 20 ? r.label.substring(0, 20) + "…" : r.label,
     value: r.count,
     fill: r.color || PIE_COLORS[i % PIE_COLORS.length],
   }));
   return (
-    <div className="mt-3">
-      <ResponsiveContainer width="100%" height={200}>
+    <div className="mt-4 pt-3 border-t border-slate-100">
+      <ResponsiveContainer width="100%" height={220}>
         <PieChart>
           <Pie
             data={data}
             cx="50%"
-            cy="50%"
-            outerRadius={70}
+            cy="45%"
+            outerRadius={60}
+            innerRadius={35}
             dataKey="value"
-            label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ""}
+            label={({ name, percent }) => percent > 0.08 ? `${(percent * 100).toFixed(0)}%` : ""}
             labelLine={false}
+            paddingAngle={2}
           >
             {data.map((entry, i) => (
               <Cell key={i} fill={entry.fill} />
@@ -72,7 +74,9 @@ function MiniPie({ rows }) {
           <Legend
             iconType="circle"
             iconSize={8}
-            formatter={(value) => <span className="text-xs text-slate-700">{value}</span>}
+            verticalAlign="bottom"
+            height={60}
+            formatter={(value) => <span className="text-xs text-slate-700 block mb-0.5">{value}</span>}
           />
         </PieChart>
       </ResponsiveContainer>
@@ -423,14 +427,16 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           )}
 
           {show("case_program_status") && (
-            <BreakdownCard title="Case Status" rows={stats.caseStatusRows}>
-              <BreakdownTable rows={stats.caseStatusRows} />
+            <>
+              <BreakdownCard title="Case Status" rows={stats.caseStatusRows}>
+                <BreakdownTable rows={stats.caseStatusRows} />
+              </BreakdownCard>
               {stats.programStatusRows.length > 0 && (
-                <div className="mt-4">
-                  <BreakdownTable title="Program Status" rows={stats.programStatusRows} />
-                </div>
+                <BreakdownCard title="Program Status" rows={stats.programStatusRows}>
+                  <BreakdownTable rows={stats.programStatusRows} />
+                </BreakdownCard>
               )}
-            </BreakdownCard>
+            </>
           )}
 
           {show("referral_source") && (
