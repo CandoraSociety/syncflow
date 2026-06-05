@@ -592,18 +592,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                           return (
                             <div key={item.key} className="relative">
                               <button
-                                onClick={() => { 
-                                  setEditingMilestone(null);
-                                  if (item.isBarrier) {
-                                    setOpenBarrierDetail(isBarrierOpen ? null : item.key);
-                                    setOpenItem(null);
-                                  } else {
-                                    setOpenItem(isOpen ? null : item.key);
-                                    setOpenBarrierDetail(null);
-                                  }
-                                }}
-                                className="w-full flex items-center h-8 group"
-                              >
+                                 onClick={() => { 
+                                   setEditingMilestone(null);
+                                   setOpenItem(isOpen ? null : item.key);
+                                   setOpenBarrierDetail(null);
+                                 }}
+                                 className="w-full flex items-center h-8 group"
+                               >
                                 <div
                                   className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right"
                                   style={{ 
@@ -672,42 +667,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 </div>
                               )}
 
-                              {isBarrierOpen && (
-                                <div className="relative z-30 mt-1 mb-2 ml-40 bg-amber-50 border-2 border-amber-200 rounded-xl p-4 shadow-sm">
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                      <AlertTriangle className="w-5 h-5 text-amber-600" />
-                                      <h4 className="text-sm font-bold text-amber-800">{item.label}</h4>
-                                    </div>
-                                    <button onClick={() => setOpenBarrierDetail(null)} className="text-amber-400 hover:text-amber-600">
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                  <div className="space-y-3 text-xs">
-                                    {fullBarrierNotes && (
-                                      <div>
-                                        <span className="font-semibold text-amber-700 block mb-1">Notes:</span>
-                                        <p className="text-slate-700 whitespace-pre-wrap">{fullBarrierNotes}</p>
-                                      </div>
-                                    )}
-                                    {actionSteps && (
-                                      <div>
-                                        <span className="font-semibold text-amber-700 block mb-1">Action Steps:</span>
-                                        <p className="text-slate-700 whitespace-pre-wrap">{actionSteps}</p>
-                                      </div>
-                                    )}
-                                    {challenges && (
-                                      <div>
-                                        <span className="font-semibold text-amber-700 block mb-1">Challenges:</span>
-                                        <p className="text-slate-700 whitespace-pre-wrap">{challenges}</p>
-                                      </div>
-                                    )}
-                                    {!fullBarrierNotes && !actionSteps && !challenges && (
-                                      <p className="text-slate-500 italic">No detailed notes recorded for this barrier.</p>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
+
                             </div>
                           );
                         })}
