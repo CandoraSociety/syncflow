@@ -109,7 +109,7 @@ function BreakdownCard({ title, rows, children }) {
   const total = hasData ? rows.reduce((s, r) => s + r.count, 0) : 0;
 
   return (
-    <Card>
+    <Card className="print-break-inside-avoid">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm">{title}</CardTitle>
@@ -176,27 +176,71 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
 
   const handlePrint = () => window.print();
 
+  const printStyles = `
+    @media print {
+      @page {
+        margin: 15mm;
+        size: A4 portrait;
+      }
+      
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      
+      .print-break-before {
+        break-before: page;
+        page-break-before: always;
+      }
+    }
+  `;
+
   const handleSavePDF = async () => {
     const { jsPDF } = await import("jspdf");
     const { default: html2canvas } = await import("html2canvas");
     if (!reportRef.current) return;
     toast("Generating PDF…");
     try {
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
+      const canvas = await html2canvas(reportRef.current, { 
+        scale: 2, 
+        useCORS: true,
+        windowWidth: 1200,
+        windowHeight: 1600,
+        scrollX: 0,
+        scrollY: 0,
+        logging: false,
+      });
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pdf = new jsPDF({ 
+        orientation: "portrait", 
+        unit: "mm", 
+        format: "a4",
+        hotfixes: ["px_scaling"]
+      });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgHeight = (canvas.height * pageWidth) / canvas.width;
-      let y = 0;
-      while (y < imgHeight) {
-        pdf.addImage(imgData, "PNG", 0, -y, pageWidth, imgHeight);
-        if (y + pageHeight < imgHeight) pdf.addPage();
-        y += pageHeight;
-      }
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+      const newWidth = imgWidth * ratio;
+      const newHeight = imgHeight * ratio;
+      
+      // Add image scaled to fit page width with proper margins
+      pdf.addImage(imgData, "PNG", 0, 0, newWidth, newHeight);
+      
       pdf.save(`report-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("PDF saved!");
-    } catch {
+    } catch (error) {
+      console.error("PDF generation error:", error);
       toast.error("Failed to generate PDF");
     }
   };
@@ -349,8 +393,10 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
 
   return (
     <div className="space-y-6">
+      <style>{printStyles}</style>
+      
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 no-print">
         <div>
           <h2 className="text-lg font-bold text-slate-800">{stats.total} Client{stats.total !== 1 ? "s" : ""} in Report</h2>
           <p className="text-xs text-slate-500">Aggregated summary across filtered clients</p>
@@ -372,9 +418,9 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
         </div>
       </div>
 
-      <div ref={reportRef}>
+      <div ref={reportRef} className="print-break-inside-avoid">
         {/* Print/PDF Header */}
-        <div className="mb-6 pb-6 border-b-2 border-slate-200 bg-white">
+        <div className="mb-6 pb-6 border-b-2 border-slate-200 bg-white print-break-inside-avoid">
           <div className="flex items-center gap-4 mb-4">
             <img src="https://media.base44.com/images/public/6a0025bc2848937e9e70bca5/bf0d54770_Candoracirclelogo_noanniversary.png" alt="Candora" className="h-16 w-auto" />
             <div>
@@ -525,7 +571,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
         </div>
 
         {/* Top stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 print-break-inside-avoid">
           <StatCard title="Total Clients" value={stats.total} icon={Users} color="text-primary" />
           {show("starters_completers") && (
             <StatCard title="Employment Outcomes" value={stats.employed} sub="post-completion employed" icon={Briefcase} color="text-green-600" />
@@ -540,7 +586,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
 
         {/* Program outcomes */}
         {show("starters_completers") && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 print-break-inside-avoid">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -592,7 +638,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
         )}
 
         {/* Breakdowns grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 print-break-inside-avoid">
           {show("service_stream") && (
             <BreakdownCard title="Service Stream" rows={stats.streamRows}>
               <BreakdownTable rows={stats.streamRows} />
