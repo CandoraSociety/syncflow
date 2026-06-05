@@ -171,8 +171,77 @@ function fmt$(n) {
   return "$" + Number(n).toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Helper to format filter display - shows "All X" if all options are selected
+function formatFilterDisplay(filterKey, filterValue, allLabel, allClients = [], demographicFilters = []) {
+  if (!filterValue || filterValue === "" || (Array.isArray(filterValue) && filterValue.length === 0)) {
+    return allLabel;
+  }
+  if (!Array.isArray(filterValue)) {
+    return filterValue;
+  }
+  // Check if all available options are selected
+  const filterDef = demographicFilters.find(f => f.key === filterKey);
+  if (filterDef) {
+    const rawOptions = filterDef.fixedOptions
+      ? filterDef.fixedOptions
+      : allClients.map(c => c[filterKey]).filter(Boolean);
+    const uniqueOptions = filterDef.fixedOptions ? rawOptions : [...new Set(rawOptions)];
+    if (filterValue.length >= uniqueOptions.length) {
+      return allLabel;
+    }
+  }
+  return filterValue.join(', ');
+}
+
 export default function ReportSummary({ results, financialRecords, selectedSections = [], demographicOptions = [], onClear, onExportCSV, dateRange, appliedFilters, allClients, demographicFilters }) {
   const reportRef = useRef(null);
+
+  // Helper to check if all options for a filter are selected
+  const getAllFilterOptions = (key) => {
+    const filter = demographicFilters.find(f => f.key === key);
+    if (!filter) return [];
+    if (filter.fixedOptions) return filter.fixedOptions.map(o => o.value);
+    return [...new Set(allClients.map(c => c[key]).filter(Boolean))].sort();
+  };
+
+  const formatFilterDisplay = (key, value, allLabel) => {
+    if (!value || value === "" || (Array.isArray(value) && value.length === 0)) {
+      return allLabel || 'All';
+    }
+    const allOptions = getAllFilterOptions(key);
+    if (Array.isArray(value) && allOptions.length > 0 && value.length === allOptions.length) {
+      return allLabel || 'All';
+    }
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    return String(value);
+  };
+
+  const formatSimpleFilter = (value, allLabel) => {
+    if (!value || value === "" || (Array.isArray(value) && value.length === 0)) {
+      return allLabel;
+    }
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    return String(value);
+  };
+
+  const formatMultiSelectFilter = (key, value, allLabel) => {
+    if (!value || value === "" || (Array.isArray(value) && value.length === 0)) {
+      return allLabel;
+    }
+    const allOptions = getAllFilterOptions(key);
+    // Check if all available options are selected
+    if (Array.isArray(value) && allOptions.length > 0 && value.length === allOptions.length) {
+      return allLabel;
+    }
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    return String(value);
+  };
 
   const handlePrint = () => window.print();
 
@@ -573,126 +642,104 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Service Streams - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Service Streams</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.service_type && appliedFilters.service_type.length > 0 ? appliedFilters.service_type.join(', ') : 'All streams'}>
-                  {appliedFilters.service_type && appliedFilters.service_type.length > 0 
-                    ? appliedFilters.service_type.join(', ') 
-                    : 'All streams'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('service_type', appliedFilters.service_type, 'All streams')}>
+                  {formatMultiSelectFilter('service_type', appliedFilters.service_type, 'All streams')}
                 </p>
               </div>
               
               {/* Case Status - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Case Status</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.status && appliedFilters.status.length > 0 ? appliedFilters.status.join(', ') : 'All statuses'}>
-                  {appliedFilters.status && appliedFilters.status.length > 0 
-                    ? appliedFilters.status.join(', ') 
-                    : 'All statuses'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('status', appliedFilters.status, 'All statuses')}>
+                  {formatMultiSelectFilter('status', appliedFilters.status, 'All statuses')}
                 </p>
               </div>
               
               {/* Program Status - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Program Status</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.program_status && appliedFilters.program_status.length > 0 ? appliedFilters.program_status.join(', ') : 'All statuses'}>
-                  {appliedFilters.program_status && appliedFilters.program_status.length > 0 
-                    ? appliedFilters.program_status.join(', ') 
-                    : 'All statuses'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('program_status', appliedFilters.program_status, 'All statuses')}>
+                  {formatMultiSelectFilter('program_status', appliedFilters.program_status, 'All statuses')}
                 </p>
               </div>
               
               {/* Residency Status - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Residency Status</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.residency_status && appliedFilters.residency_status.length > 0 ? appliedFilters.residency_status.join(', ') : 'All statuses'}>
-                  {appliedFilters.residency_status && appliedFilters.residency_status.length > 0 
-                    ? appliedFilters.residency_status.join(', ') 
-                    : 'All statuses'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('residency_status', appliedFilters.residency_status, 'All statuses')}>
+                  {formatMultiSelectFilter('residency_status', appliedFilters.residency_status, 'All statuses')}
                 </p>
               </div>
               
               {/* CLB Level - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">CLB Level</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.clb_level && appliedFilters.clb_level.length > 0 ? appliedFilters.clb_level.join(', ') : 'All levels'}>
-                  {appliedFilters.clb_level && appliedFilters.clb_level.length > 0 
-                    ? appliedFilters.clb_level.join(', ') 
-                    : 'All levels'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('clb_level', appliedFilters.clb_level, 'All levels')}>
+                  {formatMultiSelectFilter('clb_level', appliedFilters.clb_level, 'All levels')}
                 </p>
               </div>
               
               {/* Employment Status - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Employment Status</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.employment_status && appliedFilters.employment_status.length > 0 ? appliedFilters.employment_status.join(', ') : 'All statuses'}>
-                  {appliedFilters.employment_status && appliedFilters.employment_status.length > 0 
-                    ? appliedFilters.employment_status.join(', ') 
-                    : 'All statuses'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('employment_status', appliedFilters.employment_status, 'All statuses')}>
+                  {formatMultiSelectFilter('employment_status', appliedFilters.employment_status, 'All statuses')}
                 </p>
               </div>
               
               {/* Referral Source - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Referral Source</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.referral_source && appliedFilters.referral_source.length > 0 ? appliedFilters.referral_source.join(', ') : 'All sources'}>
-                  {appliedFilters.referral_source && appliedFilters.referral_source.length > 0 
-                    ? appliedFilters.referral_source.join(', ') 
-                    : 'All sources'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('referral_source', appliedFilters.referral_source, 'All sources')}>
+                  {formatMultiSelectFilter('referral_source', appliedFilters.referral_source, 'All sources')}
                 </p>
               </div>
               
               {/* Career Counsellor - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Career Counsellor</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 ? appliedFilters.assigned_worker_name.join(', ') : 'All counsellors'}>
-                  {appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 
-                    ? appliedFilters.assigned_worker_name.join(', ') 
-                    : 'All counsellors'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('assigned_worker_name', appliedFilters.assigned_worker_name, 'All counsellors')}>
+                  {formatMultiSelectFilter('assigned_worker_name', appliedFilters.assigned_worker_name, 'All counsellors')}
                 </p>
               </div>
               
               {/* Barrier Type - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Barrier Type</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.barrier_1 && appliedFilters.barrier_1.length > 0 ? appliedFilters.barrier_1.join(', ') : 'All types'}>
-                  {appliedFilters.barrier_1 && appliedFilters.barrier_1.length > 0 
-                    ? appliedFilters.barrier_1.join(', ') 
-                    : 'All types'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('barrier_1', appliedFilters.barrier_1, 'All types')}>
+                  {formatMultiSelectFilter('barrier_1', appliedFilters.barrier_1, 'All types')}
                 </p>
               </div>
               
               {/* Has Vehicle - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Has Vehicle</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.has_vehicle || 'All'}>
-                  {appliedFilters.has_vehicle || 'All'}
+                <p className="text-slate-600 truncate" title={formatSimpleFilter(appliedFilters.has_vehicle, 'All')}>
+                  {formatSimpleFilter(appliedFilters.has_vehicle, 'All')}
                 </p>
               </div>
               
               {/* City - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">City</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.city && appliedFilters.city.trim() !== '' ? appliedFilters.city : 'All cities'}>
-                  {appliedFilters.city && appliedFilters.city.trim() !== '' ? appliedFilters.city : 'All cities'}
+                <p className="text-slate-600 truncate" title={formatSimpleFilter(appliedFilters.city, 'All cities')}>
+                  {formatSimpleFilter(appliedFilters.city, 'All cities')}
                 </p>
               </div>
               
               {/* Close Reason - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Close Reason</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.closed_reason && appliedFilters.closed_reason.length > 0 ? appliedFilters.closed_reason.join(', ') : 'All reasons'}>
-                  {appliedFilters.closed_reason && appliedFilters.closed_reason.length > 0 
-                    ? appliedFilters.closed_reason.join(', ') 
-                    : 'All reasons'}
+                <p className="text-slate-600 truncate" title={formatMultiSelectFilter('closed_reason', appliedFilters.closed_reason, 'All reasons')}>
+                  {formatMultiSelectFilter('closed_reason', appliedFilters.closed_reason, 'All reasons')}
                 </p>
               </div>
               
               {/* Compass Verified - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Compass Verified</p>
-                <p className="text-slate-600 truncate" title={appliedFilters.compass_verified !== undefined && appliedFilters.compass_verified !== '' ? (appliedFilters.compass_verified === true ? 'Yes' : 'No') : 'All'}>
-                  {appliedFilters.compass_verified !== undefined && appliedFilters.compass_verified !== '' 
-                    ? (appliedFilters.compass_verified === true ? 'Yes' : 'No') 
-                    : 'All'}
+                <p className="text-slate-600 truncate" title={formatSimpleFilter(appliedFilters.compass_verified, 'All')}>
+                  {formatSimpleFilter(appliedFilters.compass_verified, 'All')}
                 </p>
               </div>
             </div>
