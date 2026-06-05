@@ -37,8 +37,8 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
   // When status changes to started/completed, show compass prompt
   const prevStatus = currentStatus?.status || "planned";
 
-  // Check if any date is after projected end (skip check for barriers and follow-up items)
-  const isBarrierOrFollowup = item.isBarrier || item.key === "followup_90day" || item.key?.includes("followup");
+  // Check if any date is after projected end (skip check for follow-up items only)
+  const isBarrierOrFollowup = item.key === "followup_90day" || item.key?.includes("followup");
 
   function checkLateDate() {
     if (isBarrierOrFollowup || !projectedEndDate) return false;
