@@ -171,7 +171,7 @@ function fmt$(n) {
   return "$" + Number(n).toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export default function ReportSummary({ results, financialRecords, selectedSections = [], onClear, onExportCSV }) {
+export default function ReportSummary({ results, financialRecords, selectedSections = [], onClear, onExportCSV, dateRange, appliedFilters }) {
   const reportRef = useRef(null);
 
   const handlePrint = () => window.print();
@@ -373,6 +373,33 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       </div>
 
       <div ref={reportRef}>
+        {/* Print/PDF Header */}
+        <div className="hidden print:block mb-6 pb-6 border-b-2 border-slate-200">
+          <div className="flex items-center gap-4 mb-4">
+            <img src="/candora-logo.svg" alt="Candora" className="h-12 w-auto" />
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800" style={{ fontFamily: "Arial, sans-serif" }}>CANDORA Pathways Summary Report</h1>
+              <p className="text-sm text-slate-500">Generated on {new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+          </div>
+          {(dateRange || appliedFilters) && (
+            <div className="bg-slate-50 rounded-lg p-3 text-xs space-y-1">
+              {dateRange && (
+                <p className="text-slate-600"><span className="font-semibold">Date Range:</span> {dateRange.from} → {dateRange.to}</p>
+              )}
+              {appliedFilters && appliedFilters.service_type && (
+                <p className="text-slate-600"><span className="font-semibold">Service Streams:</span> {appliedFilters.service_type.join(', ')}</p>
+              )}
+              {appliedFilters && appliedFilters.status && (
+                <p className="text-slate-600"><span className="font-semibold">Case Status:</span> {appliedFilters.status.join(', ')}</p>
+              )}
+              {appliedFilters && appliedFilters.assigned_worker_name && (
+                <p className="text-slate-600"><span className="font-semibold">Career Counsellor:</span> {appliedFilters.assigned_worker_name.join(', ')}</p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Top stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <StatCard title="Total Clients" value={stats.total} icon={Users} color="text-primary" />

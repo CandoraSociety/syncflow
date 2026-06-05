@@ -661,6 +661,8 @@ export default function Reports() {
               selectedSections={selectedSections}
               onClear={() => { setResults(null); }}
               onExportCSV={exportCSV}
+              dateRange={{ from: dateFrom, to: dateTo }}
+              appliedFilters={filters}
             />
           )}
         </div>
