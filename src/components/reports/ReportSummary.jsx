@@ -576,11 +576,10 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
 
     const genderCounts = {};
     results.forEach(c => {
-      // Note: gender field may not exist, adjust if needed
       if (c.gender) genderCounts[c.gender] = (genderCounts[c.gender] || 0) + 1;
     });
     const genderRows = Object.entries(genderCounts)
-      .map(([k, v]) => ({ label: k, count: v }))
+      .map(([k, v]) => ({ label: k === "male" ? "Male" : k === "female" ? "Female" : k, count: v }))
       .sort((a, b) => b.count - a.count);
 
     // Financial rows for pie
@@ -605,10 +604,10 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       totalExposure, totalPlacement, totalSupports,
       totalDirect: totalExposure + totalPlacement + totalSupports,
       ageRows,
+      genderRows,
       residencyRows,
       cityRows,
       postalRows,
-      genderRows,
     };
   }, [results, financialRecords]);
 
@@ -1061,6 +1060,11 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {showDemographic("age_distribution") && stats.ageRows && stats.ageRows.length > 0 && (
                 <BreakdownCard title="Age Distribution" rows={stats.ageRows}>
                   <BreakdownTable rows={stats.ageRows} />
+                </BreakdownCard>
+              )}
+              {showDemographic("gender_distribution") && stats.genderRows && stats.genderRows.length > 0 && (
+                <BreakdownCard title="Gender Distribution" rows={stats.genderRows}>
+                  <BreakdownTable rows={stats.genderRows} />
                 </BreakdownCard>
               )}
               {showDemographic("residency_status") && stats.residencyRows && stats.residencyRows.length > 0 && (
