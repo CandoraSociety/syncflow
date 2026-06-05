@@ -168,7 +168,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   const intakeDate   = parseDate(client?.intake_date);
   const serviceStart = parseDate(client?.service_start_date);
   const isPathways   = client?.service_type === "pathways";
-  const projectedEnd = (isPathways && serviceStart) ? addWeeks(serviceStart, 16) : null;
+  const isDEA        = client?.service_type === "direct_to_employment";
+  const projectedEnd = serviceStart ? addWeeks(serviceStart, isPathways ? 16 : 2) : null;
   const actualEnd    = parseDate(client?.completion_date);
   const followup90   = actualEnd ? addWeeks(actualEnd, 13) : (projectedEnd ? addWeeks(projectedEnd, 13) : null);
 
@@ -300,7 +301,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     },
     projectedEnd && {
       key: "projected_end", date: projectedEnd,
-      label: "Proj.End", editLabel: null,
+      label: isPathways ? "Proj.End" : "End", editLabel: null,
       field: null, color: "#3b82f6",
       textColor: "text-blue-700", dashed: true,
     },
