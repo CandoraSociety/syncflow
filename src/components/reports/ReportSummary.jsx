@@ -241,48 +241,56 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       
-      // Calculate scaling to fit page width (with 15mm margins = 30mm total horizontal margin)
-      const availableWidth = pageWidth - 30; // 15mm margin on each side
+      // Margins (in mm)
+      const marginLeft = 15;
+      const marginRight = 15;
+      const marginTop = 15;
+      const marginBottom = 15;
+      const availableWidth = pageWidth - marginLeft - marginRight;
+      const availablePageHeight = pageHeight - marginTop - marginBottom;
+      
+      // Scale image to fit page width while maintaining aspect ratio
       const scale = availableWidth / imgWidth;
       const scaledWidth = imgWidth * scale;
       const scaledHeight = imgHeight * scale;
       
-      // Add multiple pages if content exceeds page height
-      let heightRemaining = 0;
-      const marginTop = 15; // 15mm top margin
+      // Slice the image across multiple pages
+      let sourceY = 0; // Position in the source image (in scaled mm)
+      let pageNum = 0;
       
-      if (scaledHeight <= pageHeight - marginTop - 15) {
-        // Single page
-        pdf.addImage(imgData, "PNG", 15, marginTop, scaledWidth, scaledHeight);
-      } else {
-        // Multiple pages - slice the image into page-sized chunks
-        const pageHeightPx = (pageHeight - 30) / scale; // Convert mm to pixels
-        let yPosition = 0;
-        let pageNum = 0;
-        
-        while (yPosition < imgHeight) {
-          if (pageNum > 0) {
-            pdf.addPage();
-          }
-          
-          // Calculate the portion of the image to show on this page
-          const remainingHeight = imgHeight - yPosition;
-          const drawHeight = Math.min(remainingHeight, pageHeightPx);
-          const drawY = yPosition;
-          
-          // Scale to fit on page
-          pdf.addImage(
-            imgData, 
-            "PNG", 
-            15, // x position (15mm left margin)
-            marginTop, // y position (15mm top margin)
-            scaledWidth,
-            (drawHeight / imgHeight) * scaledHeight // proportional height
-          );
-          
-          yPosition += pageHeightPx;
-          pageNum++;
+      while (sourceY < scaledHeight) {
+        if (pageNum > 0) {
+          pdf.addPage();
         }
+        
+        // Calculate how much of the image to show on this page
+        const remainingHeight = scaledHeight - sourceY;
+        const drawHeight = Math.min(remainingHeight, availablePageHeight);
+        
+        // Convert source Y from mm to pixels for clipping
+        const sourceYPixels = (sourceY / scale);
+        const drawHeightPixels = (drawHeight / scale);
+        
+        // Add clipped image slice to PDF
+        // jsPDF addImage supports: image, format, x, y, w, h, undefined, compression, rotation, srcX, srcY, srcW, srcH
+        pdf.addImage(
+          imgData, 
+          "PNG", 
+          marginLeft, 
+          marginTop, 
+          scaledWidth, 
+          drawHeight,
+          undefined,
+          'FAST',
+          0,
+          sourceYPixels,
+          imgWidth,
+          drawHeightPixels
+        );
+        
+        // Move to next page section
+        sourceY += drawHeight;
+        pageNum++;
       }
       
       pdf.save(`report-${new Date().toISOString().slice(0, 10)}.pdf`);
