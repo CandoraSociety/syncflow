@@ -193,6 +193,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       const n = key.split("_")[1];
       if (saveData.startDate) extraFields[`barrier_${n}_timeline_start`] = saveData.startDate;
       if (saveData.endDate)   extraFields[`barrier_${n}_timeline_end`]   = saveData.endDate;
+      // Sync barrier status: completed → resolved, started → in_progress, planned/cancelled → unresolved
+      const barrierStatusMap = { completed: "resolved", started: "in_progress", planned: "unresolved", cancelled: "unresolved" };
+      extraFields[`barrier_${n}_status`] = barrierStatusMap[saveData.status] || "unresolved";
     } else if (saveData.startDate || saveData.endDate) {
       const existingDetails = client?.sdp_item_details || {};
       extraFields.sdp_item_details = {
