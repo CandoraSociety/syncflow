@@ -5,6 +5,13 @@ import confetti from "canvas-confetti";
  * Celebration component - plays confetti animation and applause sound
  * Triggered when a roadmap item is marked as completed
  */
+const APPLAUSE_URL = "https://archive.org/download/Red_Library_Crowds_Applause/R07-29-Loud%20Applause%20and%20Cheering.mp3";
+
+// Preload audio at module level so it's ready immediately on trigger
+const preloadedAudio = new Audio(APPLAUSE_URL);
+preloadedAudio.preload = "auto";
+preloadedAudio.volume = 0.7;
+
 export default function Celebration({ trigger, onComplete }) {
   const audioRef = useRef(null);
   const animationRef = useRef(null);
@@ -12,15 +19,13 @@ export default function Celebration({ trigger, onComplete }) {
   useEffect(() => {
     if (!trigger) return;
 
-    // Play applause sound using Pixabay CDN (royalty-free, no hotlink restrictions)
     const playSound = async () => {
       try {
-        // "Loud Applause and Cheering" from Red Library (CC0, Internet Archive)
-        const audio = new Audio("https://archive.org/download/Red_Library_Crowds_Applause/R07-29-Loud%20Applause%20and%20Cheering.mp3");
-        audio.volume = 0.7;
-        audioRef.current = audio;
-        await audio.play();
-        audio.onended = () => {
+        // Reuse preloaded audio; reset if it was already played
+        preloadedAudio.currentTime = 0;
+        audioRef.current = preloadedAudio;
+        await preloadedAudio.play();
+        preloadedAudio.onended = () => {
           if (onComplete) onComplete();
         };
       } catch (error) {
