@@ -544,6 +544,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                     onSave={(data) => handleSaveItem(item.key, data)}
                                     onCancel={() => setOpenItem(null)}
                                     saving={saving}
+                                    projectedEndDate={client?.completion_date || (projectedEnd ? projectedEnd.toISOString().slice(0, 10) : null)}
                                     />
                             </div>
                           )}
@@ -661,12 +662,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                               {isOpen && (
                                 <div className="relative z-30 mb-1">
                                   <RoadmapItemPanel
-                                    item={item}
-                                    currentStatus={item.statusData}
-                                    onSave={(data) => handleSaveItem(item.key, data)}
-                                    onCancel={() => setOpenItem(null)}
-                                    saving={saving}
-                                  />
+                                                     item={item}
+                                                     currentStatus={item.statusData}
+                                                     onSave={(data) => handleSaveItem(item.key, data)}
+                                                     onCancel={() => setOpenItem(null)}
+                                                     saving={saving}
+                                                     projectedEndDate={client?.completion_date || (projectedEnd ? projectedEnd.toISOString().slice(0, 10) : null)}
+                                                   />
                                 </div>
                               )}
 
@@ -832,6 +834,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                         onSave={(data) => handleSaveItem(item.key, data)}
                         onCancel={() => setOpenItem(null)}
                         saving={saving}
+                        projectedEndDate={client?.completion_date || (projectedEnd ? projectedEnd.toISOString().slice(0, 10) : null)}
                       />
                     )}
                   </div>
@@ -881,6 +884,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                     onSave={(data) => handleSaveItem(item.key, data)}
                     onCancel={() => setOpenItem(null)}
                     saving={saving}
+                    projectedEndDate={client?.completion_date || (projectedEnd ? projectedEnd.toISOString().slice(0, 10) : null)}
                   />
                 )}
               </div>

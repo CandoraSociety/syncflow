@@ -7,6 +7,11 @@ import { AlertTriangle, Save, X, CheckCircle2, Play, Calendar, AlertCircle } fro
 import { format } from "date-fns";
 import Celebration from "../Celebration";
 
+function isAfterProjectedEnd(dateStr, projectedEndDate) {
+  if (!dateStr || !projectedEndDate) return false;
+  return dateStr > projectedEndDate;
+}
+
 const BARRIER_STATUS_COLORS = {
   unresolved: "bg-red-100 text-red-700 border-red-200",
   in_progress: "bg-amber-100 text-amber-700 border-amber-200",
@@ -18,7 +23,7 @@ const BARRIER_STATUS_COLORS = {
  * Handles: dates, case manager notes, started status + date, completed status + date.
  * Calls onSave({ startDate, endDate, notes, status, startedDate, completedDate })
  */
-export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel, saving }) {
+export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel, saving, projectedEndDate }) {
   const [startDate, setStartDate] = useState(item.detail?.timeline_start || "");
   const [endDate, setEndDate] = useState(item.detail?.timeline_end || "");
   const [notes, setNotes] = useState(currentStatus?.case_manager_notes || "");
@@ -26,20 +31,52 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
   const [startedDate, setStartedDate] = useState(currentStatus?.started_date || "");
   const [completedDate, setCompletedDate] = useState(currentStatus?.completed_date || format(new Date(), "yyyy-MM-dd"));
   const [showCompassPrompt, setShowCompassPrompt] = useState(false);
+  const [showLateDatePrompt, setShowLateDatePrompt] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
 
   // When status changes to started/completed, show compass prompt
   const prevStatus = currentStatus?.status || "planned";
 
+  // Check if any date is after projected end (skip check for barriers and follow-up items)
+  const isBarrierOrFollowup = item.isBarrier || item.key === "followup_90day" || item.key?.includes("followup");
+
+  function checkLateDate() {
+    if (isBarrierOrFollowup || !projectedEndDate) return false;
+    return (
+      isAfterProjectedEnd(startDate, projectedEndDate) ||
+      isAfterProjectedEnd(endDate, projectedEndDate) ||
+      isAfterProjectedEnd(startedDate, projectedEndDate) ||
+      isAfterProjectedEnd(completedDate, projectedEndDate)
+    );
+  }
+
   function handleSave() {
     const isNewStarted = status === "started" && prevStatus !== "started";
     const isNewCompleted = status === "completed" && prevStatus !== "completed";
-    
+
+    // Check for late date first (only for non-barrier, non-followup items)
+    if (checkLateDate()) {
+      setShowLateDatePrompt(true);
+      return;
+    }
+
     // Trigger celebration for ANY item when marked as completed
     if (isNewCompleted) {
       setCelebrate(true);
     }
     
+    if (isNewStarted || isNewCompleted) {
+      setShowCompassPrompt(true);
+    } else {
+      onSave({ startDate, endDate, notes, status, startedDate, completedDate });
+    }
+  }
+
+  function proceedAfterLateDate() {
+    setShowLateDatePrompt(false);
+    const isNewStarted = status === "started" && prevStatus !== "started";
+    const isNewCompleted = status === "completed" && prevStatus !== "completed";
+    if (isNewCompleted) setCelebrate(true);
     if (isNewStarted || isNewCompleted) {
       setShowCompassPrompt(true);
     } else {
@@ -146,6 +183,28 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
         />
       </div>
 
+      {/* Late date confirmation prompt */}
+      {showLateDatePrompt && (
+        <div className="border border-orange-300 bg-orange-50 rounded-lg p-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+            <div className="text-xs text-orange-800">
+              <p className="font-semibold mb-1">Date is after projected program end</p>
+              <p>
+                This activity is scheduled at a date later than the projected program completion date
+                {projectedEndDate ? ` (${projectedEndDate})` : ""}. Would you still like to select this date?
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={proceedAfterLateDate} disabled={saving} className="text-xs h-7 gap-1 bg-orange-600 hover:bg-orange-700">
+              Yes, proceed anyway
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowLateDatePrompt(false)} className="text-xs h-7">Go back</Button>
+          </div>
+        </div>
+      )}
+
       {/* Compass prompt overlay */}
       {showCompassPrompt && (
         <div className="border border-amber-300 bg-amber-50 rounded-lg p-3 space-y-2">
@@ -170,7 +229,7 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
         </div>
       )}
 
-      {!showCompassPrompt && (
+      {!showCompassPrompt && !showLateDatePrompt && (
         <div className="flex gap-2 pt-1">
           <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5 text-xs h-8">
             <Save className="w-3.5 h-3.5" /> {saving ? "Saving…" : "Save"}
