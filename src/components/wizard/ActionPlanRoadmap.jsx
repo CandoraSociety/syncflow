@@ -545,6 +545,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                     onCancel={() => setOpenItem(null)}
                                     saving={saving}
                                     projectedEndDate={client?.completion_date || (projectedEnd ? projectedEnd.toISOString().slice(0, 10) : null)}
+                                    serviceStartDate={client?.service_start_date}
                                     />
                             </div>
                           )}
@@ -663,6 +664,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                                      onCancel={() => setOpenItem(null)}
                                                      saving={saving}
                                                      projectedEndDate={client?.completion_date || (projectedEnd ? projectedEnd.toISOString().slice(0, 10) : null)}
+                                                     serviceStartDate={client?.service_start_date}
                                                    />
                                 </div>
                               )}

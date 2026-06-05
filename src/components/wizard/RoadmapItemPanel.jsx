@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Save, X, CheckCircle2, Play, Calendar, AlertCircle } from "lucide-react";
+import { AlertTriangle, Save, X, CheckCircle2, Play, Calendar, AlertCircle, Lock, Unlock } from "lucide-react";
 import { format } from "date-fns";
 import Celebration from "../Celebration";
 
@@ -23,7 +23,7 @@ const BARRIER_STATUS_COLORS = {
  * Handles: dates, case manager notes, started status + date, completed status + date.
  * Calls onSave({ startDate, endDate, notes, status, startedDate, completedDate })
  */
-export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel, saving, projectedEndDate }) {
+export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel, saving, projectedEndDate, serviceStartDate }) {
   const [startDate, setStartDate] = useState(item.detail?.timeline_start || "");
   const [endDate, setEndDate] = useState(item.detail?.timeline_end || "");
   const [notes, setNotes] = useState(currentStatus?.case_manager_notes || "");
@@ -33,6 +33,14 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
   const [showCompassPrompt, setShowCompassPrompt] = useState(false);
   const [showLateDatePrompt, setShowLateDatePrompt] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  const [unlockRange, setUnlockRange] = useState(false);
+
+  // Date range constraints
+  const minDate = serviceStartDate || undefined;
+  const maxDate = projectedEndDate || undefined;
+  const hasRange = !!(minDate && maxDate);
+  const dateMin = (!unlockRange && minDate) ? minDate : undefined;
+  const dateMax = (!unlockRange && maxDate) ? maxDate : undefined;
 
   // When status changes to started/completed, show compass prompt
   const prevStatus = currentStatus?.status || "planned";
@@ -120,15 +128,27 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
       )}
 
       {/* Dates */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" />Planned Start</Label>
-          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-xs h-8" />
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" />Planned Start</Label>
+            <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} min={dateMin} max={dateMax} className="text-xs h-8" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" />Planned End</Label>
+            <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} min={dateMin} max={dateMax} className="text-xs h-8" />
+          </div>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" />Planned End</Label>
-          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-xs h-8" />
-        </div>
+        {hasRange && (
+          <button
+            type="button"
+            onClick={() => setUnlockRange(v => !v)}
+            className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md border transition-colors ${unlockRange ? "border-amber-300 bg-amber-50 text-amber-700" : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300"}`}
+          >
+            {unlockRange ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+            {unlockRange ? "Dates outside program range unlocked" : "Allow dates outside program range"}
+          </button>
+        )}
       </div>
 
       {/* Status selector */}
@@ -160,7 +180,7 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
       {status === "started" && (
         <div className="space-y-1">
           <Label className="text-xs font-semibold text-blue-700">Actual Start Date</Label>
-          <Input type="date" value={startedDate} onChange={e => setStartedDate(e.target.value)} className="text-xs h-8 border-blue-300" />
+          <Input type="date" value={startedDate} onChange={e => setStartedDate(e.target.value)} min={dateMin} max={dateMax} className="text-xs h-8 border-blue-300" />
         </div>
       )}
 
@@ -168,7 +188,7 @@ export default function RoadmapItemPanel({ item, currentStatus, onSave, onCancel
       {status === "completed" && (
         <div className="space-y-1">
           <Label className="text-xs font-semibold text-green-700">Completion Date</Label>
-          <Input type="date" value={completedDate} onChange={e => setCompletedDate(e.target.value)} className="text-xs h-8 border-green-300" />
+          <Input type="date" value={completedDate} onChange={e => setCompletedDate(e.target.value)} min={dateMin} max={dateMax} className="text-xs h-8 border-green-300" />
         </div>
       )}
 
