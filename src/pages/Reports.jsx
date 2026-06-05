@@ -93,8 +93,17 @@ const SERVICE_LABELS = {
   external_referral: "Ext. Referral", internal_referral: "Int. Referral", not_eligible: "Not Eligible",
 };
 
+const SERVICE_TYPE_OPTIONS = [
+  { value: "direct_to_employment", label: "Direct to Employment (DEA)" },
+  { value: "pathways", label: "Pathways" },
+  { value: "casual", label: "Casual" },
+  { value: "external_referral", label: "External Referral" },
+  { value: "internal_referral", label: "Internal Referral" },
+  { value: "not_eligible", label: "Not Eligible" },
+];
+
 const DEMOGRAPHIC_FILTERS = [
-  { key: "service_type", label: "Service Stream", type: "multi-select" },
+  { key: "service_type", label: "Service Stream", type: "multi-select", fixedOptions: SERVICE_TYPE_OPTIONS },
   { key: "status", label: "Case Status", type: "multi-select" },
   { key: "program_status", label: "Program Status", type: "multi-select" },
   { key: "residency_status", label: "Residency Status", type: "multi-select" },
@@ -586,26 +595,28 @@ export default function Reports() {
                         </div>
                       );
                     } else {
-                      const options = [...new Set(clients.map(c => c[f.key]).filter(Boolean))].sort();
-                      const allSelected = options.length > 0 && options.every(o => (filters[f.key] || []).includes(o));
+                      const rawOptions = f.fixedOptions
+                        ? f.fixedOptions
+                        : [...new Set(clients.map(c => c[f.key]).filter(Boolean))].sort().map(v => ({ value: v, label: v }));
+                      const allSelected = rawOptions.length > 0 && rawOptions.every(o => (filters[f.key] || []).includes(o.value));
                       return (
                         <div key={f.key}>
                           <div className="flex items-center justify-between mb-1">
                             <Label className="text-xs">{f.label}</Label>
-                            {options.length > 1 && (
-                              <button className="text-xs text-primary hover:underline" onClick={() => selectAllFilterOptions(f.key, options)}>
+                            {rawOptions.length > 1 && (
+                              <button className="text-xs text-primary hover:underline" onClick={() => selectAllFilterOptions(f.key, rawOptions.map(o => o.value))}>
                                 {allSelected ? "Clear" : "All"}
                               </button>
                             )}
                           </div>
                           <div className="space-y-1 max-h-24 overflow-y-auto border border-slate-100 rounded p-2">
-                            {options.map(opt => (
-                              <label key={opt} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                            {rawOptions.map(opt => (
+                              <label key={opt.value} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
                                 <Checkbox
-                                  checked={(filters[f.key] || []).includes(opt)}
-                                  onCheckedChange={() => toggleFilter(f.key, opt)}
+                                  checked={(filters[f.key] || []).includes(opt.value)}
+                                  onCheckedChange={() => toggleFilter(f.key, opt.value)}
                                 />
-                                <span className="text-xs text-slate-700 truncate">{opt}</span>
+                                <span className="text-xs text-slate-700 truncate">{opt.label}</span>
                               </label>
                             ))}
                           </div>
