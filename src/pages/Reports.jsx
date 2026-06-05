@@ -100,9 +100,16 @@ const SERVICE_TYPE_OPTIONS = [
   { value: "internal_referral", label: "Internal Referral" },
 ];
 
+const CASE_STATUS_OPTIONS = [
+  { value: "new", label: "New" },
+  { value: "active", label: "Active" },
+  { value: "pending", label: "Pending" },
+  { value: "closed", label: "Closed" },
+];
+
 const DEMOGRAPHIC_FILTERS = [
   { key: "service_type", label: "Service Stream", type: "multi-select", fixedOptions: SERVICE_TYPE_OPTIONS },
-  { key: "status", label: "Case Status", type: "multi-select" },
+  { key: "status", label: "Case Status", type: "multi-select", fixedOptions: CASE_STATUS_OPTIONS },
   { key: "program_status", label: "Program Status", type: "multi-select" },
   { key: "residency_status", label: "Residency Status", type: "multi-select" },
   { key: "clb_level", label: "CLB Level", type: "multi-select" },
