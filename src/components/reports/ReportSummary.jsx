@@ -103,7 +103,7 @@ function MiniPie({ rows }) {
   );
 }
 
-function BreakdownCard({ title, rows, children, demographicBreakdown }) {
+function BreakdownCard({ title, rows, children }) {
   const [showPie, setShowPie] = useState(false);
   const hasData = rows && rows.length > 0;
   const total = hasData ? rows.reduce((s, r) => s + r.count, 0) : 0;
@@ -127,7 +127,6 @@ function BreakdownCard({ title, rows, children, demographicBreakdown }) {
       <CardContent>
         {children}
         {showPie && hasData && <MiniPie rows={rows} />}
-        {demographicBreakdown && <DemographicBreakdown breakdowns={demographicBreakdown} />}
       </CardContent>
     </Card>
   );
@@ -167,50 +166,12 @@ function BreakdownTable({ title, rows }) {
   );
 }
 
-function DemographicBreakdown({ breakdowns }) {
-  if (!breakdowns || Object.keys(breakdowns).length === 0) return null;
-
-  return (
-    <div className="mt-4 pt-4 border-t border-slate-200">
-      <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-        <Users className="w-3 h-3" /> Demographic Breakdown
-      </h4>
-      <div className="space-y-3">
-        {Object.entries(breakdowns).map(([field, rows]) => {
-          const total = rows.reduce((s, x) => s + x.count, 0);
-          return (
-            <div key={field} className="space-y-1.5">
-              <p className="text-xs font-medium text-slate-500 capitalize">
-                {field.replace(/_/g, ' ')}
-              </p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                {rows.slice(0, 8).map((r, i) => {
-                  const color = PIE_COLORS[i % PIE_COLORS.length];
-                  return (
-                    <div key={r.label} className="flex items-center gap-2 min-w-0">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      <span className="text-xs text-slate-700 truncate flex-1">{r.label}</span>
-                      <span className="text-xs font-semibold text-slate-800 shrink-0">{r.count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-
-
 function fmt$(n) {
   if (!n && n !== 0) return "$0.00";
   return "$" + Number(n).toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export default function ReportSummary({ results, financialRecords, selectedSections = [], sectionDemographics = {}, onClear, onExportCSV, dateRange, appliedFilters, allClients, demographicFilters }) {
+export default function ReportSummary({ results, financialRecords, selectedSections = [], onClear, onExportCSV, dateRange, appliedFilters, allClients, demographicFilters }) {
   const reportRef = useRef(null);
 
   const handlePrint = () => window.print();
@@ -486,33 +447,6 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
 
   const show = (key) => selectedSections.includes(key) || selectedSections.length === 0;
 
-  // Compute demographic breakdown for a section
-  const getDemographicBreakdown = (sectionKey) => {
-    const demoFields = sectionDemographics[sectionKey] || [];
-    if (demoFields.length === 0) return null;
-
-    const breakdowns = {};
-    demoFields.forEach(field => {
-      const counts = {};
-      results.forEach(c => {
-        const value = c[field];
-        const label = value === undefined || value === null || value === "" 
-          ? "Not specified" 
-          : field === "service_type" ? SERVICE_LABELS[value] || value
-          : field === "employment_status" || field === "post_completion_employment_status" || field === "followup_90day_status"
-          ? EMP_STATUS_LABELS[value] || value
-          : field === "compass_verified" ? (value ? "Yes" : "No")
-          : field === "clb_level" ? value.replace("clb_", "CLB ").replace("native_english_french", "Native")
-          : String(value);
-        counts[label] = (counts[label] || 0) + 1;
-      });
-      breakdowns[field] = Object.entries(counts)
-        .map(([label, count]) => ({ label, count }))
-        .sort((a, b) => b.count - a.count);
-    });
-    return breakdowns;
-  };
-
   return (
     <div className="space-y-6">
       <style>{printStyles}</style>
@@ -762,30 +696,18 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
         {/* Breakdowns grid - Page 2/3 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 print-break-inside-avoid print-section-break">
           {show("service_stream") && (
-            <BreakdownCard 
-              title="Service Stream" 
-              rows={stats.streamRows}
-              demographicBreakdown={getDemographicBreakdown("service_stream")}
-            >
+            <BreakdownCard title="Service Stream" rows={stats.streamRows}>
               <BreakdownTable rows={stats.streamRows} />
             </BreakdownCard>
           )}
 
           {show("case_program_status") && (
             <>
-              <BreakdownCard 
-                title="Case Status" 
-                rows={stats.caseStatusRows}
-                demographicBreakdown={getDemographicBreakdown("case_program_status")}
-              >
+              <BreakdownCard title="Case Status" rows={stats.caseStatusRows}>
                 <BreakdownTable rows={stats.caseStatusRows} />
               </BreakdownCard>
               {stats.programStatusRows.length > 0 && (
-                <BreakdownCard 
-                  title="Program Status" 
-                  rows={stats.programStatusRows}
-                  demographicBreakdown={getDemographicBreakdown("case_program_status")}
-                >
+                <BreakdownCard title="Program Status" rows={stats.programStatusRows}>
                   <BreakdownTable rows={stats.programStatusRows} />
                 </BreakdownCard>
               )}
@@ -793,51 +715,31 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           )}
 
           {show("referral_source") && (
-            <BreakdownCard 
-              title="Referral Source" 
-              rows={stats.referralRows}
-              demographicBreakdown={getDemographicBreakdown("referral_source")}
-            >
+            <BreakdownCard title="Referral Source" rows={stats.referralRows}>
               <BreakdownTable rows={stats.referralRows} />
             </BreakdownCard>
           )}
 
           {show("employment_intake") && (
-            <BreakdownCard 
-              title="Employment Status at Intake" 
-              rows={stats.intakeEmpRows}
-              demographicBreakdown={getDemographicBreakdown("employment_intake")}
-            >
+            <BreakdownCard title="Employment Status at Intake" rows={stats.intakeEmpRows}>
               <BreakdownTable rows={stats.intakeEmpRows} />
             </BreakdownCard>
           )}
 
           {show("employment_post") && stats.postEmpRows.length > 0 && (
-            <BreakdownCard 
-              title="Post-Completion Employment Status" 
-              rows={stats.postEmpRows}
-              demographicBreakdown={getDemographicBreakdown("employment_post")}
-            >
+            <BreakdownCard title="Post-Completion Employment Status" rows={stats.postEmpRows}>
               <BreakdownTable rows={stats.postEmpRows} />
             </BreakdownCard>
           )}
 
           {show("employment_90day") && stats.fu90Rows.length > 0 && (
-            <BreakdownCard 
-              title="90-Day Follow-Up Status" 
-              rows={stats.fu90Rows}
-              demographicBreakdown={getDemographicBreakdown("employment_90day")}
-            >
+            <BreakdownCard title="90-Day Follow-Up Status" rows={stats.fu90Rows}>
               <BreakdownTable rows={stats.fu90Rows} />
             </BreakdownCard>
           )}
 
           {show("barriers") && stats.barrierRows.length > 0 && (
-            <BreakdownCard 
-              title="Top Barriers Identified" 
-              rows={stats.barrierRows}
-              demographicBreakdown={getDemographicBreakdown("barriers")}
-            >
+            <BreakdownCard title="Top Barriers Identified" rows={stats.barrierRows}>
               <BreakdownTable rows={stats.barrierRows} />
             </BreakdownCard>
           )}
