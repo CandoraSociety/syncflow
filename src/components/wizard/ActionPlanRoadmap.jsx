@@ -256,7 +256,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     minDate = leftAnchor
       ? new Date(leftAnchor.getFullYear(), leftAnchor.getMonth(), leftAnchor.getDate(), 12, 0, 0)
       : new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate(), 12, 0, 0);
-    maxDate = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate() + 28, 12, 0, 0);
+    // Extend maxDate to show full timeline: at least 20 weeks from start, or 4 weeks past the latest date
+    const minEnd = new Date(minDate.getTime() + 20 * 7 * 24 * 60 * 60 * 1000); // 20 weeks from start
+    const bufferEnd = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate() + 28, 12, 0, 0);
+    maxDate = minEnd > bufferEnd ? minEnd : bufferEnd;
     minMs   = minDate.getTime();
     rangeMs = maxDate.getTime() - minMs;
   }
