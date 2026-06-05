@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
 
 /**
- * Celebration component - plays confetti animation and clapping/cheering sound
- * Triggered when a barrier is marked as completed
+ * Celebration component - plays confetti animation and applause sound
+ * Triggered when a roadmap item is marked as completed
  */
 export default function Celebration({ trigger, onComplete }) {
   const audioRef = useRef(null);
@@ -12,10 +12,11 @@ export default function Celebration({ trigger, onComplete }) {
   useEffect(() => {
     if (!trigger) return;
 
-    // Play applause sound
+    // Play applause sound using Pixabay CDN (royalty-free, no hotlink restrictions)
     const playSound = async () => {
       try {
-        const audio = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-animated-small-group-applause-523.mp3");
+        // "Loud Applause and Cheering" from Red Library (CC0, Internet Archive)
+        const audio = new Audio("https://archive.org/download/Red_Library_Crowds_Applause/R07-29-Loud%20Applause%20and%20Cheering.mp3");
         audio.volume = 0.7;
         audioRef.current = audio;
         await audio.play();
@@ -32,63 +33,25 @@ export default function Celebration({ trigger, onComplete }) {
     const fireConfetti = () => {
       const duration = 3000;
       const end = Date.now() + duration;
-
-      // Gold and green confetti for celebration
       const colors = ["#FBB800", "#22c55e", "#16a34a", "#f59e0b"];
 
       const frame = () => {
         if (Date.now() > end) return;
-
-        confetti({
-          particleCount: 3,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0, y: 0.6 },
-          colors: colors,
-          scalar: 0.8,
-          drift: 0.5,
-          ticks: 200,
-        });
-        confetti({
-          particleCount: 3,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1, y: 0.6 },
-          colors: colors,
-          scalar: 0.8,
-          drift: -0.5,
-          ticks: 200,
-        });
-
+        confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.6 }, colors, scalar: 0.8, drift: 0.5, ticks: 200 });
+        confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.6 }, colors, scalar: 0.8, drift: -0.5, ticks: 200 });
         animationRef.current = requestAnimationFrame(frame);
       };
 
       frame();
-
-      // Initial burst
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: colors,
-        scalar: 1.2,
-        gravity: 1.2,
-        drift: 0,
-        ticks: 150,
-      });
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors, scalar: 1.2, gravity: 1.2, drift: 0, ticks: 150 });
     };
 
     playSound();
     fireConfetti();
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     };
   }, [trigger, onComplete]);
 
