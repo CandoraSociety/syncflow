@@ -90,7 +90,7 @@ export default function ProgramFlowWizard({ client, onSave, onClientUpdate }) {
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all text-sm ${
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : "hover:bg-slate-100 text-slate-700"
+                    : "hover:bg-slate-100 hover:text-slate-900 text-slate-700"
                 }`}
               >
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isActive ? "border-white/60 bg-white/20" : cfg.ring}`}>

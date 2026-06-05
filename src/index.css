@@ -102,7 +102,7 @@
     @apply transition-colors;
   }
 
-  a:hover, button:hover, [role="button"]:hover {
+  a:hover, [role="button"]:hover {
     @apply bg-accent/5;
   }
 
