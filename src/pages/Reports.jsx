@@ -441,8 +441,10 @@ export default function Reports() {
 
       <Tabs defaultValue="data" className="max-w-7xl mx-auto px-6 py-6">
         <TabsList className="mb-4">
+          <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
           <TabsTrigger value="data">Data Reports</TabsTrigger>
           <TabsTrigger value="staff">Staff Monthly Reports</TabsTrigger>
+          <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="data">
