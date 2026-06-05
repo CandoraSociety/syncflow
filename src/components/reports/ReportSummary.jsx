@@ -142,19 +142,24 @@ function BreakdownCard({ title, rows, children, showDemographics, onToggleDemogr
           <div className="mt-4 pt-3 border-t border-slate-100 -mx-6 px-6 pb-4">
             <h5 className="text-xs font-semibold text-slate-600 mb-2">Breakdown by Demographics</h5>
             <div className="space-y-3">
-              {demographicBreakdownData.map((demo, idx) => (
-                <div key={idx} className="space-y-1">
-                  <p className="text-xs font-medium text-slate-700">{demo.label}</p>
-                  <div className="space-y-1">
-                    {demo.breakdown.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-slate-600">{item.label}</span>
-                        <span className="font-medium text-slate-800">{item.count}</span>
-                      </div>
-                    ))}
+              {demographicBreakdownData.map((demo, idx) => {
+                const total = demo.breakdown.reduce((sum, item) => sum + item.count, 0);
+                return (
+                  <div key={idx} className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">{demo.label}</p>
+                    <div className="space-y-1">
+                      {demo.breakdown.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600">{item.label}</span>
+                          <span className="font-medium text-slate-800">
+                            {item.count} ({Math.round((item.count / total) * 100)}%)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
