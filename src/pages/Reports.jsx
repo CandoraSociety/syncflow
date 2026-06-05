@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Download, Save, Trash2, FileBarChart, Filter, BarChart3, Info, FileText, Calendar } from "lucide-react";
-import { format, differenceInMonths, startOfYear, endOfYear, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { Play, Save, Trash2, FileBarChart, Filter } from "lucide-react";
+import { format, differenceInMonths, startOfYear, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaffMonthlyReports from "../components/reports/StaffMonthlyReports";
+import ReportSummary from "../components/reports/ReportSummary";
 
 // All available fields
 const ALL_FIELDS = [
@@ -219,10 +220,9 @@ function saveTemplates(t) {
 
 export default function Reports() {
   const [clients, setClients] = useState([]);
+  const [financialRecords, setFinancialRecords] = useState([]);
   const [financialMap, setFinancialMap] = useState({});
-  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFields, setSelectedFields] = useState(["first_name", "last_name", "service_type", "program_status", "assigned_worker_name", "intake_date"]);
   const [datePreset, setDatePreset] = useState("none");
   const [customDateFrom, setCustomDateFrom] = useState("");
   const [customDateTo, setCustomDateTo] = useState("");
@@ -232,14 +232,12 @@ export default function Reports() {
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [filters, setFilters] = useState({});
-  const [finApplyClientFilter, setFinApplyClientFilter] = useState(false);
 
   useEffect(() => {
     Promise.all([
       base44.entities.Client.list("-intake_date", 1000),
       base44.entities.FinancialRecord.list("-date", 2000),
-      base44.entities.Invoice.list("-billing_month", 200),
-    ]).then(([clientData, finData, invData]) => {
+    ]).then(([clientData, finData]) => {
       const map = {};
       finData.forEach(rec => {
         if (!rec.client_id) return;
@@ -250,26 +248,11 @@ export default function Reports() {
         else if (rec.record_type === "employment_supports") map[rec.client_id].supports += amt;
       });
       setFinancialMap(map);
+      setFinancialRecords(finData);
       setClients(clientData);
-      setInvoices(invData);
       setLoading(false);
     });
   }, []);
-
-  const toggleField = (key) => {
-    setSelectedFields(prev =>
-      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-    );
-  };
-
-  const selectAllFields = (fields) => {
-    setSelectedFields(prev => {
-      const keys = fields.map(f => f.key);
-      const allSelected = keys.every(k => prev.includes(k));
-      if (allSelected) return prev.filter(k => !keys.includes(k));
-      return [...prev.filter(k => !keys.includes(k)), ...keys];
-    });
-  };
 
   const selectAllFilterOptions = (filterKey, options) => {
     setFilters(prev => {
@@ -329,56 +312,12 @@ export default function Reports() {
     setResults(data);
   };
 
-  // Build invoice aggregates — optionally filtered to the client set
-  function buildInvoiceAggregates(filteredClientIds) {
-    const agg = {
-      _inv_total_amount: 0,
-      _inv_base_amount: 0,
-      _inv_subtotal_deliverables: 0,
-      _inv_subtotal_direct_costs: 0,
-      _inv_starters: 0,
-      _inv_completers: 0,
-      _inv_employment_outcomes: 0,
-      _inv_90day_outcomes: 0,
-      _inv_exposure_courses: 0,
-      _inv_paid_placements: 0,
-      _inv_employment_supports: 0,
-    };
-
-    const clientIdSet = filteredClientIds ? new Set(filteredClientIds) : null;
-
-    invoices.forEach(inv => {
-      // Invoice-level totals: always include (not client-filterable)
-      agg._inv_total_amount += inv.total_amount || 0;
-      agg._inv_base_amount += inv.base_amount || 0;
-      agg._inv_subtotal_deliverables += inv.subtotal_deliverables || 0;
-      agg._inv_subtotal_direct_costs += inv.subtotal_direct_costs || 0;
-
-      (inv.line_items || []).forEach(li => {
-        if (li.excluded) return;
-        const amt = li.amount || 0;
-        const inClientSet = !clientIdSet || (li.client_id && clientIdSet.has(li.client_id));
-        if (!inClientSet) return; // These line items are client-filterable
-
-        if (li.category === "starter") agg._inv_starters += amt;
-        else if (li.category === "completer") agg._inv_completers += amt;
-        else if (li.category === "employment_outcome") agg._inv_employment_outcomes += amt;
-        else if (li.category === "90day_outcome") agg._inv_90day_outcomes += amt;
-        else if (li.category === "exposure_course") agg._inv_exposure_courses += amt;
-        else if (li.category === "paid_placement") agg._inv_paid_placements += amt;
-        else if (li.category === "employment_support") agg._inv_employment_supports += amt;
-      });
-    });
-
-    return agg;
-  }
-
   const exportCSV = () => {
     if (!results) return;
-    const nonInvoiceFields = selectedFields.filter(k => !k.startsWith("_inv_"));
-    const headers = nonInvoiceFields.map(k => ALL_FIELDS.find(f => f.key === k)?.label || k);
-    const rows = results.map(c => nonInvoiceFields.map(k => {
-      const v = getDisplayValue(c, k);
+    const fields = ALL_FIELDS.filter(f => f.category === "demographic" || f.category === "date");
+    const headers = fields.map(f => f.label);
+    const rows = results.map(c => fields.map(f => {
+      const v = getDisplayValue(c, f.key);
       return `"${v.replace(/"/g, '""')}"`;
     }).join(","));
     const csv = [headers.join(","), ...rows].join("\n");
@@ -393,7 +332,7 @@ export default function Reports() {
 
   const saveTemplate = () => {
     if (!templateName.trim()) return;
-    const t = { id: Date.now(), name: templateName.trim(), selectedFields, dateField, datePreset, filters, finApplyClientFilter };
+    const t = { id: Date.now(), name: templateName.trim(), dateField, datePreset, filters };
     const updated = [...templates, t];
     setTemplates(updated);
     saveTemplates(updated);
@@ -402,11 +341,9 @@ export default function Reports() {
   };
 
   const loadTemplate = (t) => {
-    setSelectedFields(t.selectedFields);
     setDateField(t.dateField || "intake_date");
     setDatePreset(t.datePreset || "none");
     setFilters(t.filters || {});
-    setFinApplyClientFilter(t.finApplyClientFilter || false);
   };
 
   const deleteTemplate = (id) => {
@@ -415,85 +352,7 @@ export default function Reports() {
     saveTemplates(updated);
   };
 
-  const orderedFields = selectedFields.map(k => ALL_FIELDS.find(f => f.key === k)).filter(Boolean);
-  const demographicFields = ALL_FIELDS.filter(f => f.category === "demographic");
-  const metricFields = ALL_FIELDS.filter(f => f.category === "metric");
   const dateFields = ALL_FIELDS.filter(f => f.category === "date");
-  const financialFields = ALL_FIELDS.filter(f => f.category === "financial");
-  const invoiceFields = ALL_FIELDS.filter(f => f.category === "invoice");
-  const hasInvoiceColumns = selectedFields.some(k => k.startsWith("_inv_"));
-
-  // Invoice aggregates (computed when results exist)
-  const invoiceAgg = results
-    ? buildInvoiceAggregates(finApplyClientFilter ? results.map(c => c.id) : null)
-    : null;
-
-  // Build summary statistics for the report
-  function buildSummaryStats(data) {
-    if (!data || data.length === 0) return null;
-    
-    // Employment status counts
-    const employmentStatusCounts = {};
-    data.forEach(c => {
-      const status = c.employment_status;
-      if (status) employmentStatusCounts[status] = (employmentStatusCounts[status] || 0) + 1;
-    });
-
-    // Program starters by stream (service_start_date within date range)
-    const deaStarters = data.filter(c => c.service_type === "direct_to_employment" && c.service_start_date && 
-      (!dateFrom || c.service_start_date >= dateFrom) && (!dateTo || c.service_start_date <= dateTo)).length;
-    const pathwaysStarters = data.filter(c => c.service_type === "pathways" && c.service_start_date && 
-      (!dateFrom || c.service_start_date >= dateFrom) && (!dateTo || c.service_start_date <= dateTo)).length;
-
-    // Program completers by stream
-    const deaCompleters = data.filter(c => c.service_type === "direct_to_employment" && c.program_status === "complete").length;
-    const pathwaysCompleters = data.filter(c => c.service_type === "pathways" && c.program_status === "complete").length;
-
-    // Exposure courses count and total cost
-    const exposureCourseCount = data.reduce((sum, c) => sum + (c._fin_exposure || 0), 0);
-    const exposureCourseTotal = data.reduce((sum, c) => sum + (c._fin_exposure || 0), 0);
-    
-    // Count of clients with exposure courses (from financial records)
-    const clientsWithExposure = data.filter(c => c._fin_exposure > 0).length;
-
-    // Total direct costs
-    const totalDirectCosts = data.reduce((sum, c) => 
-      sum + (c._fin_exposure || 0) + (c._fin_placement || 0) + (c._fin_supports || 0), 0);
-
-    // Barriers identified
-    const clientsWithBarriers = data.filter(c => c.barriers_addressed === true).length;
-    const bitCompleted = data.filter(c => c.bit_completed === true).length;
-
-    // Employment outcomes
-    const employmentOutcomes = data.filter(c => c.employment_start_date || ["E-RF", "E-UF", "E-PT"].includes(c.employment_status)).length;
-    const ninetyDayOutcomes = data.filter(c => c.followup_90day_status && ["E-RF", "E-UF", "E-PT"].includes(c.followup_90day_status)).length;
-
-    // Service stream breakdown
-    const streamCounts = {};
-    data.forEach(c => {
-      const stream = c.service_type;
-      if (stream) streamCounts[stream] = (streamCounts[stream] || 0) + 1;
-    });
-
-    return {
-      totalClients: data.length,
-      employmentStatusCounts,
-      deaStarters,
-      pathwaysStarters,
-      deaCompleters,
-      pathwaysCompleters,
-      clientsWithExposure,
-      exposureCourseTotal,
-      totalDirectCosts,
-      clientsWithBarriers,
-      bitCompleted,
-      employmentOutcomes,
-      ninetyDayOutcomes,
-      streamCounts,
-    };
-  }
-
-  const summaryStats = results ? buildSummaryStats(results) : null;
 
   if (loading) return (
     <div className="fixed inset-0 flex items-center justify-center">
@@ -540,13 +399,7 @@ export default function Reports() {
             </Card>
           )}
 
-          <Tabs defaultValue="filters">
-            <TabsList className="w-full">
-              <TabsTrigger value="filters" className="flex-1 text-xs">Filters</TabsTrigger>
-              <TabsTrigger value="columns" className="flex-1 text-xs">Columns</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="filters" className="space-y-4 mt-4">
+          <div className="space-y-4 mt-0">
               {/* Date Range */}
               <Card>
                 <CardHeader className="pb-2">
@@ -698,137 +551,13 @@ export default function Reports() {
                   })}
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="columns" className="space-y-4 mt-4">
-              {/* Demographics */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <BarChart3 className="w-3 h-3" /> Demographics
-                    </CardTitle>
-                    <button className="text-xs text-primary hover:underline" onClick={() => selectAllFields(demographicFields)}>
-                      {demographicFields.every(f => selectedFields.includes(f.key)) ? "Deselect All" : "Select All"}
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => demographicFields.find(f => f.key === k)).length} / {demographicFields.length} selected</p>
-                </CardHeader>
-                <CardContent className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {demographicFields.map(f => (
-                    <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
-                      <span className="text-xs text-slate-700">{f.label}</span>
-                    </label>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Metrics */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <BarChart3 className="w-3 h-3" /> Metrics & Outcomes
-                    </CardTitle>
-                    <button className="text-xs text-primary hover:underline" onClick={() => selectAllFields(metricFields)}>
-                      {metricFields.every(f => selectedFields.includes(f.key)) ? "Deselect All" : "Select All"}
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => metricFields.find(f => f.key === k)).length} / {metricFields.length} selected</p>
-                </CardHeader>
-                <CardContent className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {metricFields.map(f => (
-                    <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
-                      <span className="text-xs text-slate-700">{f.label}</span>
-                    </label>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Financial (direct costs per client) */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <BarChart3 className="w-3 h-3" /> Financial — Direct Costs
-                    </CardTitle>
-                    <button className="text-xs text-primary hover:underline" onClick={() => selectAllFields(financialFields)}>
-                      {financialFields.every(f => selectedFields.includes(f.key)) ? "Deselect All" : "Select All"}
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => financialFields.find(f => f.key === k)).length} / {financialFields.length} selected · per-client amounts</p>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {financialFields.map(f => (
-                    <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
-                      <span className="text-xs text-slate-700">{f.label}</span>
-                    </label>
-                  ))}
-                  <div className="mt-3 pt-3 border-t border-slate-100">
-                    <label className="flex items-start gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-1">
-                      <Checkbox
-                        className="mt-0.5"
-                        checked={finApplyClientFilter}
-                        onCheckedChange={v => setFinApplyClientFilter(!!v)}
-                      />
-                      <span className="text-xs text-slate-700 leading-relaxed">
-                        Limit financial totals to filtered clients only
-                      </span>
-                    </label>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed px-1">
-                      When checked, direct cost columns reflect only the clients matching your current filters. Invoice-level totals (below) always reflect all invoices regardless of this setting.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Invoice columns */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <BarChart3 className="w-3 h-3" /> Invoice Amounts
-                    </CardTitle>
-                    <button className="text-xs text-primary hover:underline" onClick={() => selectAllFields(invoiceFields)}>
-                      {invoiceFields.every(f => selectedFields.includes(f.key)) ? "Deselect All" : "Select All"}
-                    </button>
-                  </div>
-                  <p className="text-xs text-slate-400">{selectedFields.filter(k => invoiceFields.find(f => f.key === k)).length} / {invoiceFields.length} selected · shown in report footer</p>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-2">
-                    <Info className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>Invoice columns show totals across all invoices in the footer row. Items marked "filterable" below only count line items for clients matching your filters (when that option is enabled above). Overall invoice totals (Total, Base Fee, Subtotals) always reflect all invoices.</span>
-                  </div>
-                  {invoiceFields.map(f => (
-                    <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox checked={selectedFields.includes(f.key)} onCheckedChange={() => toggleField(f.key)} />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs text-slate-700">{f.label}</span>
-                        {f.clientFilterable && (
-                          <span className="ml-1 text-xs text-slate-400">(filterable)</span>
-                        )}
-                      </div>
-                    </label>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
 
           {/* Actions */}
           <div className="space-y-2">
-            <Button className="w-full gap-2" onClick={runReport} disabled={selectedFields.length === 0}>
+            <Button className="w-full gap-2" onClick={runReport}>
               <Play className="w-4 h-4" /> Run Report
             </Button>
-            {results && (
-              <Button variant="outline" className="w-full gap-2" onClick={exportCSV}>
-                <Download className="w-4 h-4" /> Export CSV
-              </Button>
-            )}
             {savingTemplate ? (
               <div className="flex gap-2">
                 <Input
@@ -851,217 +580,20 @@ export default function Reports() {
         </div>
 
         {/* Right: results */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3">
           {results === null ? (
             <div className="flex flex-col items-center justify-center h-64 text-slate-400">
               <FileBarChart className="w-12 h-12 mb-3 opacity-30" />
               <p className="text-base font-medium">Configure and run your report</p>
-              <p className="text-sm mt-1">Select filters, columns, and date range, then click Run Report.</p>
+              <p className="text-sm mt-1">Select filters and date range, then click Run Report.</p>
             </div>
           ) : (
-            <>
-              {/* Summary Statistics Card */}
-              {summaryStats && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold text-slate-700">Report Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Top-level totals */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                        <p className="text-xs text-slate-500 font-medium">Total Clients</p>
-                        <p className="text-lg font-bold text-slate-800">{summaryStats.totalClients}</p>
-                      </div>
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                        <p className="text-xs text-slate-500 font-medium">Employment Outcomes</p>
-                        <p className="text-lg font-bold text-slate-800">{summaryStats.employmentOutcomes}</p>
-                      </div>
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                        <p className="text-xs text-slate-500 font-medium">90-Day Outcomes</p>
-                        <p className="text-lg font-bold text-slate-800">{summaryStats.ninetyDayOutcomes}</p>
-                      </div>
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                        <p className="text-xs text-slate-500 font-medium">Total Direct Costs</p>
-                        <p className="text-lg font-bold text-emerald-700">{fmt$(summaryStats.totalDirectCosts)}</p>
-                      </div>
-                    </div>
-
-                    {/* Program Starters & Completers */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <p className="text-xs text-blue-600 font-medium">DEA Starters</p>
-                        <p className="text-lg font-bold text-blue-800">{summaryStats.deaStarters}</p>
-                      </div>
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <p className="text-xs text-blue-600 font-medium">Pathways Starters</p>
-                        <p className="text-lg font-bold text-blue-800">{summaryStats.pathwaysStarters}</p>
-                      </div>
-                      <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                        <p className="text-xs text-green-600 font-medium">DEA Completers</p>
-                        <p className="text-lg font-bold text-green-800">{summaryStats.deaCompleters}</p>
-                      </div>
-                      <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                        <p className="text-xs text-green-600 font-medium">Pathways Completers</p>
-                        <p className="text-lg font-bold text-green-800">{summaryStats.pathwaysCompleters}</p>
-                      </div>
-                    </div>
-
-                    {/* Employment Status Breakdown */}
-                    <div>
-                      <p className="text-xs font-semibold text-slate-600 mb-2">Employment Status Breakdown</p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {Object.entries(summaryStats.employmentStatusCounts).map(([status, count]) => (
-                          <div key={status} className="bg-slate-50 rounded p-2 border border-slate-200">
-                            <p className="text-xs text-slate-500">{status}</p>
-                            <p className="text-base font-bold text-slate-800">{count}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Service Stream Breakdown */}
-                    <div>
-                      <p className="text-xs font-semibold text-slate-600 mb-2">Service Stream Breakdown</p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {Object.entries(summaryStats.streamCounts).map(([stream, count]) => (
-                          <div key={stream} className="bg-slate-50 rounded p-2 border border-slate-200">
-                            <p className="text-xs text-slate-500">{SERVICE_LABELS[stream] || stream}</p>
-                            <p className="text-base font-bold text-slate-800">{count}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Exposure Courses & Supports */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-                        <p className="text-xs text-amber-700 font-medium">Clients with Exposure Courses</p>
-                        <p className="text-lg font-bold text-amber-900">{summaryStats.clientsWithExposure}</p>
-                        <p className="text-xs text-amber-600 mt-1">Total: {fmt$(summaryStats.exposureCourseTotal)}</p>
-                      </div>
-                      <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                        <p className="text-xs text-purple-700 font-medium">Clients with Barriers Identified</p>
-                        <p className="text-lg font-bold text-purple-900">{summaryStats.clientsWithBarriers}</p>
-                      </div>
-                      <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                        <p className="text-xs text-purple-700 font-medium">BIT Completed</p>
-                        <p className="text-lg font-bold text-purple-900">{summaryStats.bitCompleted}</p>
-                      </div>
-                    </div>
-
-                    {/* Invoice totals (if applicable) */}
-                    {hasInvoiceColumns && invoiceAgg && (
-                      <div className="pt-3 border-t border-slate-200">
-                        <p className="text-xs font-semibold text-slate-600 mb-2">Invoice Totals</p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          <div className="bg-slate-50 rounded p-2 border border-slate-200">
-                            <p className="text-xs text-slate-500">Total Billed</p>
-                            <p className="text-base font-bold text-slate-800">{fmt$(invoiceAgg._inv_total_amount)}</p>
-                          </div>
-                          <div className="bg-slate-50 rounded p-2 border border-slate-200">
-                            <p className="text-xs text-slate-500">Base Fees</p>
-                            <p className="text-base font-bold text-slate-800">{fmt$(invoiceAgg._inv_base_amount)}</p>
-                          </div>
-                          <div className="bg-slate-50 rounded p-2 border border-slate-200">
-                            <p className="text-xs text-slate-500">Deliverables</p>
-                            <p className="text-base font-bold text-slate-800">{fmt$(invoiceAgg._inv_subtotal_deliverables)}</p>
-                          </div>
-                          <div className="bg-slate-50 rounded p-2 border border-slate-200">
-                            <p className="text-xs text-slate-500">Direct Costs</p>
-                            <p className="text-base font-bold text-slate-800">{fmt$(invoiceAgg._inv_subtotal_direct_costs)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-            <Card>
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm">Client List ({results.length} clients)</CardTitle>
-                  {hasInvoiceColumns && (
-                    <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
-                      <Info className="w-3 h-3" />
-                      Invoice totals appear in the footer row only
-                      {finApplyClientFilter ? " (line items limited to filtered clients)" : " (all invoices, all clients)"}
-                    </p>
-                  )}
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setResults(null)}>Clear Results</Button>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        {orderedFields.map(f => (
-                          <th key={f.key} className="text-left px-3 py-2.5 font-semibold text-slate-600 whitespace-nowrap">
-                            {f.label}
-                            {f.category === "invoice" && (
-                              <span className="block text-slate-400 font-normal text-xs">footer only</span>
-                            )}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {results.length > 0 ? (
-                        results.map(c => (
-                          <tr key={c.id} className="hover:bg-slate-50">
-                            {orderedFields.map(f => (
-                              <td key={f.key} className={`px-3 py-2 text-slate-700 whitespace-nowrap ${f.category === "invoice" ? "text-slate-300" : ""}`}>
-                                {getDisplayValue(c, f.key) || "—"}
-                              </td>
-                            ))}
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={orderedFields.length} className="text-center py-10 text-slate-400">
-                            No clients match the selected filters and date range.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                    {results.length > 0 && (
-                      <tfoot className="bg-slate-100 border-t-2 border-slate-300 text-xs font-semibold text-slate-600">
-                        <tr>
-                          {orderedFields.map((f, i) => {
-                            if (i === 0) return <td key={f.key} className="px-3 py-2 whitespace-nowrap">Total: {results.length}</td>;
-                            if (f.key === "_duration_months") {
-                              const avg = Math.round(
-                                results.filter(c => c.service_start_date)
-                                  .reduce((sum, c) => sum + differenceInMonths(new Date(), new Date(c.service_start_date)), 0)
-                                / (results.filter(c => c.service_start_date).length || 1)
-                              );
-                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">Avg: {avg} mo</td>;
-                            }
-                            if (f.category === "metric" && typeof results[0]?.[f.key] === "boolean") {
-                              const count = results.filter(c => c[f.key] === true).length;
-                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{count} yes</td>;
-                            }
-                            // Financial per-client sums
-                            if (f.key === "_fin_exposure_course_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_exposure || 0), 0))}</td>;
-                            if (f.key === "_fin_paid_placement_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_placement || 0), 0))}</td>;
-                            if (f.key === "_fin_employment_supports_total") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_supports || 0), 0))}</td>;
-                            if (f.key === "_fin_total_all") return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(results.reduce((s, c) => s + (c._fin_exposure || 0) + (c._fin_placement || 0) + (c._fin_supports || 0), 0))}</td>;
-                            // Invoice aggregates
-                            if (f.key.startsWith("_inv_") && invoiceAgg) {
-                              return <td key={f.key} className="px-3 py-2 whitespace-nowrap">{fmt$(invoiceAgg[f.key] || 0)}</td>;
-                            }
-                            return <td key={f.key} className="px-3 py-2"></td>;
-                          })}
-                        </tr>
-                      </tfoot>
-                    )}
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-            </>
+            <ReportSummary
+              results={results}
+              financialRecords={financialRecords}
+              onClear={() => setResults(null)}
+              onExportCSV={exportCSV}
+            />
           )}
         </div>
         </div>
