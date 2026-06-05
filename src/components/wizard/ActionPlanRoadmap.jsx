@@ -242,8 +242,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     ...bitReviewDates.map(d => parseDate(d)),
   ].filter(Boolean);
 
-  // The left anchor is always intake date (or service start, or earliest right date)
-  const leftAnchor = intakeDate || serviceStart;
+  // The left anchor is intake/service start, or earliest right date if those don't exist
+  const leftAnchor = intakeDate || serviceStart || (rightDates.length > 0 ? new Date(Math.min(...rightDates.map(d => d.getTime()))) : null);
   const allDates = [leftAnchor, ...rightDates].filter(Boolean);
 
   const hasTimelineData = allDates.length > 0 || hasMilestoneDates;
@@ -469,10 +469,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                             onClick={() => { setEditingMilestone(null); setOpenItem(isOpen ? null : item.key); }}
                             className="w-full flex items-center h-8 group"
                           >
-                            {/* Label — coloured by type */}
+                            {/* Label — coloured by type, green if completed */}
                             <div
                               className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right"
-                              style={{ color: isCancelled ? "#94a3b8" : typeColor }}
+                              style={{ 
+                                color: isCancelled ? "#94a3b8" : isCompleted ? "#16a34a" : typeColor,
+                                fontWeight: isCompleted ? "600" : "500"
+                              }}
                             >
                               {item.isBarrier && <span className="mr-0.5">⚠</span>}
                               {item.label}
@@ -485,6 +488,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                 backgroundColor: "#f8fafc",
                                 outline: `2px solid ${cfg.ring}`,
                                 outlineOffset: "-1px",
+                                ...(isCompleted ? { animation: "completedPulse 2s infinite" } : {})
                               }}
                             >
                               {hasBar && (
@@ -587,7 +591,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                               >
                                 <div
                                   className="absolute -ml-40 w-40 pr-2 text-[11px] font-medium truncate text-right"
-                                  style={{ color: isCancelled ? "#94a3b8" : typeColor }}
+                                  style={{ 
+                                    color: isCancelled ? "#94a3b8" : isCompleted ? "#16a34a" : typeColor,
+                                    fontWeight: isCompleted ? "600" : "500"
+                                  }}
                                 >
                                   {item.isBarrier && <span className="mr-0.5">⚠</span>}
                                   {item.label}
@@ -599,6 +606,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                     backgroundColor: "#fffbeb",
                                     outline: `2px solid ${cfg.ring}`,
                                     outlineOffset: "-1px",
+                                    ...(isCompleted ? { animation: "completedPulse 2s infinite" } : {})
                                   }}
                                 >
                                   {hasBar && (
@@ -991,6 +999,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
         @keyframes typeShimmer {
           0%   { background-position: -200% 0; }
           100% { background-position: 200% 0; }
+        }
+        @keyframes completedPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+          50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
         }
       `}</style>
     </div>
