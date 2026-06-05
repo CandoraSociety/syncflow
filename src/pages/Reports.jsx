@@ -259,25 +259,23 @@ function saveSession(state) {
 }
 
 export default function Reports() {
-  const session = loadSession();
-
   const [clients, setClients] = useState([]);
   const [financialRecords, setFinancialRecords] = useState([]);
   const [financialMap, setFinancialMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [datePreset, setDatePreset] = useState(session?.datePreset ?? "none");
-  const [customDateFrom, setCustomDateFrom] = useState(session?.customDateFrom ?? "");
-  const [customDateTo, setCustomDateTo] = useState(session?.customDateTo ?? "");
-  const [dateField, setDateField] = useState(session?.dateField ?? "intake_date");
+  const [datePreset, setDatePreset] = useState("none");
+  const [customDateFrom, setCustomDateFrom] = useState("");
+  const [customDateTo, setCustomDateTo] = useState("");
+  const [dateField, setDateField] = useState("service_start_date");
   const [templates, setTemplates] = useState(loadTemplates());
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [filters, setFilters] = useState(session?.filters ?? {});
+  const [filters, setFilters] = useState({});
   const [selectedSections, setSelectedSections] = useState(
-    session?.selectedSections ?? REPORT_SECTIONS.filter(s => s.default).map(s => s.key)
+    REPORT_SECTIONS.filter(s => s.default).map(s => s.key)
   );
   const [demographicOptions, setDemographicOptions] = useState(
-    session?.demographicOptions ?? (REPORT_SECTIONS.find(s => s.key === "client_demographics")?.subOptions?.filter(o => o.default).map(o => o.key) || [])
+    REPORT_SECTIONS.find(s => s.key === "client_demographics")?.subOptions?.filter(o => o.default).map(o => o.key) || []
   );
   const [results, setResults] = useState(null);
 
