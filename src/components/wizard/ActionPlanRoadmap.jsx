@@ -168,10 +168,9 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
   const intakeDate   = parseDate(client?.intake_date);
   const serviceStart = parseDate(client?.service_start_date);
   const isPathways   = client?.service_type === "pathways";
-  const programWeeks = isPathways ? 16 : 2;
-  const projectedEnd = serviceStart ? addWeeks(serviceStart, programWeeks) : null;
+  const projectedEnd = (isPathways && serviceStart) ? addWeeks(serviceStart, 16) : null;
   const actualEnd    = parseDate(client?.completion_date);
-  const followup90   = actualEnd ? addWeeks(actualEnd, 13) : null;
+  const followup90   = actualEnd ? addWeeks(actualEnd, 13) : (projectedEnd ? addWeeks(projectedEnd, 13) : null);
 
   const items = buildItems(selectedItems, itemDetails, otherDesc, roadmapStatus, client);
   const itemsWithDates    = items.filter(item => item.detail?.timeline_start || item.statusData?.started_date || item.detail?.timeline_end || item.statusData?.completed_date);
@@ -292,11 +291,17 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
       key: "service_start", date: serviceStart, label: "Start", editLabel: "Service Start Date",
       field: "service_start_date", color: "#10b981", textColor: "text-emerald-700",
     },
-    (actualEnd || projectedEnd) && {
-      key: "completion", date: actualEnd || projectedEnd,
-      label: actualEnd ? "End" : "Proj.End", editLabel: "Completion Date",
-      field: "completion_date", color: actualEnd ? "#16a34a" : "#3b82f6",
-      textColor: actualEnd ? "text-green-700" : "text-blue-700", dashed: !actualEnd,
+    projectedEnd && {
+      key: "projected_end", date: projectedEnd,
+      label: "Proj.End", editLabel: null,
+      field: null, color: "#3b82f6",
+      textColor: "text-blue-700", dashed: true,
+    },
+    actualEnd && {
+      key: "completion", date: actualEnd,
+      label: "End", editLabel: "Completion Date",
+      field: "completion_date", color: "#16a34a",
+      textColor: "text-green-700", dashed: false,
     },
     followup90 && {
       key: "followup90", date: followup90, label: "90d", editLabel: null,
