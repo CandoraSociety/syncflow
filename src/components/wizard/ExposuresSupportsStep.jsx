@@ -407,6 +407,110 @@ export default function ExposuresSupportsStep({ client, onSave }) {
   const loadRecords = async () => {
     if (!client?.id) return;
     const recs = await base44.entities.FinancialRecord.filter({ client_id: client.id });
+
+    // Auto-seed draft records from the action plan if none exist yet
+    if (recs.length === 0) {
+      const seeds = [];
+      const sdpItems = client?.sdp_items || [];
+      const sdpDetails = client?.sdp_item_details || {};
+      const isDEA = client?.service_type === "direct_to_employment";
+
+      // For DEA: check each eda_N slot for exposure_course or employment_supports activity
+      if (isDEA) {
+        const edaKeys = Object.keys(sdpDetails).filter(k => k.startsWith("eda_"));
+        edaKeys.forEach(key => {
+          const d = sdpDetails[key] || {};
+          if (d.activity === "exposure_course") {
+            const courseTypes = d.course_types?.length > 0 ? d.course_types : [null];
+            courseTypes.forEach(ct => {
+              seeds.push({
+                client_id: client.id,
+                client_name: clientName,
+                assigned_worker: client.assigned_worker,
+                record_type: "exposure_course",
+                course_type: ct || "",
+                course_type_other: ct === "Other" ? (d.course_type_other || "") : "",
+                description: ct ? ct : "",
+                notes: d.notes || "",
+                registration_status: "not_registered",
+                completion_status: "not_started",
+                receipt_urls: [],
+                completion_record_urls: [],
+              });
+            });
+          } else if (d.activity === "employment_supports") {
+            seeds.push({
+              client_id: client.id,
+              client_name: clientName,
+              assigned_worker: client.assigned_worker,
+              record_type: "employment_supports",
+              course_type: d.support_type || "",
+              description: d.other_desc || d.notes || "",
+              notes: d.notes || "",
+              receipt_urls: [],
+              completion_record_urls: [],
+            });
+          }
+        });
+      } else {
+        // Pathways / other: check sdp_items
+        if (sdpItems.includes("exposure_course")) {
+          const detail = sdpDetails["exposure_course"] || {};
+          const courseTypes = detail.course_types?.length > 0 ? detail.course_types : [null];
+          courseTypes.forEach(ct => {
+            seeds.push({
+              client_id: client.id,
+              client_name: clientName,
+              assigned_worker: client.assigned_worker,
+              record_type: "exposure_course",
+              course_type: ct || "",
+              course_type_other: ct === "Other" ? (detail.course_type_other || "") : "",
+              description: ct ? ct : "",
+              notes: detail.notes || "",
+              registration_status: "not_registered",
+              completion_status: "not_started",
+              receipt_urls: [],
+              completion_record_urls: [],
+            });
+          });
+        }
+        if (sdpItems.includes("employment_supports")) {
+          const detail = sdpDetails["employment_supports"] || {};
+          seeds.push({
+            client_id: client.id,
+            client_name: clientName,
+            assigned_worker: client.assigned_worker,
+            record_type: "employment_supports",
+            course_type: detail.support_type || "",
+            description: detail.notes || "",
+            notes: detail.notes || "",
+            receipt_urls: [],
+            completion_record_urls: [],
+          });
+        }
+        if (sdpItems.includes("paid_external_placement")) {
+          seeds.push({
+            client_id: client.id,
+            client_name: clientName,
+            assigned_worker: client.assigned_worker,
+            record_type: "paid_external_placement",
+            description: "",
+            notes: "",
+            receipt_urls: [],
+            completion_record_urls: [],
+          });
+        }
+      }
+
+      if (seeds.length > 0) {
+        await base44.entities.FinancialRecord.bulkCreate(seeds);
+        const seeded = await base44.entities.FinancialRecord.filter({ client_id: client.id });
+        setRecords(seeded);
+        setLoading(false);
+        return;
+      }
+    }
+
     setRecords(recs);
     setLoading(false);
   };
