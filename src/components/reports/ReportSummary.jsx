@@ -386,17 +386,19 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           {/* Report Scope Section */}
           <div className="bg-slate-50 rounded-lg p-4 text-xs space-y-2">
             <p className="font-semibold text-slate-700 uppercase tracking-wide">Report Scope</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div className="grid grid-cols-4 gap-x-3 gap-y-2">
               {/* Date Range - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Date Range</p>
-                <p className="text-slate-600">{dateRange.from || 'All time'} → {dateRange.to || 'Present'}</p>
+                <p className="text-slate-600">
+                  {dateRange.from || 'All time'} → {dateRange.from ? dateRange.to : new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </p>
               </div>
               
               {/* Service Streams - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Service Streams</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.service_type && appliedFilters.service_type.length > 0 ? appliedFilters.service_type.join(', ') : 'All streams'}>
                   {appliedFilters.service_type && appliedFilters.service_type.length > 0 
                     ? appliedFilters.service_type.join(', ') 
                     : 'All streams'}
@@ -406,7 +408,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Case Status - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Case Status</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.status && appliedFilters.status.length > 0 ? appliedFilters.status.join(', ') : 'All statuses'}>
                   {appliedFilters.status && appliedFilters.status.length > 0 
                     ? appliedFilters.status.join(', ') 
                     : 'All statuses'}
@@ -416,7 +418,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Program Status - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Program Status</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.program_status && appliedFilters.program_status.length > 0 ? appliedFilters.program_status.join(', ') : 'All statuses'}>
                   {appliedFilters.program_status && appliedFilters.program_status.length > 0 
                     ? appliedFilters.program_status.join(', ') 
                     : 'All statuses'}
@@ -426,7 +428,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Residency Status - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Residency Status</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.residency_status && appliedFilters.residency_status.length > 0 ? appliedFilters.residency_status.join(', ') : 'All statuses'}>
                   {appliedFilters.residency_status && appliedFilters.residency_status.length > 0 
                     ? appliedFilters.residency_status.join(', ') 
                     : 'All statuses'}
@@ -436,7 +438,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* CLB Level - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">CLB Level</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.clb_level && appliedFilters.clb_level.length > 0 ? appliedFilters.clb_level.join(', ') : 'All levels'}>
                   {appliedFilters.clb_level && appliedFilters.clb_level.length > 0 
                     ? appliedFilters.clb_level.join(', ') 
                     : 'All levels'}
@@ -446,7 +448,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Employment Status - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Employment Status</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.employment_status && appliedFilters.employment_status.length > 0 ? appliedFilters.employment_status.join(', ') : 'All statuses'}>
                   {appliedFilters.employment_status && appliedFilters.employment_status.length > 0 
                     ? appliedFilters.employment_status.join(', ') 
                     : 'All statuses'}
@@ -456,7 +458,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Referral Source - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Referral Source</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.referral_source && appliedFilters.referral_source.length > 0 ? appliedFilters.referral_source.join(', ') : 'All sources'}>
                   {appliedFilters.referral_source && appliedFilters.referral_source.length > 0 
                     ? appliedFilters.referral_source.join(', ') 
                     : 'All sources'}
@@ -466,7 +468,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Career Counsellor - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Career Counsellor</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 ? appliedFilters.assigned_worker_name.join(', ') : 'All counsellors'}>
                   {appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 
                     ? appliedFilters.assigned_worker_name.join(', ') 
                     : 'All counsellors'}
@@ -476,7 +478,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Barrier Type - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Barrier Type</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.barrier_1 && appliedFilters.barrier_1.length > 0 ? appliedFilters.barrier_1.join(', ') : 'All types'}>
                   {appliedFilters.barrier_1 && appliedFilters.barrier_1.length > 0 
                     ? appliedFilters.barrier_1.join(', ') 
                     : 'All types'}
@@ -486,27 +488,23 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Has Vehicle - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Has Vehicle</p>
-                <p className="text-slate-600">
-                  {appliedFilters.has_vehicle 
-                    ? appliedFilters.has_vehicle 
-                    : 'All'}
+                <p className="text-slate-600 truncate" title={appliedFilters.has_vehicle || 'All'}>
+                  {appliedFilters.has_vehicle || 'All'}
                 </p>
               </div>
               
               {/* City - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">City</p>
-                <p className="text-slate-600">
-                  {appliedFilters.city && appliedFilters.city.trim() !== '' 
-                    ? appliedFilters.city 
-                    : 'All cities'}
+                <p className="text-slate-600 truncate" title={appliedFilters.city && appliedFilters.city.trim() !== '' ? appliedFilters.city : 'All cities'}>
+                  {appliedFilters.city && appliedFilters.city.trim() !== '' ? appliedFilters.city : 'All cities'}
                 </p>
               </div>
               
               {/* Close Reason - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Close Reason</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.closed_reason && appliedFilters.closed_reason.length > 0 ? appliedFilters.closed_reason.join(', ') : 'All reasons'}>
                   {appliedFilters.closed_reason && appliedFilters.closed_reason.length > 0 
                     ? appliedFilters.closed_reason.join(', ') 
                     : 'All reasons'}
@@ -516,7 +514,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
               {/* Compass Verified - always shown */}
               <div>
                 <p className="font-semibold text-slate-700">Compass Verified</p>
-                <p className="text-slate-600">
+                <p className="text-slate-600 truncate" title={appliedFilters.compass_verified !== undefined && appliedFilters.compass_verified !== '' ? (appliedFilters.compass_verified === true ? 'Yes' : 'No') : 'All'}>
                   {appliedFilters.compass_verified !== undefined && appliedFilters.compass_verified !== '' 
                     ? (appliedFilters.compass_verified === true ? 'Yes' : 'No') 
                     : 'All'}
