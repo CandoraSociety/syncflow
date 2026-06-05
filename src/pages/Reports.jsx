@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Save, Trash2, FileBarChart, Filter } from "lucide-react";
+import { Play, Save, Trash2, FileBarChart, Filter, Users } from "lucide-react";
+import { toast } from "sonner";
 import { format, differenceInMonths, startOfYear, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   Select,
@@ -29,6 +30,23 @@ const REPORT_SECTIONS = [
   { key: "starters_completers", label: "Program Starters & Completers", default: true },
   { key: "financial_summary", label: "Financial Summary", default: true },
   { key: "barriers", label: "Top Barriers Identified", default: true },
+];
+
+// Demographic fields available for breakdowns
+const DEMOGRAPHIC_BREAKDOWN_FIELDS = [
+  { key: "service_type", label: "Service Stream" },
+  { key: "status", label: "Case Status" },
+  { key: "program_status", label: "Program Status" },
+  { key: "residency_status", label: "Residency Status" },
+  { key: "clb_level", label: "CLB Level" },
+  { key: "employment_status", label: "Employment Status" },
+  { key: "referral_source", label: "Referral Source" },
+  { key: "assigned_worker_name", label: "Career Counsellor" },
+  { key: "city", label: "City" },
+  { key: "has_vehicle", label: "Has Vehicle" },
+  { key: "barrier_1", label: "Primary Barrier" },
+  { key: "closed_reason", label: "Close Reason" },
+  { key: "compass_verified", label: "Compass Verified" },
 ];
 
 // All available fields
@@ -258,11 +276,14 @@ export default function Reports() {
   const [selectedSections, setSelectedSections] = useState(
     session?.selectedSections ?? REPORT_SECTIONS.filter(s => s.default).map(s => s.key)
   );
+  const [sectionDemographics, setSectionDemographics] = useState(session?.sectionDemographics ?? {});
+  const [universalDemographics, setUniversalDemographics] = useState([]);
+  const [useUniversalDemographics, setUseUniversalDemographics] = useState(false);
 
   // Persist report state for the session so navigating away and back restores it
   useEffect(() => {
-    saveSession({ datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, results });
-  }, [datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, results]);
+    saveSession({ datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, results, sectionDemographics, useUniversalDemographics, universalDemographics });
+  }, [datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, results, sectionDemographics, useUniversalDemographics, universalDemographics]);
 
   useEffect(() => {
     Promise.all([
@@ -512,16 +533,121 @@ export default function Reports() {
                     </button>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-1 max-h-48 overflow-y-auto">
+                <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                   {REPORT_SECTIONS.map(section => (
-                    <label key={section.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox
-                        checked={selectedSections.includes(section.key)}
-                        onCheckedChange={() => toggleSection(section.key)}
-                      />
-                      <span className="text-xs text-slate-700">{section.label}</span>
-                    </label>
+                    <div key={section.key} className="space-y-1">
+                      <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                        <Checkbox
+                          checked={selectedSections.includes(section.key)}
+                          onCheckedChange={() => toggleSection(section.key)}
+                        />
+                        <span className="text-xs text-slate-700">{section.label}</span>
+                      </label>
+                      {selectedSections.includes(section.key) && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`universal-${section.key}`}
+                              checked={useUniversalDemographics}
+                              onCheckedChange={(checked) => {
+                                setUseUniversalDemographics(checked);
+                                if (checked) {
+                                  setSectionDemographics(prev => ({ ...prev, [section.key]: universalDemographics }));
+                                }
+                              }}
+                            />
+                            <label htmlFor={`universal-${section.key}`} className="text-xs text-slate-500 cursor-pointer">
+                              Use universal selection
+                            </label>
+                          </div>
+                          {!useUniversalDemographics && (
+                            <div className="flex flex-wrap gap-1">
+                              {DEMOGRAPHIC_BREAKDOWN_FIELDS.map(field => (
+                                <button
+                                  key={field.key}
+                                  className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                                    (sectionDemographics[section.key] || []).includes(field.key)
+                                      ? "bg-primary text-white border-primary"
+                                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                                  }`}
+                                  onClick={() => {
+                                    setSectionDemographics(prev => {
+                                      const current = prev[section.key] || [];
+                                      const updated = current.includes(field.key)
+                                        ? current.filter(f => f !== field.key)
+                                        : [...current, field.key];
+                                      return { ...prev, [section.key]: updated };
+                                    });
+                                  }}
+                                >
+                                  {field.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ))}
+                </CardContent>
+              </Card>
+
+              {/* Universal Demographic Selection */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Users className="w-3 h-3" /> Universal Demographic Breakdown
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-slate-500">Select demographics to apply across all sections at once</p>
+                  <div className="flex flex-wrap gap-1">
+                    {DEMOGRAPHIC_BREAKDOWN_FIELDS.map(field => (
+                      <button
+                        key={field.key}
+                        className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                          universalDemographics.includes(field.key)
+                            ? "bg-primary text-white border-primary"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                        }`}
+                        onClick={() => {
+                          setUniversalDemographics(prev =>
+                            prev.includes(field.key)
+                              ? prev.filter(f => f !== field.key)
+                              : [...prev, field.key]
+                          );
+                          if (useUniversalDemographics) {
+                            setSectionDemographics(prev => {
+                              const updated = prev.includes(field.key)
+                                ? Object.fromEntries(Object.entries(prev).map(([k, v]) => [k, v.filter(f => f !== field.key)]))
+                                : Object.fromEntries(Object.entries(prev).map(([k, v]) => [k, [...v, field.key]]));
+                              return { ...prev, ...updated };
+                            });
+                          }
+                        }}
+                      >
+                        {field.label}
+                      </button>
+                    ))}
+                  </div>
+                  {universalDemographics.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => {
+                        setSectionDemographics(
+                          REPORT_SECTIONS.reduce((acc, section) => ({
+                            ...acc,
+                            [section.key]: universalDemographics
+                          }), {})
+                        );
+                        toast.success("Applied to all sections!");
+                      }}
+                    >
+                      Apply to All Sections
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
 
@@ -659,6 +785,7 @@ export default function Reports() {
               results={results}
               financialRecords={financialRecords}
               selectedSections={selectedSections}
+              sectionDemographics={sectionDemographics}
               onClear={() => { setResults(null); }}
               onExportCSV={exportCSV}
               dateRange={{ from: dateFrom, to: dateTo }}
