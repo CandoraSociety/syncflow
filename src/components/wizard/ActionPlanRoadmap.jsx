@@ -497,7 +497,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                     {/* Completed checkmark */}
                                     {isCompleted && (endP - startP) > 8 && (
                                       <span className="absolute inset-0 flex items-center justify-center">
-                                        <CheckCheck className="w-3 h-3 text-white drop-shadow" />
+                                        <CheckCheck className="w-4 h-4 drop-shadow-md" style={{ color: "#16a34a", filter: "drop-shadow(0 0 3px rgba(255,255,255,0.9))" }} />
                                       </span>
                                     )}
                                     {/* Cancelled X */}
@@ -506,33 +506,33 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                         <X className="w-3 h-3 text-white drop-shadow" />
                                       </span>
                                     )}
-                                  </div>
-                                </Tooltip>
-                              )}
-                              {hasDot && (
-                                <Tooltip
-                                  content={tooltipLines}
-                                  style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
-                                  className="rounded-full border-2 border-white shadow"
-                                >
-                                  <div className="w-full h-full rounded-full relative flex items-center justify-center pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
-                                    {isCompleted && <CheckCheck className="w-2 h-2 text-white" />}
+                                    </div>
+                                    </Tooltip>
+                                    )}
+                                    {hasDot && (
+                                    <Tooltip
+                                    content={tooltipLines}
+                                    style={{ left: `calc(${startP}% - 8px)`, top: "4px", width: "16px", height: "16px" }}
+                                    className="rounded-full border-2 border-white shadow"
+                                    >
+                                    <div className="w-full h-full rounded-full relative flex items-center justify-center pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
+                                    {isCompleted && <CheckCheck className="w-2.5 h-2.5" style={{ color: "#16a34a", filter: "drop-shadow(0 0 2px rgba(255,255,255,0.9))" }} />}
                                     {isCancelled && <X className="w-2 h-2 text-white" />}
-                                  </div>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </button>
+                                    </div>
+                                    </Tooltip>
+                                    )}
+                                    </div>
+                                    </button>
 
-                          {isOpen && (
-                            <div className="relative z-30 mb-1">
-                              <RoadmapItemPanel
-                                item={item}
-                                currentStatus={item.statusData}
-                                onSave={(data) => handleSaveItem(item.key, data)}
-                                onCancel={() => setOpenItem(null)}
-                                saving={saving}
-                              />
+                                    {isOpen && (
+                                    <div className="relative z-30 mb-1">
+                                    <RoadmapItemPanel
+                                    item={item}
+                                    currentStatus={item.statusData}
+                                    onSave={(data) => handleSaveItem(item.key, data)}
+                                    onCancel={() => setOpenItem(null)}
+                                    saving={saving}
+                                    />
                             </div>
                           )}
                         </div>
@@ -621,7 +621,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                         )}
                                         {isCompleted && (endP - startP) > 8 && (
                                           <span className="absolute inset-0 flex items-center justify-center">
-                                            <CheckCheck className="w-3 h-3 text-white drop-shadow" />
+                                            <CheckCheck className="w-4 h-4 drop-shadow-md" style={{ color: "#16a34a", filter: "drop-shadow(0 0 3px rgba(255,255,255,0.9))" }} />
                                           </span>
                                         )}
                                         {isCancelled && (endP - startP) > 8 && (
@@ -639,7 +639,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                       className="rounded-full border-2 border-white shadow"
                                     >
                                       <div className="w-full h-full rounded-full relative flex items-center justify-center pointer-events-none" style={{ backgroundColor: barColor, opacity: isCancelled ? 0.5 : 0.85 }}>
-                                        {isCompleted && <CheckCheck className="w-2 h-2 text-white" />}
+                                        {isCompleted && <CheckCheck className="w-2.5 h-2.5" style={{ color: "#16a34a", filter: "drop-shadow(0 0 2px rgba(255,255,255,0.9))" }} />}
                                         {isCancelled && <X className="w-2 h-2 text-white" />}
                                       </div>
                                     </Tooltip>
@@ -849,7 +849,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all hover:shadow-sm bg-white"
                   style={{ borderColor: cfg.ring, borderWidth: "2px", opacity: isCancelled ? 0.6 : 1 }}
                 >
-                  {isCompleted ? <CheckCheck className="w-4 h-4 shrink-0" style={{ color: typeColor }} /> :
+                  {isCompleted ? <CheckCheck className="w-5 h-5 shrink-0 text-green-600" /> :
                    isCancelled ? <X className="w-4 h-4 shrink-0 text-red-400" /> :
                    isStarted   ? <Clock className="w-4 h-4 shrink-0" style={{ color: typeColor }} /> :
                                  <Circle className="w-4 h-4 shrink-0 text-slate-300" />}
