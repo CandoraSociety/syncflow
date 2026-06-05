@@ -376,41 +376,61 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
         {/* Print/PDF Header */}
         <div className="mb-6 pb-6 border-b-2 border-slate-200 bg-white">
           <div className="flex items-center gap-4 mb-4">
-            <img src="/candora-logo.svg" alt="Candora" className="h-12 w-auto" />
+            <img src="https://media.base44.com/images/public/6a0025bc2848937e9e70bca5/bf0d54770_Candoracirclelogo_noanniversary.png" alt="Candora" className="h-16 w-auto" />
             <div>
-              <h1 className="text-2xl font-bold text-slate-800" style={{ fontFamily: "Arial, sans-serif" }}>CANDORA Pathways Summary Report</h1>
+              <h1 className="text-2xl font-bold text-slate-800">Pathways Summary Report</h1>
               <p className="text-sm text-slate-500">Generated on {new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
           </div>
-          {(dateRange || appliedFilters) && (
-            <div className="bg-slate-50 rounded-lg p-3 text-xs space-y-1">
+          
+          {/* Report Scope Section */}
+          <div className="bg-slate-50 rounded-lg p-4 text-xs space-y-2">
+            <p className="font-semibold text-slate-700 uppercase tracking-wide">Report Scope</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               {dateRange && dateRange.from && dateRange.to && (
-                <p className="text-slate-600"><span className="font-semibold">Date Range:</span> {dateRange.from} → {dateRange.to}</p>
+                <div>
+                  <p className="font-semibold text-slate-700">Date Range</p>
+                  <p className="text-slate-600">{dateRange.from} → {dateRange.to}</p>
+                </div>
               )}
-              {appliedFilters && Object.keys(appliedFilters).length > 0 && (
-                <div className="space-y-0.5">
-                  {appliedFilters.service_type && appliedFilters.service_type.length > 0 && (
-                    <p className="text-slate-600"><span className="font-semibold">Service Streams:</span> {appliedFilters.service_type.join(', ')}</p>
-                  )}
-                  {appliedFilters.status && appliedFilters.status.length > 0 && (
-                    <p className="text-slate-600"><span className="font-semibold">Case Status:</span> {appliedFilters.status.join(', ')}</p>
-                  )}
-                  {appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 && (
-                    <p className="text-slate-600"><span className="font-semibold">Career Counsellor:</span> {appliedFilters.assigned_worker_name.join(', ')}</p>
-                  )}
-                  {appliedFilters.program_status && appliedFilters.program_status.length > 0 && (
-                    <p className="text-slate-600"><span className="font-semibold">Program Status:</span> {appliedFilters.program_status.join(', ')}</p>
-                  )}
-                  {appliedFilters.referral_source && appliedFilters.referral_source.length > 0 && (
-                    <p className="text-slate-600"><span className="font-semibold">Referral Source:</span> {appliedFilters.referral_source.join(', ')}</p>
-                  )}
-                  {appliedFilters.city && appliedFilters.city.trim() !== '' && (
-                    <p className="text-slate-600"><span className="font-semibold">City:</span> {appliedFilters.city}</p>
-                  )}
+              {appliedFilters && appliedFilters.service_type && appliedFilters.service_type.length > 0 && (
+                <div>
+                  <p className="font-semibold text-slate-700">Service Streams</p>
+                  <p className="text-slate-600">{appliedFilters.service_type.join(', ')}</p>
+                </div>
+              )}
+              {appliedFilters && appliedFilters.status && appliedFilters.status.length > 0 && (
+                <div>
+                  <p className="font-semibold text-slate-700">Case Status</p>
+                  <p className="text-slate-600">{appliedFilters.status.join(', ')}</p>
+                </div>
+              )}
+              {appliedFilters && appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 && (
+                <div>
+                  <p className="font-semibold text-slate-700">Career Counsellor</p>
+                  <p className="text-slate-600">{appliedFilters.assigned_worker_name.join(', ')}</p>
+                </div>
+              )}
+              {appliedFilters && appliedFilters.program_status && appliedFilters.program_status.length > 0 && (
+                <div>
+                  <p className="font-semibold text-slate-700">Program Status</p>
+                  <p className="text-slate-600">{appliedFilters.program_status.join(', ')}</p>
+                </div>
+              )}
+              {appliedFilters && appliedFilters.referral_source && appliedFilters.referral_source.length > 0 && (
+                <div>
+                  <p className="font-semibold text-slate-700">Referral Source</p>
+                  <p className="text-slate-600">{appliedFilters.referral_source.join(', ')}</p>
+                </div>
+              )}
+              {appliedFilters && appliedFilters.city && appliedFilters.city.trim() !== '' && (
+                <div>
+                  <p className="font-semibold text-slate-700">City</p>
+                  <p className="text-slate-600">{appliedFilters.city}</p>
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Top stats */}
