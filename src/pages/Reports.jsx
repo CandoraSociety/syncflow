@@ -18,6 +18,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaffMonthlyReports from "../components/reports/StaffMonthlyReports";
 import ReportSummary from "../components/reports/ReportSummary";
 
+// Report sections available to include
+const REPORT_SECTIONS = [
+  { key: "service_stream", label: "Service Stream Breakdown", default: true },
+  { key: "case_program_status", label: "Case & Program Status", default: true },
+  { key: "referral_source", label: "Referral Source", default: true },
+  { key: "employment_intake", label: "Employment Status at Intake", default: true },
+  { key: "employment_post", label: "Post-Completion Employment Status", default: true },
+  { key: "employment_90day", label: "90-Day Follow-Up Status", default: true },
+  { key: "starters_completers", label: "Program Starters & Completers", default: true },
+  { key: "financial_summary", label: "Financial Summary", default: true },
+  { key: "barriers", label: "Top Barriers Identified", default: true },
+];
+
 // All available fields
 const ALL_FIELDS = [
   // Demographics
@@ -232,6 +245,9 @@ export default function Reports() {
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [filters, setFilters] = useState({});
+  const [selectedSections, setSelectedSections] = useState(
+    REPORT_SECTIONS.filter(s => s.default).map(s => s.key)
+  );
 
   useEffect(() => {
     Promise.all([
@@ -270,6 +286,14 @@ export default function Reports() {
         : [...current, value];
       return { ...prev, [filterKey]: updated };
     });
+  };
+
+  const toggleSection = (sectionKey) => {
+    setSelectedSections(prev =>
+      prev.includes(sectionKey)
+        ? prev.filter(s => s !== sectionKey)
+        : [...prev, sectionKey]
+    );
   };
 
   const setTextFilter = (filterKey, value) => {
@@ -458,6 +482,34 @@ export default function Reports() {
                 </CardContent>
               </Card>
 
+              {/* Report Sections */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FileBarChart className="w-3 h-3" /> Include in Summary
+                    </CardTitle>
+                    <button
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setSelectedSections(selectedSections.length === REPORT_SECTIONS.length ? [] : REPORT_SECTIONS.map(s => s.key))}
+                    >
+                      {selectedSections.length === REPORT_SECTIONS.length ? "Clear All" : "All"}
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-1 max-h-48 overflow-y-auto">
+                  {REPORT_SECTIONS.map(section => (
+                    <label key={section.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                      <Checkbox
+                        checked={selectedSections.includes(section.key)}
+                        onCheckedChange={() => toggleSection(section.key)}
+                      />
+                      <span className="text-xs text-slate-700">{section.label}</span>
+                    </label>
+                  ))}
+                </CardContent>
+              </Card>
+
               {/* Demographic Filters */}
               <Card>
                 <CardHeader className="pb-2">
@@ -591,6 +643,7 @@ export default function Reports() {
             <ReportSummary
               results={results}
               financialRecords={financialRecords}
+              selectedSections={selectedSections}
               onClear={() => setResults(null)}
               onExportCSV={exportCSV}
             />

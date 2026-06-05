@@ -74,7 +74,7 @@ function fmt$(n) {
   return "$" + Number(n).toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export default function ReportSummary({ results, financialRecords, onClear, onExportCSV }) {
+export default function ReportSummary({ results, financialRecords, selectedSections = [], onClear, onExportCSV }) {
   const stats = useMemo(() => {
     if (!results || results.length === 0) return null;
 
@@ -236,39 +236,47 @@ export default function ReportSummary({ results, financialRecords, onClear, onEx
       {/* Top stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard title="Total Clients" value={stats.total} icon={Users} color="text-primary" />
-        <StatCard title="Employment Outcomes" value={stats.employed} sub="post-completion employed" icon={Briefcase} color="text-green-600" />
-        <StatCard title="90-Day Sustained Employment" value={stats.followup90Employed} sub="still employed at follow-up" icon={Award} color="text-purple-600" />
-        <StatCard title="Total Direct Costs" value={fmt$(stats.totalDirect)} sub="courses + placements + supports" icon={DollarSign} color="text-amber-600" />
+        {(selectedSections.includes("starters_completers") || selectedSections.length === 0) && (
+          <StatCard title="Employment Outcomes" value={stats.employed} sub="post-completion employed" icon={Briefcase} color="text-green-600" />
+        )}
+        {(selectedSections.includes("employment_90day") || selectedSections.length === 0) && (
+          <StatCard title="90-Day Sustained" value={stats.followup90Employed} sub="employed at follow-up" icon={Award} color="text-purple-600" />
+        )}
+        {(selectedSections.includes("financial_summary") || selectedSections.length === 0) && (
+          <StatCard title="Total Direct Costs" value={fmt$(stats.totalDirect)} sub="courses + placements + supports" icon={DollarSign} color="text-amber-600" />
+        )}
       </div>
 
-      {/* Program outcomes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> Program Starters & Completers</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: "DEA Starters", value: stats.deaStarters, color: "bg-blue-50 border-blue-200 text-blue-800" },
-                { label: "DEA Completers", value: stats.deaCompleters, color: "bg-blue-100 border-blue-300 text-blue-900" },
-                { label: "Pathways Starters", value: stats.pathwaysStarters, color: "bg-purple-50 border-purple-200 text-purple-800" },
-                { label: "Pathways Completers", value: stats.pathwaysCompleters, color: "bg-purple-100 border-purple-300 text-purple-900" },
-              ].map(item => (
-                <div key={item.label} className={`rounded-lg border p-3 ${item.color}`}>
-                  <p className="text-2xl font-bold">{item.value}</p>
-                  <p className="text-xs font-medium mt-0.5">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Program outcomes - conditional */}
+      {(selectedSections.includes("starters_completers") || selectedSections.length === 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> Program Starters & Completers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "DEA Starters", value: stats.deaStarters, color: "bg-blue-50 border-blue-200 text-blue-800" },
+                  { label: "DEA Completers", value: stats.deaCompleters, color: "bg-blue-100 border-blue-300 text-blue-900" },
+                  { label: "Pathways Starters", value: stats.pathwaysStarters, color: "bg-purple-50 border-purple-200 text-purple-800" },
+                  { label: "Pathways Completers", value: stats.pathwaysCompleters, color: "bg-purple-100 border-purple-300 text-purple-900" },
+                ].map(item => (
+                  <div key={item.label} className={`rounded-lg border p-3 ${item.color}`}>
+                    <p className="text-2xl font-bold">{item.value}</p>
+                    <p className="text-xs font-medium mt-0.5">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><BookOpen className="w-4 h-4 text-amber-600" /> Financial Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
+          {(selectedSections.includes("financial_summary") || selectedSections.length === 0) && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><BookOpen className="w-4 h-4 text-amber-600" /> Financial Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
             <div className="space-y-3">
               {[
                 { label: "Exposure Courses", count: stats.exposureCount, total: stats.totalExposure, color: "#f59e0b" },
@@ -291,52 +299,62 @@ export default function ReportSummary({ results, financialRecords, onClear, onEx
             </div>
           </CardContent>
         </Card>
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Breakdowns grid */}
+      {/* Breakdowns grid - conditional on selected sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Service Stream</CardTitle></CardHeader>
-          <CardContent><BreakdownTable rows={stats.streamRows} /></CardContent>
-        </Card>
+        {(selectedSections.includes("service_stream") || selectedSections.length === 0) && (
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Service Stream</CardTitle></CardHeader>
+            <CardContent><BreakdownTable rows={stats.streamRows} /></CardContent>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Case Status</CardTitle></CardHeader>
-          <CardContent>
-            <BreakdownTable rows={stats.caseStatusRows} />
-            {stats.programStatusRows.length > 0 && (
-              <div className="mt-4">
-                <BreakdownTable title="Program Status" rows={stats.programStatusRows} />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {(selectedSections.includes("case_program_status") || selectedSections.length === 0) && (
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Case Status</CardTitle></CardHeader>
+            <CardContent>
+              <BreakdownTable rows={stats.caseStatusRows} />
+              {stats.programStatusRows.length > 0 && (
+                <div className="mt-4">
+                  <BreakdownTable title="Program Status" rows={stats.programStatusRows} />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Referral Source</CardTitle></CardHeader>
-          <CardContent><BreakdownTable rows={stats.referralRows} /></CardContent>
-        </Card>
+        {(selectedSections.includes("referral_source") || selectedSections.length === 0) && (
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Referral Source</CardTitle></CardHeader>
+            <CardContent><BreakdownTable rows={stats.referralRows} /></CardContent>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Employment Status at Intake</CardTitle></CardHeader>
-          <CardContent><BreakdownTable rows={stats.intakeEmpRows} /></CardContent>
-        </Card>
+        {(selectedSections.includes("employment_intake") || selectedSections.length === 0) && (
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Employment Status at Intake</CardTitle></CardHeader>
+            <CardContent><BreakdownTable rows={stats.intakeEmpRows} /></CardContent>
+          </Card>
+        )}
 
-        {stats.postEmpRows.length > 0 && (
+        {(selectedSections.includes("employment_post") || selectedSections.length === 0) && stats.postEmpRows.length > 0 && (
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Post-Completion Employment Status</CardTitle></CardHeader>
             <CardContent><BreakdownTable rows={stats.postEmpRows} /></CardContent>
           </Card>
         )}
 
-        {stats.fu90Rows.length > 0 && (
+        {(selectedSections.includes("employment_90day") || selectedSections.length === 0) && stats.fu90Rows.length > 0 && (
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">90-Day Follow-Up Status</CardTitle></CardHeader>
             <CardContent><BreakdownTable rows={stats.fu90Rows} /></CardContent>
           </Card>
         )}
 
-        {stats.barrierRows.length > 0 && (
+        {(selectedSections.includes("barriers") || selectedSections.length === 0) && stats.barrierRows.length > 0 && (
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Top Barriers Identified</CardTitle></CardHeader>
             <CardContent><BreakdownTable rows={stats.barrierRows} /></CardContent>
