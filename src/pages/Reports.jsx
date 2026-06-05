@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaffMonthlyReports from "../components/reports/StaffMonthlyReports";
 import ReportSummary from "../components/reports/ReportSummary";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, TrendingUp, Calendar, Briefcase, Target, Users, Filter, X } from "lucide-react";
+import { CheckCircle2, TrendingUp, Calendar, Briefcase, Target, Users, X } from "lucide-react";
 
 // Report sections available to include
 const REPORT_SECTIONS = [
@@ -736,19 +736,9 @@ export default function Reports() {
         });
         const outcomes = calculateOutcomes(filteredClients, dateRange);
         return (
-          {(() => {
-        const dateRange = getDateRange();
-        const filteredClients = clients.filter(client => {
-          if (filters.assignedWorker !== "all" && client.assigned_worker_name !== filters.assignedWorker) return false;
-          if (filters.serviceType !== "all" && client.service_type !== filters.serviceType) return false;
-          if (filters.status !== "all" && client.status !== filters.status) return false;
-          if (filters.programStatus !== "all" && client.program_status !== filters.programStatus) return false;
-          return true;
-        });
-        const outcomes = calculateOutcomes(filteredClients, dateRange);
-        
-        return (
           <OutcomesSection clients={clients} financialRecords={financialRecords} />
+        );
+      })()}
         </TabsContent>
       </Tabs>
     </div>
@@ -875,16 +865,12 @@ function OutcomesSection({ clients }) {
     .map(c => c.assigned_worker_name)
   )].sort();
 
-  
-
-  
+  const filteredClients = clients.filter(client => {
     if (filters.assignedWorker !== "all" && client.assigned_worker_name !== filters.assignedWorker) return false;
     if (filters.serviceType !== "all" && client.service_type !== filters.serviceType) return false;
     if (filters.status !== "all" && client.status !== filters.status) return false;
     return true;
   });
-
-  
 
   const getDateRange = () => {
     const now = new Date();
@@ -922,16 +908,8 @@ function OutcomesSection({ clients }) {
     return { startDate, endDate, label };
   };
 
-  
-
-  
-    if (filters.assignedWorker !== "all" && client.assigned_worker_name !== filters.assignedWorker) return false;
-    if (filters.serviceType !== "all" && client.service_type !== filters.serviceType) return false;
-    if (filters.status !== "all" && client.status !== filters.status) return false;
-    return true;
-  });
-
-  
+  const dateRange = getDateRange();
+  const outcomes = calculateOutcomes(filteredClients, dateRange);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
