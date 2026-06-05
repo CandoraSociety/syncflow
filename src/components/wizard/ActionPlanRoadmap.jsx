@@ -512,13 +512,13 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                       </div>
                                     )}
                                     {/* Completed checkmark */}
-                                    {isCompleted && barWidth > 8 && (
+                                    {isCompleted && barWidth > 3 && (
                                       <span className="absolute inset-0 flex items-center justify-center">
                                         <CheckCheck className="w-4 h-4 drop-shadow-md" style={{ color: "#16a34a", filter: "drop-shadow(0 0 3px rgba(255,255,255,0.9))" }} />
                                       </span>
                                     )}
                                     {/* Cancelled X */}
-                                    {isCancelled && barWidth > 8 && (
+                                    {isCancelled && barWidth > 3 && (
                                       <span className="absolute inset-0 flex items-center justify-center">
                                         <X className="w-3 h-3 text-white drop-shadow" />
                                       </span>
@@ -635,12 +635,12 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                             <div className="h-full" style={{ animation: "typeShimmer 2s infinite linear", backgroundImage: `linear-gradient(90deg, transparent, ${barColor}cc, rgba(255,255,255,0.5), ${barColor}cc, transparent)`, backgroundSize: "200% 100%" }} />
                                           </div>
                                         )}
-                                        {isCompleted && barWidth > 8 && (
+                                        {isCompleted && barWidth > 3 && (
                                           <span className="absolute inset-0 flex items-center justify-center">
                                             <CheckCheck className="w-4 h-4 drop-shadow-md" style={{ color: "#16a34a", filter: "drop-shadow(0 0 3px rgba(255,255,255,0.9))" }} />
                                           </span>
                                         )}
-                                        {isCancelled && barWidth > 8 && (
+                                        {isCancelled && barWidth > 3 && (
                                           <span className="absolute inset-0 flex items-center justify-center">
                                             <X className="w-3 h-3 text-white drop-shadow" />
                                           </span>
@@ -727,7 +727,7 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
                                       key={i}
                                       content={tooltipContent}
                                       style={{ left: `calc(${dp}% - 9px)`, top: "2px", width: "20px", height: "20px" }}
-                                      className={`rounded-full cursor-pointer ${!isDone ? "animate-pulse" : ""}`}
+                                      className="rounded-full cursor-pointer"
                                     >
                                       <div
                                         onClick={() => { setEditingMilestone(null); setOpenBITReview(openBITReview === i ? null : i); }}
@@ -1015,8 +1015,8 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
           100% { background-position: 200% 0; }
         }
         @keyframes completedPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-          50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+          0%, 100% { opacity: 0.85; }
+          50% { opacity: 1; }
         }
       `}</style>
     </div>
