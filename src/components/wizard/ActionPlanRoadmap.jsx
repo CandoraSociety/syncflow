@@ -256,9 +256,10 @@ export default function ActionPlanRoadmap({ client, selectedItems, itemDetails, 
     minDate = leftAnchor
       ? new Date(leftAnchor.getFullYear(), leftAnchor.getMonth(), leftAnchor.getDate(), 12, 0, 0)
       : new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate(), 12, 0, 0);
-    // Extend maxDate to show full timeline: 16 weeks for Pathways, 12 weeks for others, or 4 weeks past the latest date
+    // Extend maxDate to show full timeline: 16 weeks from program start for Pathways, or 4 weeks past the latest date
+    const programStart = serviceStart || minDate;
     const programWeeks = isPathways ? 16 : 12;
-    const minEnd = new Date(minDate.getTime() + programWeeks * 7 * 24 * 60 * 60 * 1000);
+    const minEnd = new Date(programStart.getTime() + programWeeks * 7 * 24 * 60 * 60 * 1000);
     const bufferEnd = new Date(rawMax.getFullYear(), rawMax.getMonth(), rawMax.getDate() + 28, 12, 0, 0);
     maxDate = minEnd > bufferEnd ? minEnd : bufferEnd;
     minMs   = minDate.getTime();
