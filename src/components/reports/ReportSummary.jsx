@@ -579,7 +579,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
       if (c.sex) sexCounts[c.sex] = (sexCounts[c.sex] || 0) + 1;
     });
     const sexRows = Object.entries(sexCounts)
-      .map(([k, v]) => ({ label: k === "male" ? "Male" : k === "female" ? "Female" : k === "non-binary" ? "Non-binary" : k === "other" ? "Other" : k === "prefer_not_to_say" ? "Prefer not to say" : k, count: v }))
+      .map(([k, v]) => ({ label: k === "male" ? "Male" : k === "female" ? "Female" : k, count: v }))
       .sort((a, b) => b.count - a.count);
 
     // Financial rows for pie

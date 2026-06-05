@@ -43,8 +43,7 @@
       "type": "string",
       "enum": [
         "male",
-        "female",
-        "other"
+        "female"
       ],
       "description": "Sex"
     },
