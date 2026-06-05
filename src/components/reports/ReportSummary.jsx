@@ -374,7 +374,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
 
       <div ref={reportRef}>
         {/* Print/PDF Header */}
-        <div className="hidden print:block mb-6 pb-6 border-b-2 border-slate-200">
+        <div className="mb-6 pb-6 border-b-2 border-slate-200 bg-white">
           <div className="flex items-center gap-4 mb-4">
             <img src="/candora-logo.svg" alt="Candora" className="h-12 w-auto" />
             <div>
@@ -384,17 +384,30 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           </div>
           {(dateRange || appliedFilters) && (
             <div className="bg-slate-50 rounded-lg p-3 text-xs space-y-1">
-              {dateRange && (
+              {dateRange && dateRange.from && dateRange.to && (
                 <p className="text-slate-600"><span className="font-semibold">Date Range:</span> {dateRange.from} → {dateRange.to}</p>
               )}
-              {appliedFilters && appliedFilters.service_type && (
-                <p className="text-slate-600"><span className="font-semibold">Service Streams:</span> {appliedFilters.service_type.join(', ')}</p>
-              )}
-              {appliedFilters && appliedFilters.status && (
-                <p className="text-slate-600"><span className="font-semibold">Case Status:</span> {appliedFilters.status.join(', ')}</p>
-              )}
-              {appliedFilters && appliedFilters.assigned_worker_name && (
-                <p className="text-slate-600"><span className="font-semibold">Career Counsellor:</span> {appliedFilters.assigned_worker_name.join(', ')}</p>
+              {appliedFilters && Object.keys(appliedFilters).length > 0 && (
+                <div className="space-y-0.5">
+                  {appliedFilters.service_type && appliedFilters.service_type.length > 0 && (
+                    <p className="text-slate-600"><span className="font-semibold">Service Streams:</span> {appliedFilters.service_type.join(', ')}</p>
+                  )}
+                  {appliedFilters.status && appliedFilters.status.length > 0 && (
+                    <p className="text-slate-600"><span className="font-semibold">Case Status:</span> {appliedFilters.status.join(', ')}</p>
+                  )}
+                  {appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 && (
+                    <p className="text-slate-600"><span className="font-semibold">Career Counsellor:</span> {appliedFilters.assigned_worker_name.join(', ')}</p>
+                  )}
+                  {appliedFilters.program_status && appliedFilters.program_status.length > 0 && (
+                    <p className="text-slate-600"><span className="font-semibold">Program Status:</span> {appliedFilters.program_status.join(', ')}</p>
+                  )}
+                  {appliedFilters.referral_source && appliedFilters.referral_source.length > 0 && (
+                    <p className="text-slate-600"><span className="font-semibold">Referral Source:</span> {appliedFilters.referral_source.join(', ')}</p>
+                  )}
+                  {appliedFilters.city && appliedFilters.city.trim() !== '' && (
+                    <p className="text-slate-600"><span className="font-semibold">City:</span> {appliedFilters.city}</p>
+                  )}
+                </div>
               )}
             </div>
           )}
