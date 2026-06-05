@@ -663,6 +663,8 @@ export default function Reports() {
               onExportCSV={exportCSV}
               dateRange={{ from: dateFrom, to: dateTo }}
               appliedFilters={filters}
+              allClients={clients}
+              demographicFilters={DEMOGRAPHIC_FILTERS}
             />
           )}
         </div>

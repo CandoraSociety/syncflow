@@ -171,7 +171,7 @@ function fmt$(n) {
   return "$" + Number(n).toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export default function ReportSummary({ results, financialRecords, selectedSections = [], onClear, onExportCSV, dateRange, appliedFilters }) {
+export default function ReportSummary({ results, financialRecords, selectedSections = [], onClear, onExportCSV, dateRange, appliedFilters, allClients, demographicFilters }) {
   const reportRef = useRef(null);
 
   const handlePrint = () => window.print();
@@ -386,49 +386,142 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           {/* Report Scope Section */}
           <div className="bg-slate-50 rounded-lg p-4 text-xs space-y-2">
             <p className="font-semibold text-slate-700 uppercase tracking-wide">Report Scope</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              {dateRange && dateRange.from && dateRange.to && (
-                <div>
-                  <p className="font-semibold text-slate-700">Date Range</p>
-                  <p className="text-slate-600">{dateRange.from} → {dateRange.to}</p>
-                </div>
-              )}
-              {appliedFilters && appliedFilters.service_type && appliedFilters.service_type.length > 0 && (
-                <div>
-                  <p className="font-semibold text-slate-700">Service Streams</p>
-                  <p className="text-slate-600">{appliedFilters.service_type.join(', ')}</p>
-                </div>
-              )}
-              {appliedFilters && appliedFilters.status && appliedFilters.status.length > 0 && (
-                <div>
-                  <p className="font-semibold text-slate-700">Case Status</p>
-                  <p className="text-slate-600">{appliedFilters.status.join(', ')}</p>
-                </div>
-              )}
-              {appliedFilters && appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 && (
-                <div>
-                  <p className="font-semibold text-slate-700">Career Counsellor</p>
-                  <p className="text-slate-600">{appliedFilters.assigned_worker_name.join(', ')}</p>
-                </div>
-              )}
-              {appliedFilters && appliedFilters.program_status && appliedFilters.program_status.length > 0 && (
-                <div>
-                  <p className="font-semibold text-slate-700">Program Status</p>
-                  <p className="text-slate-600">{appliedFilters.program_status.join(', ')}</p>
-                </div>
-              )}
-              {appliedFilters && appliedFilters.referral_source && appliedFilters.referral_source.length > 0 && (
-                <div>
-                  <p className="font-semibold text-slate-700">Referral Source</p>
-                  <p className="text-slate-600">{appliedFilters.referral_source.join(', ')}</p>
-                </div>
-              )}
-              {appliedFilters && appliedFilters.city && appliedFilters.city.trim() !== '' && (
-                <div>
-                  <p className="font-semibold text-slate-700">City</p>
-                  <p className="text-slate-600">{appliedFilters.city}</p>
-                </div>
-              )}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              {/* Date Range - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Date Range</p>
+                <p className="text-slate-600">{dateRange.from || 'All time'} → {dateRange.to || 'Present'}</p>
+              </div>
+              
+              {/* Service Streams - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Service Streams</p>
+                <p className="text-slate-600">
+                  {appliedFilters.service_type && appliedFilters.service_type.length > 0 
+                    ? appliedFilters.service_type.join(', ') 
+                    : 'All streams'}
+                </p>
+              </div>
+              
+              {/* Case Status - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Case Status</p>
+                <p className="text-slate-600">
+                  {appliedFilters.status && appliedFilters.status.length > 0 
+                    ? appliedFilters.status.join(', ') 
+                    : 'All statuses'}
+                </p>
+              </div>
+              
+              {/* Program Status - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Program Status</p>
+                <p className="text-slate-600">
+                  {appliedFilters.program_status && appliedFilters.program_status.length > 0 
+                    ? appliedFilters.program_status.join(', ') 
+                    : 'All statuses'}
+                </p>
+              </div>
+              
+              {/* Residency Status - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Residency Status</p>
+                <p className="text-slate-600">
+                  {appliedFilters.residency_status && appliedFilters.residency_status.length > 0 
+                    ? appliedFilters.residency_status.join(', ') 
+                    : 'All statuses'}
+                </p>
+              </div>
+              
+              {/* CLB Level - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">CLB Level</p>
+                <p className="text-slate-600">
+                  {appliedFilters.clb_level && appliedFilters.clb_level.length > 0 
+                    ? appliedFilters.clb_level.join(', ') 
+                    : 'All levels'}
+                </p>
+              </div>
+              
+              {/* Employment Status - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Employment Status</p>
+                <p className="text-slate-600">
+                  {appliedFilters.employment_status && appliedFilters.employment_status.length > 0 
+                    ? appliedFilters.employment_status.join(', ') 
+                    : 'All statuses'}
+                </p>
+              </div>
+              
+              {/* Referral Source - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Referral Source</p>
+                <p className="text-slate-600">
+                  {appliedFilters.referral_source && appliedFilters.referral_source.length > 0 
+                    ? appliedFilters.referral_source.join(', ') 
+                    : 'All sources'}
+                </p>
+              </div>
+              
+              {/* Career Counsellor - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Career Counsellor</p>
+                <p className="text-slate-600">
+                  {appliedFilters.assigned_worker_name && appliedFilters.assigned_worker_name.length > 0 
+                    ? appliedFilters.assigned_worker_name.join(', ') 
+                    : 'All counsellors'}
+                </p>
+              </div>
+              
+              {/* Barrier Type - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Barrier Type</p>
+                <p className="text-slate-600">
+                  {appliedFilters.barrier_1 && appliedFilters.barrier_1.length > 0 
+                    ? appliedFilters.barrier_1.join(', ') 
+                    : 'All types'}
+                </p>
+              </div>
+              
+              {/* Has Vehicle - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Has Vehicle</p>
+                <p className="text-slate-600">
+                  {appliedFilters.has_vehicle 
+                    ? appliedFilters.has_vehicle 
+                    : 'All'}
+                </p>
+              </div>
+              
+              {/* City - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">City</p>
+                <p className="text-slate-600">
+                  {appliedFilters.city && appliedFilters.city.trim() !== '' 
+                    ? appliedFilters.city 
+                    : 'All cities'}
+                </p>
+              </div>
+              
+              {/* Close Reason - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Close Reason</p>
+                <p className="text-slate-600">
+                  {appliedFilters.closed_reason && appliedFilters.closed_reason.length > 0 
+                    ? appliedFilters.closed_reason.join(', ') 
+                    : 'All reasons'}
+                </p>
+              </div>
+              
+              {/* Compass Verified - always shown */}
+              <div>
+                <p className="font-semibold text-slate-700">Compass Verified</p>
+                <p className="text-slate-600">
+                  {appliedFilters.compass_verified !== undefined && appliedFilters.compass_verified !== '' 
+                    ? (appliedFilters.compass_verified === true ? 'Yes' : 'No') 
+                    : 'All'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
