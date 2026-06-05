@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Users, TrendingUp, DollarSign, Briefcase, BookOpen, Award } from "lucide-react";
+import { Download, Users, TrendingUp, DollarSign, Briefcase, BookOpen, Award, Printer, FileDown, Share2 } from "lucide-react";
+import { toast } from "sonner";
 
 const SERVICE_LABELS = {
   direct_to_employment: "DEA (Direct to Employment)",
@@ -75,6 +76,48 @@ function fmt$(n) {
 }
 
 export default function ReportSummary({ results, financialRecords, selectedSections = [], onClear, onExportCSV }) {
+  const reportRef = useRef(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleSavePDF = async () => {
+    const { jsPDF } = await import("jspdf");
+    const { default: html2canvas } = await import("html2canvas");
+    if (!reportRef.current) return;
+    toast("Generating PDF…");
+    try {
+      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
+      let y = 0;
+      while (y < imgHeight) {
+        pdf.addImage(imgData, "PNG", 0, -y, pageWidth, imgHeight);
+        if (y + pageHeight < imgHeight) pdf.addPage();
+        y += pageHeight;
+      }
+      pdf.save(`report-${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success("PDF saved!");
+    } catch (e) {
+      toast.error("Failed to generate PDF");
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Client Report", url });
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    }
+  };
   const stats = useMemo(() => {
     if (!results || results.length === 0) return null;
 
@@ -220,18 +263,29 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-lg font-bold text-slate-800">{stats.total} Client{stats.total !== 1 ? "s" : ""} in Report</h2>
           <p className="text-xs text-slate-500">Aggregated summary across filtered clients</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" className="gap-1.5" onClick={onExportCSV}>
             <Download className="w-3.5 h-3.5" /> Export CSV
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handlePrint}>
+            <Printer className="w-3.5 h-3.5" /> Print
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSavePDF}>
+            <FileDown className="w-3.5 h-3.5" /> Save as PDF
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleShare}>
+            <Share2 className="w-3.5 h-3.5" /> Share
           </Button>
           <Button variant="ghost" size="sm" onClick={onClear}>Clear</Button>
         </div>
       </div>
+
+      <div ref={reportRef}>
 
       {/* Top stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -361,6 +415,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           </Card>
         )}
       </div>
+      </div> {/* end reportRef */}
     </div>
   );
 }
