@@ -179,7 +179,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
   const printStyles = `
     @media print {
       @page {
-        margin: 15mm;
+        margin: 20mm 15mm 20mm 15mm;
         size: A4 portrait;
       }
       
@@ -201,6 +201,13 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
         break-before: page;
         page-break-before: always;
       }
+      
+      /* Add page breaks between major sections */
+      .print-section-break {
+        break-before: page;
+        page-break-before: always;
+        margin-top: 20px;
+      }
     }
   `;
 
@@ -210,32 +217,73 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
     if (!reportRef.current) return;
     toast("Generating PDF…");
     try {
+      // Capture the report with high quality
       const canvas = await html2canvas(reportRef.current, { 
         scale: 2, 
         useCORS: true,
         windowWidth: 1200,
-        windowHeight: 1600,
         scrollX: 0,
         scrollY: 0,
         logging: false,
+        backgroundColor: "#ffffff",
       });
+      
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ 
         orientation: "portrait", 
         unit: "mm", 
         format: "a4",
-        hotfixes: ["px_scaling"]
+        compress: true,
       });
+      
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
-      const newWidth = imgWidth * ratio;
-      const newHeight = imgHeight * ratio;
       
-      // Add image scaled to fit page width with proper margins
-      pdf.addImage(imgData, "PNG", 0, 0, newWidth, newHeight);
+      // Calculate scaling to fit page width (with 15mm margins = 30mm total horizontal margin)
+      const availableWidth = pageWidth - 30; // 15mm margin on each side
+      const scale = availableWidth / imgWidth;
+      const scaledWidth = imgWidth * scale;
+      const scaledHeight = imgHeight * scale;
+      
+      // Add multiple pages if content exceeds page height
+      let heightRemaining = 0;
+      const marginTop = 15; // 15mm top margin
+      
+      if (scaledHeight <= pageHeight - marginTop - 15) {
+        // Single page
+        pdf.addImage(imgData, "PNG", 15, marginTop, scaledWidth, scaledHeight);
+      } else {
+        // Multiple pages - slice the image into page-sized chunks
+        const pageHeightPx = (pageHeight - 30) / scale; // Convert mm to pixels
+        let yPosition = 0;
+        let pageNum = 0;
+        
+        while (yPosition < imgHeight) {
+          if (pageNum > 0) {
+            pdf.addPage();
+          }
+          
+          // Calculate the portion of the image to show on this page
+          const remainingHeight = imgHeight - yPosition;
+          const drawHeight = Math.min(remainingHeight, pageHeightPx);
+          const drawY = yPosition;
+          
+          // Scale to fit on page
+          pdf.addImage(
+            imgData, 
+            "PNG", 
+            15, // x position (15mm left margin)
+            marginTop, // y position (15mm top margin)
+            scaledWidth,
+            (drawHeight / imgHeight) * scaledHeight // proportional height
+          );
+          
+          yPosition += pageHeightPx;
+          pageNum++;
+        }
+      }
       
       pdf.save(`report-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("PDF saved!");
@@ -570,7 +618,7 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           </div>
         </div>
 
-        {/* Top stats */}
+        {/* Top stats - Page 1 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 print-break-inside-avoid">
           <StatCard title="Total Clients" value={stats.total} icon={Users} color="text-primary" />
           {show("starters_completers") && (
@@ -584,9 +632,9 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           )}
         </div>
 
-        {/* Program outcomes */}
+        {/* Program outcomes - Page 2 */}
         {show("starters_completers") && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 print-break-inside-avoid">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 print-break-inside-avoid print-section-break">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -637,8 +685,8 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
           </div>
         )}
 
-        {/* Breakdowns grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 print-break-inside-avoid">
+        {/* Breakdowns grid - Page 2/3 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 print-break-inside-avoid print-section-break">
           {show("service_stream") && (
             <BreakdownCard title="Service Stream" rows={stats.streamRows}>
               <BreakdownTable rows={stats.streamRows} />
