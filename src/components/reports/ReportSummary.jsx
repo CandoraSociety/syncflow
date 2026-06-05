@@ -67,9 +67,9 @@ function MiniPie({ rows }) {
         x={x}
         y={y}
         fill="white"
-        textAnchor={x > entry.cx ? "start" : "end"}
+        textAnchor="middle"
         dominantBaseline="central"
-        fontSize="12"
+        fontSize="13"
         fontWeight="bold"
       >
         {`${percent}%`}
