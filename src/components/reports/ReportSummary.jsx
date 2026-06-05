@@ -123,9 +123,10 @@ function BreakdownTable({ title, rows }) {
   return (
     <div>
       {title && <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{title}</h4>}
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         {rows.map(r => (
           <div key={r.label} className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: r.color || "#1a237e" }} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-xs text-slate-700 truncate">{r.label}</span>
