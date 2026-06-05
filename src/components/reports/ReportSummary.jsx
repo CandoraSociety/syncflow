@@ -52,6 +52,31 @@ function MiniPie({ rows }) {
     value: r.count,
     fill: r.color || PIE_COLORS[i % PIE_COLORS.length],
   }));
+
+  const renderLabel = (entry) => {
+    const RADIAN = Math.PI / 180;
+    const radius = 80 * 0.65; // Position inside the pie
+    const x = entry.cx + radius * Math.cos(-entry.midAngle * RADIAN);
+    const y = entry.cy + radius * Math.sin(-entry.midAngle * RADIAN);
+    const percent = ((entry.value / data.reduce((sum, d) => sum + d.value, 0)) * 100).toFixed(0);
+
+    if (percent < 3) return null;
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor={x > entry.cx ? "start" : "end"}
+        dominantBaseline="central"
+        fontSize="12"
+        fontWeight="bold"
+      >
+        {`${percent}%`}
+      </text>
+    );
+  };
+
   return (
     <div className="mt-4 pt-3 border-t border-slate-100 -mx-6 px-6 pb-4">
       <div className="flex justify-center">
@@ -63,9 +88,8 @@ function MiniPie({ rows }) {
               cy="50%"
               outerRadius={80}
               dataKey="value"
-              label={({ percent }) => percent > 0.03 ? `${(percent * 100).toFixed(0)}%` : ""}
+              label={renderLabel}
               labelLine={false}
-              labelPosition="inside"
             >
               {data.map((entry, i) => (
                 <Cell key={i} fill={entry.fill} />
