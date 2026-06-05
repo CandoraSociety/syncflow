@@ -97,9 +97,7 @@ const SERVICE_TYPE_OPTIONS = [
   { value: "direct_to_employment", label: "Direct to Employment (DEA)" },
   { value: "pathways", label: "Pathways" },
   { value: "casual", label: "Casual" },
-  { value: "external_referral", label: "External Referral" },
   { value: "internal_referral", label: "Internal Referral" },
-  { value: "not_eligible", label: "Not Eligible" },
 ];
 
 const DEMOGRAPHIC_FILTERS = [
