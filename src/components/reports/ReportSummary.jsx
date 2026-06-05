@@ -28,6 +28,7 @@ const EMP_STATUS_LABELS = {
 const PIE_COLORS = [
   "#1a237e", "#7c3aed", "#0369a1", "#0891b2", "#059669",
   "#d97706", "#dc2626", "#9333ea", "#64748b", "#1d4ed8",
+  "#f59e0b", "#10b981", "#6366f1", "#ec4899", "#8b5cf6",
 ];
 
 function StatCard({ title, value, sub, icon: Icon, color = "text-primary" }) {
@@ -123,26 +124,29 @@ function BreakdownTable({ title, rows }) {
   return (
     <div>
       {title && <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">{title}</h4>}
-      <div className="space-y-1">
-        {rows.map(r => (
-          <div key={r.label} className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="text-xs text-slate-700 truncate">{r.label}</span>
-                <span className="text-xs font-semibold text-slate-800 ml-2 shrink-0">{r.count}</span>
-              </div>
-              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: total > 0 ? `${(r.count / total) * 100}%` : "0%",
-                    backgroundColor: r.color || "#1a237e",
-                  }}
-                />
+      <div className="space-y-2">
+        {rows.map((r, i) => {
+          const color = r.color || PIE_COLORS[i % PIE_COLORS.length];
+          return (
+            <div key={r.label} className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs text-slate-700 truncate">{r.label}</span>
+                  <span className="text-xs font-semibold text-slate-800 ml-2 shrink-0">{r.count}</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: total > 0 ? `${(r.count / total) * 100}%` : "0%",
+                      backgroundColor: color,
+                    }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
