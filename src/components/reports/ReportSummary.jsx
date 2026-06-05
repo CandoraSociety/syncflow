@@ -171,7 +171,7 @@ function fmt$(n) {
   return "$" + Number(n).toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export default function ReportSummary({ results, financialRecords, selectedSections = [], onClear, onExportCSV, dateRange, appliedFilters, allClients, demographicFilters }) {
+export default function ReportSummary({ results, financialRecords, selectedSections = [], demographicOptions = [], onClear, onExportCSV, dateRange, appliedFilters, allClients, demographicFilters }) {
   const reportRef = useRef(null);
 
   const handlePrint = () => window.print();
@@ -493,7 +493,18 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
     );
   }
 
-  const show = (key) => selectedSections.includes(key) || selectedSections.length === 0;
+  const show = (key) => {
+    if (selectedSections.length === 0) return true;
+    if (!selectedSections.includes(key)) return false;
+    // For client_demographics, check individual sub-options
+    if (key === "client_demographics") return true;
+    return true;
+  };
+
+  const showDemographic = (key) => {
+    if (!selectedSections.includes("client_demographics")) return false;
+    return demographicOptions.includes(key);
+  };
 
   return (
     <div className="space-y-6">
@@ -794,17 +805,17 @@ export default function ReportSummary({ results, financialRecords, selectedSecti
 
           {show("client_demographics") && (
             <>
-              {stats.ageRows && stats.ageRows.length > 0 && (
+              {showDemographic("age_distribution") && stats.ageRows && stats.ageRows.length > 0 && (
                 <BreakdownCard title="Age Distribution" rows={stats.ageRows}>
                   <BreakdownTable rows={stats.ageRows} />
                 </BreakdownCard>
               )}
-              {stats.residencyRows && stats.residencyRows.length > 0 && (
+              {showDemographic("residency_status") && stats.residencyRows && stats.residencyRows.length > 0 && (
                 <BreakdownCard title="Residency Status" rows={stats.residencyRows}>
                   <BreakdownTable rows={stats.residencyRows} />
                 </BreakdownCard>
               )}
-              {stats.cityRows && stats.cityRows.length > 0 && (
+              {showDemographic("city_distribution") && stats.cityRows && stats.cityRows.length > 0 && (
                 <BreakdownCard title="City Distribution" rows={stats.cityRows}>
                   <BreakdownTable rows={stats.cityRows} />
                 </BreakdownCard>

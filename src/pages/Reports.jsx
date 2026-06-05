@@ -29,7 +29,11 @@ const REPORT_SECTIONS = [
   { key: "starters_completers", label: "Program Starters & Completers", default: true },
   { key: "financial_summary", label: "Financial Summary", default: true },
   { key: "barriers", label: "Top Barriers Identified", default: true },
-  { key: "client_demographics", label: "Client Demographics", default: false },
+  { key: "client_demographics", label: "Client Demographics", default: false, subOptions: [
+    { key: "age_distribution", label: "Age Distribution", default: true },
+    { key: "residency_status", label: "Residency Status", default: true },
+    { key: "city_distribution", label: "City Distribution", default: true },
+  ]},
 ];
 
 // All available fields
@@ -259,11 +263,14 @@ export default function Reports() {
   const [selectedSections, setSelectedSections] = useState(
     session?.selectedSections ?? REPORT_SECTIONS.filter(s => s.default).map(s => s.key)
   );
+  const [demographicOptions, setDemographicOptions] = useState(
+    session?.demographicOptions ?? (REPORT_SECTIONS.find(s => s.key === "client_demographics")?.subOptions?.filter(o => o.default).map(o => o.key) || [])
+  );
 
   // Persist report state for the session so navigating away and back restores it
   useEffect(() => {
-    saveSession({ datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, results });
-  }, [datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, results]);
+    saveSession({ datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, demographicOptions, results });
+  }, [datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, demographicOptions, results]);
 
   useEffect(() => {
     Promise.all([
@@ -309,6 +316,14 @@ export default function Reports() {
       prev.includes(sectionKey)
         ? prev.filter(s => s !== sectionKey)
         : [...prev, sectionKey]
+    );
+  };
+
+  const toggleDemographicOption = (optionKey) => {
+    setDemographicOptions(prev =>
+      prev.includes(optionKey)
+        ? prev.filter(o => o !== optionKey)
+        : [...prev, optionKey]
     );
   };
 
@@ -515,13 +530,28 @@ export default function Reports() {
                 </CardHeader>
                 <CardContent className="space-y-1 max-h-48 overflow-y-auto">
                   {REPORT_SECTIONS.map(section => (
-                    <label key={section.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
-                      <Checkbox
-                        checked={selectedSections.includes(section.key)}
-                        onCheckedChange={() => toggleSection(section.key)}
-                      />
-                      <span className="text-xs text-slate-700">{section.label}</span>
-                    </label>
+                    <div key={section.key}>
+                      <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                        <Checkbox
+                          checked={selectedSections.includes(section.key)}
+                          onCheckedChange={() => toggleSection(section.key)}
+                        />
+                        <span className="text-xs text-slate-700">{section.label}</span>
+                      </label>
+                      {section.subOptions && selectedSections.includes(section.key) && (
+                        <div className="ml-6 mt-1 space-y-0.5 border-l-2 border-slate-200 pl-3">
+                          {section.subOptions.map(sub => (
+                            <label key={sub.key} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5">
+                              <Checkbox
+                                checked={demographicOptions.includes(sub.key)}
+                                onCheckedChange={() => toggleDemographicOption(sub.key)}
+                              />
+                              <span className="text-xs text-slate-600">{sub.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </CardContent>
               </Card>
@@ -660,6 +690,7 @@ export default function Reports() {
               results={results}
               financialRecords={financialRecords}
               selectedSections={selectedSections}
+              demographicOptions={demographicOptions}
               onClear={() => { setResults(null); }}
               onExportCSV={exportCSV}
               dateRange={{ from: dateFrom, to: dateTo }}
