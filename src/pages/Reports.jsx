@@ -269,7 +269,6 @@ export default function Reports() {
   const [customDateFrom, setCustomDateFrom] = useState(session?.customDateFrom ?? "");
   const [customDateTo, setCustomDateTo] = useState(session?.customDateTo ?? "");
   const [dateField, setDateField] = useState(session?.dateField ?? "intake_date");
-  const [results, setResults] = useState(session?.results ?? null);
   const [templates, setTemplates] = useState(loadTemplates());
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
@@ -280,11 +279,12 @@ export default function Reports() {
   const [demographicOptions, setDemographicOptions] = useState(
     session?.demographicOptions ?? (REPORT_SECTIONS.find(s => s.key === "client_demographics")?.subOptions?.filter(o => o.default).map(o => o.key) || [])
   );
+  const [results, setResults] = useState(null);
 
   // Persist report state for the session so navigating away and back restores it
   useEffect(() => {
-    saveSession({ datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, demographicOptions, results });
-  }, [datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, demographicOptions, results]);
+    saveSession({ datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, demographicOptions });
+  }, [datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, demographicOptions]);
 
   useEffect(() => {
     Promise.all([
