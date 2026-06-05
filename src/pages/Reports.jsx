@@ -223,6 +223,7 @@ function getDisplayValue(client, key) {
 }
 
 const TEMPLATE_KEY = "report_templates_v2";
+const SESSION_KEY = "report_session_state_v1";
 
 function loadTemplates() {
   try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY) || "[]"); } catch { return []; }
@@ -231,23 +232,37 @@ function saveTemplates(t) {
   localStorage.setItem(TEMPLATE_KEY, JSON.stringify(t));
 }
 
+function loadSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); } catch { return null; }
+}
+function saveSession(state) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state)); } catch {}
+}
+
 export default function Reports() {
+  const session = loadSession();
+
   const [clients, setClients] = useState([]);
   const [financialRecords, setFinancialRecords] = useState([]);
   const [financialMap, setFinancialMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [datePreset, setDatePreset] = useState("none");
-  const [customDateFrom, setCustomDateFrom] = useState("");
-  const [customDateTo, setCustomDateTo] = useState("");
-  const [dateField, setDateField] = useState("intake_date");
-  const [results, setResults] = useState(null);
+  const [datePreset, setDatePreset] = useState(session?.datePreset ?? "none");
+  const [customDateFrom, setCustomDateFrom] = useState(session?.customDateFrom ?? "");
+  const [customDateTo, setCustomDateTo] = useState(session?.customDateTo ?? "");
+  const [dateField, setDateField] = useState(session?.dateField ?? "intake_date");
+  const [results, setResults] = useState(session?.results ?? null);
   const [templates, setTemplates] = useState(loadTemplates());
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState(session?.filters ?? {});
   const [selectedSections, setSelectedSections] = useState(
-    REPORT_SECTIONS.filter(s => s.default).map(s => s.key)
+    session?.selectedSections ?? REPORT_SECTIONS.filter(s => s.default).map(s => s.key)
   );
+
+  // Persist report state for the session so navigating away and back restores it
+  useEffect(() => {
+    saveSession({ datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, results });
+  }, [datePreset, customDateFrom, customDateTo, dateField, filters, selectedSections, results]);
 
   useEffect(() => {
     Promise.all([
@@ -644,7 +659,7 @@ export default function Reports() {
               results={results}
               financialRecords={financialRecords}
               selectedSections={selectedSections}
-              onClear={() => setResults(null)}
+              onClear={() => { setResults(null); }}
               onExportCSV={exportCSV}
             />
           )}
