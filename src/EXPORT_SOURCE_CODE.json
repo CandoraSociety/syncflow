@@ -1,0 +1,349 @@
+{
+  "export_metadata": {
+    "app_name": "Candora Pathways Case Management",
+    "export_date": "2026-06-08",
+    "platform": "Base44",
+    "version": "1.0.0",
+    "description": "Complete source code export for app replication"
+  },
+  "entities": {
+    "User": {
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "The role of the user in the app",
+          "enum": ["admin", "user"]
+        }
+      },
+      "required": ["role"],
+      "name": "User",
+      "type": "object"
+    },
+    "Client": {
+      "name": "Client",
+      "type": "object",
+      "properties": {
+        "first_name": {"type": "string", "description": "Client's first name"},
+        "last_name": {"type": "string", "description": "Client's last name"},
+        "date_of_birth": {"type": "string", "format": "date", "description": "Date of birth"},
+        "sex": {"type": "string", "enum": ["male", "female"], "description": "Biological sex for demographic data"},
+        "phone": {"type": "string", "description": "Phone number"},
+        "email": {"type": "string", "description": "Email address"},
+        "address": {"type": "string", "description": "Street address"},
+        "city": {"type": "string", "description": "City"},
+        "state": {"type": "string", "description": "Province"},
+        "zip": {"type": "string", "description": "Postal code"},
+        "compass_hsid": {"type": "string", "description": "Compass HSID#"},
+        "compass_verified": {"type": "boolean"},
+        "compass_verified_date": {"type": "string", "format": "date"},
+        "compass_verified_by": {"type": "string"},
+        "compass_notes": {"type": "string"},
+        "residency_status": {"type": "string", "enum": ["canadian_citizen", "permanent_resident", "protected_person", "convention_refugee", "refugee_claimant", "temporary_resident", "work_permit", "study_permit", "visitor", "other"]},
+        "clb_level": {"type": "string", "enum": ["clb_1", "clb_2", "clb_3", "clb_4", "clb_5", "clb_6", "clb_7", "clb_8", "clb_9", "clb_10", "clb_11", "clb_12", "native_english_french"]},
+        "employment_status": {"type": "string", "enum": ["E-RF", "E-UF", "E-PT", "UE", "UE-LA", "UE-S", "NA"]},
+        "has_vehicle": {"type": "string", "enum": ["yes", "no_has_license", "no_no_license"]},
+        "referral_source": {"type": "string", "enum": ["self", "family_friend", "school", "employer", "external_agency", "alberta_works", "other"]},
+        "service_type": {"type": "string", "enum": ["direct_to_employment", "pathways", "casual", "external_referral", "internal_referral", "not_eligible"]},
+        "assigned_worker": {"type": "string"},
+        "assigned_worker_name": {"type": "string"},
+        "status": {"type": "string", "enum": ["new", "active", "pending", "closed"], "default": "new"},
+        "program_status": {"type": "string", "enum": ["in_progress", "complete", "incomplete", "cancelled"]},
+        "service_start_date": {"type": "string", "format": "date"},
+        "completion_date": {"type": "string", "format": "date"},
+        "employment_start_date": {"type": "string", "format": "date"},
+        "post_completion_employment_status": {"type": "string", "enum": ["E-RF", "E-UF", "E-PT", "UE", "UE-LA", "UE-S", "NA", "no_contact"]},
+        "post_completion_employment_date": {"type": "string", "format": "date"},
+        "followup_90day_date": {"type": "string", "format": "date"},
+        "followup_90day_status": {"type": "string", "enum": ["E-RF", "E-UF", "E-PT", "UE", "UE-LA", "UE-S", "NA", "no_contact"]},
+        "barrier_1": {"type": "string"},
+        "barrier_1_status": {"type": "string", "enum": ["unresolved", "in_progress", "resolved"]},
+        "barrier_1_notes": {"type": "string"},
+        "barrier_1_action_steps": {"type": "string"},
+        "barrier_2": {"type": "string"},
+        "barrier_2_status": {"type": "string", "enum": ["unresolved", "in_progress", "resolved"]},
+        "barrier_2_notes": {"type": "string"},
+        "barrier_2_action_steps": {"type": "string"},
+        "barrier_3": {"type": "string"},
+        "barrier_3_status": {"type": "string", "enum": ["unresolved", "in_progress", "resolved"]},
+        "barrier_3_notes": {"type": "string"},
+        "barrier_3_action_steps": {"type": "string"},
+        "sdp_items": {"type": "array", "items": {"type": "string"}},
+        "sdp_item_details": {"type": "object"},
+        "internal_referrals": {"type": "array", "items": {"type": "string"}},
+        "external_referrals": {"type": "array", "items": {"type": "string"}},
+        "internal_placement": {"type": "string", "enum": ["none", "cleaning_arc", "food_services_onsite", "food_services_offsite", "reception", "childcare"]},
+        "career_objectives": {"type": "string"},
+        "employment_history": {"type": "string"},
+        "resume_urls": {"type": "array", "items": {"type": "string"}},
+        "intake_notes": {"type": "string"},
+        "intake_date": {"type": "string", "format": "date"},
+        "program_stream_switches": {"type": "array", "items": {"type": "object"}},
+        "roadmap_item_status": {"type": "object"},
+        "roadmap_progress_notes": {"type": "array", "items": {"type": "object"}},
+        "casual_activity_log": {"type": "array", "items": {"type": "object"}},
+        "dea_activities": {"type": "array", "items": {"type": "object"}}
+      },
+      "required": ["first_name", "last_name"]
+    },
+    "CompassTask": {
+      "name": "CompassTask",
+      "type": "object",
+      "properties": {
+        "client_id": {"type": "string"},
+        "client_name": {"type": "string"},
+        "compass_hsid": {"type": "string"},
+        "task_type": {"type": "string"},
+        "title": {"type": "string"},
+        "instructions": {"type": "string"},
+        "triggered_by": {"type": "string"},
+        "triggered_by_name": {"type": "string"},
+        "assigned_worker": {"type": "string"},
+        "assigned_worker_name": {"type": "string"},
+        "status": {"type": "string", "enum": ["pending", "completed"], "default": "pending"},
+        "completed_by": {"type": "string"},
+        "completed_by_name": {"type": "string"},
+        "completed_date": {"type": "string", "format": "date"},
+        "completed_notes": {"type": "string"}
+      },
+      "required": ["client_id", "title", "instructions"]
+    },
+    "FinancialRecord": {
+      "name": "FinancialRecord",
+      "type": "object",
+      "properties": {
+        "client_id": {"type": "string"},
+        "client_name": {"type": "string"},
+        "assigned_worker": {"type": "string"},
+        "record_type": {"type": "string", "enum": ["exposure_course", "paid_external_placement", "employment_supports"]},
+        "course_type": {"type": "string"},
+        "course_type_other": {"type": "string"},
+        "description": {"type": "string"},
+        "amount": {"type": "number"},
+        "tax": {"type": "number"},
+        "total": {"type": "number"},
+        "date": {"type": "string", "format": "date"},
+        "vendor": {"type": "string"},
+        "registration_status": {"type": "string", "enum": ["not_registered", "registered", "waitlisted", "cancelled"]},
+        "completion_status": {"type": "string", "enum": ["not_started", "in_progress", "completed", "did_not_complete"]},
+        "receipt_urls": {"type": "array", "items": {"type": "string"}},
+        "receipt_parsed": {"type": "boolean"},
+        "completion_record_urls": {"type": "array", "items": {"type": "string"}},
+        "notes": {"type": "string"},
+        "billing_month": {"type": "string"}
+      },
+      "required": ["client_id", "record_type"]
+    },
+    "Invoice": {
+      "name": "Invoice",
+      "type": "object",
+      "properties": {
+        "invoice_number": {"type": "string"},
+        "billing_month": {"type": "string"},
+        "config_id": {"type": "string"},
+        "status": {"type": "string", "enum": ["draft", "finalized", "submitted"], "default": "draft"},
+        "base_amount": {"type": "number"},
+        "line_items": {"type": "array", "items": {"type": "object"}},
+        "subtotal_deliverables": {"type": "number"},
+        "subtotal_direct_costs": {"type": "number"},
+        "total_amount": {"type": "number"},
+        "notes": {"type": "string"},
+        "generated_by": {"type": "string"},
+        "finalized_date": {"type": "string", "format": "date"}
+      },
+      "required": ["billing_month"]
+    },
+    "InvoiceConfig": {
+      "name": "InvoiceConfig",
+      "type": "object",
+      "properties": {
+        "config_name": {"type": "string"},
+        "contract_start_date": {"type": "string", "format": "date"},
+        "contract_end_date": {"type": "string", "format": "date"},
+        "base_monthly_amount": {"type": "number"},
+        "rate_dea_starter": {"type": "number"},
+        "rate_pathways_starter": {"type": "number"},
+        "rate_dea_completer": {"type": "number"},
+        "rate_pathways_completer": {"type": "number"},
+        "rate_employment_outcome": {"type": "number"},
+        "rate_90day_outcome": {"type": "number"},
+        "cap_starters": {"type": "number"},
+        "cap_completers": {"type": "number"},
+        "cap_employment_outcomes": {"type": "number"},
+        "cap_90day_outcomes": {"type": "number"},
+        "cap_exposure_courses_dollars": {"type": "number"},
+        "cap_paid_placements_dollars": {"type": "number"},
+        "cap_employment_supports_dollars": {"type": "number"},
+        "is_active": {"type": "boolean", "default": true},
+        "notes": {"type": "string"}
+      },
+      "required": ["config_name"]
+    },
+    "InvoicePackage": {
+      "name": "InvoicePackage",
+      "type": "object",
+      "properties": {
+        "package_number": {"type": "string"},
+        "billing_month": {"type": "string"},
+        "prepared_by": {"type": "string"},
+        "prepared_by_name": {"type": "string"},
+        "prepared_date": {"type": "string", "format": "date"},
+        "config_id": {"type": "string"},
+        "status": {"type": "string", "enum": ["draft", "ready_for_review", "submitted", "approved"], "default": "draft"},
+        "notes": {"type": "string"},
+        "crt_included": {"type": "boolean", "default": true},
+        "invoice_id": {"type": "string"},
+        "supporting_documents": {"type": "array", "items": {"type": "object"}},
+        "paid_placements": {"type": "array", "items": {"type": "object"}},
+        "auto_populated_items": {"type": "array", "items": {"type": "object"}}
+      },
+      "required": ["billing_month", "prepared_by"]
+    },
+    "StaffMonthlyReport": {
+      "name": "StaffMonthlyReport",
+      "type": "object",
+      "properties": {
+        "report_month": {"type": "string", "format": "date"},
+        "submitted_by": {"type": "string"},
+        "submitted_by_name": {"type": "string"},
+        "submitted_date": {"type": "string", "format": "date"},
+        "status": {"type": "string", "enum": ["draft", "submitted"], "default": "draft"},
+        "trends": {"type": "string"},
+        "marketing_activities": {"type": "string"},
+        "success_stories": {"type": "string"},
+        "employer_engagements": {"type": "string"},
+        "challenges": {"type": "string"},
+        "goals_next_month": {"type": "string"},
+        "additional_notes": {"type": "string"}
+      },
+      "required": ["report_month", "submitted_by"]
+    },
+    "StatusChange": {
+      "name": "StatusChange",
+      "type": "object",
+      "properties": {
+        "client_id": {"type": "string"},
+        "client_name": {"type": "string"},
+        "change_type": {"type": "string", "enum": ["stream_switch", "program_status_change", "file_opened", "file_closed", "employment_outcome", "post_completion_status", "followup_90day", "other"]},
+        "change_date": {"type": "string", "format": "date"},
+        "from_value": {"type": "string"},
+        "to_value": {"type": "string"},
+        "notes": {"type": "string"},
+        "logged_by": {"type": "string"},
+        "logged_by_name": {"type": "string"},
+        "billing_relevant": {"type": "boolean"}
+      },
+      "required": ["client_id", "change_type", "change_date"]
+    },
+    "InternalTraining": {
+      "name": "InternalTraining",
+      "type": "object",
+      "properties": {
+        "client_id": {"type": "string"},
+        "client_name": {"type": "string"},
+        "placement_type": {"type": "string", "enum": ["cleaning_arc", "food_services_onsite", "food_services_offsite", "reception", "childcare"]},
+        "assigned_worker": {"type": "string"},
+        "assigned_worker_name": {"type": "string"},
+        "referral_date": {"type": "string", "format": "date"},
+        "start_date": {"type": "string", "format": "date"},
+        "expected_end_date": {"type": "string", "format": "date"},
+        "actual_end_date": {"type": "string", "format": "date"},
+        "transportation": {"type": "string", "enum": ["has_own_vehicle", "no_vehicle_willing_to_bus", "no_vehicle_not_willing_to_bus", "transit_pass_provided", "requires_transportation_support", "offsite_not_applicable"]},
+        "transportation_notes": {"type": "string"},
+        "training_goals": {"type": "string"},
+        "status": {"type": "string", "enum": ["referred", "active", "completed", "withdrawn", "cancelled"], "default": "referred"},
+        "orientation_completed": {"type": "boolean"},
+        "orientation_date": {"type": "string", "format": "date"},
+        "health_safety_completed": {"type": "boolean"},
+        "health_safety_date": {"type": "string", "format": "date"},
+        "midpoint_checkin_completed": {"type": "boolean"},
+        "midpoint_checkin_date": {"type": "string", "format": "date"},
+        "program_completion_completed": {"type": "boolean"},
+        "program_completion_date": {"type": "string", "format": "date"},
+        "training_plan_items": {"type": "array", "items": {"type": "object"}},
+        "supervisor_notes": {"type": "string"},
+        "evaluation_completed": {"type": "boolean"},
+        "evaluation_date": {"type": "string", "format": "date"},
+        "evaluation_reliability": {"type": "string", "enum": ["excellent", "good", "satisfactory", "needs_improvement", "unsatisfactory"]},
+        "evaluation_attitude": {"type": "string", "enum": ["excellent", "good", "satisfactory", "needs_improvement", "unsatisfactory"]},
+        "evaluation_skill_development": {"type": "string", "enum": ["excellent", "good", "satisfactory", "needs_improvement", "unsatisfactory"]},
+        "evaluation_teamwork": {"type": "string", "enum": ["excellent", "good", "satisfactory", "needs_improvement", "unsatisfactory"]},
+        "evaluation_communication": {"type": "string", "enum": ["excellent", "good", "satisfactory", "needs_improvement", "unsatisfactory"]},
+        "evaluation_would_hire": {"type": "string", "enum": ["yes", "yes_with_conditions", "no", "not_applicable"]},
+        "evaluation_strengths": {"type": "string"},
+        "evaluation_areas_for_growth": {"type": "string"},
+        "evaluation_overall_comments": {"type": "string"},
+        "referral_notes": {"type": "string"}
+      },
+      "required": ["client_id", "placement_type"]
+    },
+    "Employer": {
+      "name": "Employer",
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "contact_name": {"type": "string"},
+        "contact_email": {"type": "string"},
+        "contact_phone": {"type": "string"},
+        "address": {"type": "string"},
+        "industry": {"type": "string"},
+        "notes": {"type": "string"}
+      },
+      "required": ["name"]
+    }
+  },
+  "automations": [
+    {
+      "name": "90-Day Follow-Up Reminder",
+      "type": "scheduled",
+      "function": "followupReminder",
+      "schedule": {
+        "repeat_interval": 1,
+        "repeat_unit": "days",
+        "start_time": "09:00"
+      },
+      "description": "Send email reminders for 90-day follow-ups due in 7, 3, and 0 days"
+    },
+    {
+      "name": "Alert Email Notification",
+      "type": "entity",
+      "entity": "Client",
+      "events": ["update"],
+      "function": "sendAlertEmail",
+      "description": "Send email alerts for placements, referrals, and barriers"
+    }
+  ],
+  "configuration": {
+    "email_mappings": {
+      "internal_placements": {
+        "cleaning_arc": "priscilla@candorasociety.com",
+        "food_services_onsite": "priscilla@candorasociety.com",
+        "food_services_offsite": "priscilla@candorasociety.com",
+        "reception": "priscilla@candorasociety.com",
+        "childcare": "priscilla@candorasociety.com"
+      },
+      "internal_referrals": {
+        "ell": "priscilla@candorasociety.com",
+        "empoweru": "priscilla@candorasociety.com",
+        "digital_literacy": "priscilla@candorasociety.com",
+        "family_programs": "priscilla@candorasociety.com"
+      },
+      "external_referrals": {
+        "christcity_lighthouse": "priscilla@candorasociety.com"
+      },
+      "service_navigator": "Dawn.williston@candorasociety.com"
+    },
+    "workers": [
+      {"email": "priscilla@candorasociety.com", "full_name": "Priscilla"},
+      {"email": "lola@candorasociety.com", "full_name": "Lola"},
+      {"email": "john@candorasociety.com", "full_name": "John"},
+      {"email": "Dawn.williston@candorasociety.com", "full_name": "Dawn"},
+      {"email": "olena@candorasociety.com", "full_name": "Olena"}
+    ],
+    "branding": {
+      "primary_color": "#1a237e",
+      "secondary_color": "#FBB800",
+      "logo_url": "https://media.base44.com/images/public/6a0025bc2848937e9e70bca5/bf0d54770_Candoracirclelogo_noanniversary.png",
+      "app_name": "Candora Pathways"
+    }
+  }
+}
