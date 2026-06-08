@@ -1,0 +1,43 @@
+{
+  "export_instructions": {
+    "step1": "Upload this JSON file to the new app's AI Builder",
+    "step2": "Say: 'Create this entire app from the export JSON - create all entities, pages, components, and files exactly as specified'",
+    "step3": "After entities are created, create the backend functions (followupReminder and sendAlertEmail)",
+    "step4": "Set up automations: (1) followupReminder daily at 9am, (2) sendAlertEmail on Client update",
+    "step5": "Update email addresses in functions/sendAlertEmail to match your staff emails"
+  },
+  "app_structure": {
+    "pages": {
+      "Home": "See code below - auto-redirects based on user role",
+      "IntakePage": "Unassigned client intake management",
+      "WorkerDashboard": "Career counsellor dashboard with assigned clients",
+      "MasterList": "Complete client list (active/closed tabs)",
+      "ClientProfile": "Individual client profile with tabs (overview, financials, referrals, placements)",
+      "Reports": "Three tabs: Outcomes, Data Reports, Staff Monthly",
+      "SupervisorPortal": "Internal training placement management",
+      "Resources": "Career planning and job search resources",
+      "Compass": "Compass task queue grouped by counsellor",
+      "MonthlyBillingSubmissions": "Invoice packages, CRT, invoices, supporting docs"
+    },
+    "key_components": [
+      "AppNav - Navigation bar",
+      "IntakeForm - Client intake form",
+      "ClientProfileOverview - Client demographics editing",
+      "ClientFinancials - Financial records",
+      "ReportSummary - Data visualization with charts",
+      "StaffMonthlyReports - Staff narrative reports",
+      "CompassTaskList - Task management",
+      "ActionPlanRoadmap - Visual timeline",
+      "InvoicePackageGenerator - Billing package creation"
+    ],
+    "styling": {
+      "primary_color": "#1a237e (navy)",
+      "secondary_color": "#FBB800 (gold)",
+      "design_system": "Token-based with Candora branding in index.css"
+    }
+  },
+  "complete_source_code": {
+    "NOTE": "Due to file size limits, upload the EXPORT_README.md and EXPORT_SOURCE_CODE.json files I created earlier to the new app, then have the AI Builder recreate all files from those. The complete source code for all 60+ files is too large for a single message.",
+    "alternative": "Copy each file individually from this app by opening them and pasting into the new app"
+  }
+}
